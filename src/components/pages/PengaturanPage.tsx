@@ -147,56 +147,32 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
 
   const versionFeatures = [
     {
-      text: 'Struktur materi pembelajaran yang lebih terarah berdasarkan cakupan materi.',
-      icon: Layers,
-    },
-    {
-      text: 'Pengaturan bobot dan kedalaman materi.',
-      icon: SlidersHorizontal,
-    },
-    {
-      text: 'Penentuan prioritas visual berdasarkan karakteristik materi.',
+      text: 'Penyegaran tampilan antarmuka agar lebih modern, bersih, dan nyaman digunakan.',
       icon: Sparkles,
     },
     {
-      text: 'Layout yang lebih rapi dan adaptif terhadap panjang teks.',
+      text: 'Peningkatan tata letak dan pengalaman pengguna tanpa mengubah sistem utama STIVIA.',
       icon: Layers,
     },
     {
-      text: 'Gaya visual yang dapat mengubah tampilan tanpa mengubah isi dan struktur materi.',
+      text: 'Penambahan dan pengembangan fitur pilihan Gaya Infografis untuk membantu pengguna menentukan karakter visual infografis sebelum menghasilkan prompt.',
       icon: Palette,
     },
     {
-      text: 'Final Output yang dapat dikunci agar tetap konsisten.',
-      icon: Lock,
-    },
-    {
-      text: 'Preview final dalam mode read-only.',
-      icon: Eye,
-    },
-    {
-      text: 'Dukungan ekspor hasil infografis.',
-      icon: Download,
-    },
-    {
-      text: 'Penyimpanan dan pengelolaan proyek.',
-      icon: FolderKanban,
-    },
-    {
-      text: 'Prompt Studio untuk menghasilkan prompt materi dan desain infografis.',
-      icon: TerminalSquare,
-    },
-    {
-      text: 'Prompt universal yang dapat digunakan pada berbagai AI lain.',
-      icon: Bot,
-    },
-    {
-      text: 'Prompt desain infografis yang dapat langsung memberikan perintah kepada AI untuk membuat poster.',
+      text: 'Pilihan gaya visual terintegrasi dengan Prompt Desain Infografis sehingga gaya yang dipilih pengguna dapat memengaruhi hasil desain.',
       icon: Zap,
     },
     {
-      text: 'Standar poster infografis vertikal dengan rasio 2:3 untuk menjaga konsistensi tampilan.',
-      icon: Smartphone,
+      text: 'Penghapusan materi contoh bawaan sehingga daftar materi hanya menampilkan materi yang dibuat atau digunakan oleh pengguna.',
+      icon: FolderKanban,
+    },
+    {
+      text: 'Penyempurnaan tampilan berbagai komponen aplikasi agar lebih konsisten dengan identitas STIVIA.',
+      icon: SlidersHorizontal,
+    },
+    {
+      text: 'Penghapusan bagian "Tampilan & Mode Responsif" dari antarmuka pengaturan.',
+      icon: Layout,
     },
   ];
 
@@ -356,140 +332,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
         </div>
 
         {/* ================================================== */}
-        {/* 2. PENGATURAN TAMPILAN & MODE RESPONSIF */}
-        {/* ================================================== */}
-        <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
-              <Layout className="w-4.5 h-4.5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 tracking-wide uppercase">
-                TAMPILAN & MODE RESPONSIF
-              </h2>
-              <p className="text-xs text-slate-500">
-                Pilih preferensi tata letak antarmuka STIVIA untuk kenyamanan penggunaan
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            {/* Opsi 1: Otomatis */}
-            <button
-              type="button"
-              onClick={() => {
-                onSetViewMode?.('auto');
-                onSaveToast?.('Mode tampilan diubah ke: Otomatis');
-              }}
-              className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
-                viewMode === 'auto'
-                  ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20 shadow-xs'
-                  : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70 hover:border-slate-300'
-              }`}
-            >
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className={`w-4 h-4 ${viewMode === 'auto' ? 'text-indigo-600' : 'text-slate-500'}`} />
-                    <span className="text-sm font-bold text-slate-900">Otomatis (Default)</span>
-                  </div>
-                  {viewMode === 'auto' && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100 shrink-0"></span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Menyesuaikan tampilan secara cerdas mengikuti ukuran layar perangkat yang Anda gunakan.
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Status Saat Ini:</span>
-                <span className="font-bold text-indigo-700">
-                  {effectiveMode === 'mobile' ? '📱 Mobile' : '🖥 Desktop'}
-                </span>
-              </div>
-            </button>
-
-            {/* Opsi 2: Mobile */}
-            <button
-              type="button"
-              onClick={() => {
-                onSetViewMode?.('mobile');
-                onSaveToast?.('Mode tampilan diubah ke: 📱 Mode Mobile');
-              }}
-              className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
-                viewMode === 'mobile'
-                  ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20 shadow-xs'
-                  : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70 hover:border-slate-300'
-              }`}
-            >
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className={`w-4 h-4 ${viewMode === 'mobile' ? 'text-indigo-600' : 'text-slate-500'}`} />
-                    <span className="text-sm font-bold text-slate-900">📱 Mode Mobile</span>
-                  </div>
-                  {viewMode === 'mobile' && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 ring-4 ring-indigo-100 shrink-0"></span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Tata letak satu kolom, menu hamburger ringkas, kartu vertikal, dan tombol ramah sentuhan.
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Optimasi:</span>
-                <span className="font-semibold text-slate-700">Smartphone & Tablet</span>
-              </div>
-            </button>
-
-            {/* Opsi 3: Desktop */}
-            <button
-              type="button"
-              onClick={() => {
-                onSetViewMode?.('desktop');
-                onSaveToast?.('Mode tampilan diubah ke: 🖥 Mode Desktop');
-              }}
-              className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
-                viewMode === 'desktop'
-                  ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20 shadow-xs'
-                  : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70 hover:border-slate-300'
-              }`}
-            >
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Monitor className={`w-4 h-4 ${viewMode === 'desktop' ? 'text-indigo-600' : 'text-slate-500'}`} />
-                    <span className="text-sm font-bold text-slate-900">🖥 Mode Desktop</span>
-                  </div>
-                  {viewMode === 'desktop' && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 ring-4 ring-indigo-100 shrink-0"></span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Tata letak multi-kolom yang memanfaatkan luas layar, sidebar permanen, dan pratinjau lega.
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Optimasi:</span>
-                <span className="font-semibold text-slate-700">Laptop & Monitor Lebar</span>
-              </div>
-            </button>
-          </div>
-
-          {/* Catatan Prinsip Isolasi UI */}
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-600 leading-relaxed">
-              <strong className="text-slate-800">Prinsip Keseragaman Data:</strong> Perubahan mode tampilan ini murni merupakan lapisan antarmuka (UI). Seluruh isi materi, bobot, logika, dan hasil ekspor infografis (rasio poster 2:3) tetap identik dan utuh.
-            </p>
-          </div>
-        </div>
-
-        {/* ================================================== */}
-        {/* 3. TENTANG APLIKASI (RINGKASAN & BUTTON MODAL) */}
+        {/* 2. TENTANG APLIKASI (RINGKASAN & BUTTON MODAL) */}
         {/* ================================================== */}
         <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
@@ -531,7 +374,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
               </span>
               <div className="inline-flex items-center gap-1.5 mt-0.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Versi 2.0
+                Versi 2.1
               </div>
             </div>
           </div>
@@ -543,7 +386,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                 Pengembangan Terbaru STIVIA
               </span>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                Pengembangan terbaru STIVIA untuk membantu pendidik mengolah materi pembelajaran menjadi materi yang lebih terstruktur dan visual.
+                STIVIA Versi 2.1 merupakan pembaruan yang berfokus pada peningkatan pengalaman pengguna dan pengembangan tampilan aplikasi agar lebih modern, menarik, dan mudah digunakan.
               </p>
             </div>
 
@@ -560,7 +403,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
       </div>
 
       {/* ================================================== */}
-      {/* 3. MODAL / POPUP: PEMBARUAN VERSI 2.0 */}
+      {/* 3. MODAL / POPUP: PEMBARUAN VERSI 2.1 */}
       {/* ================================================== */}
       {isModalOpen && (
         <div 
@@ -580,14 +423,14 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-slate-900">
-                      PEMBARUAN VERSI 2.0
+                      PEMBARUAN VERSI 2.1
                     </h3>
                     <span className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[10px] font-extrabold text-indigo-700">
-                      STIVIA • VERSION 2.0
+                      STIVIA • VERSION 2.1
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Pengembangan STIVIA dari versi sebelumnya
+                    Peningkatan pengalaman pengguna dan tampilan antarmuka STIVIA
                   </p>
                 </div>
               </div>
@@ -605,7 +448,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
             {/* Modal Body with Internal Scroll */}
             <div className="px-6 py-5 overflow-y-auto space-y-4 text-left">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                Versi 2.0 merupakan pengembangan dari versi sebelumnya dengan peningkatan pada pengolahan materi, struktur informasi, visualisasi, pengelolaan proyek, dan pembuatan prompt.
+                STIVIA Versi 2.1 merupakan pembaruan yang berfokus pada peningkatan pengalaman pengguna dan pengembangan tampilan aplikasi agar lebih modern, menarik, dan mudah digunakan.
               </div>
 
               <div className="space-y-2">

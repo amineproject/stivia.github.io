@@ -1,5 +1,6 @@
 import { InfographicDraft, ContentSnapshot } from '../types';
 import { getContentSnapshotFromDraft } from '../data/materialGenerator';
+import { findStyleByNameOrId } from '../data/infographicStylesData';
 
 /**
  * PROMPT STUDIO ENGINE — STIVIA
@@ -102,6 +103,14 @@ ${keyPointsStr || '      • Poin utama terstruktur'}
 
   const keySummaryStr = (keySummary || []).map(s => `   • ${s}`).join('\n');
 
+  // Resolusi instruksi gaya visual
+  const matchedStyle = findStyleByNameOrId(options.visualStyleName);
+  const visualInstruction = matchedStyle
+    ? `- Gaya Visual Terpilih: ${matchedStyle.name} (Kategori: ${matchedStyle.category})
+- Karakteristik Desain: ${matchedStyle.characteristics}
+- Instruksi Visual Spesifik: ${matchedStyle.promptInstruction}`
+    : `- Terapkan gaya visual: "${options.visualStyleName}" pada skema warna, tipografi judul dan teks, bentuk sudut card/kontainer, ikon edukatif, dan komposisi artistik.`;
+
   return `=== UNIVERSAL PROMPT: GENERATE POSTER INFOGRAFIS PEMBELAJARAN (VERTIKAL 2:3) ===
 
 1. TUGAS UTAMA:
@@ -168,9 +177,9 @@ ${keySummaryStr}
 - Sesuaikan ukuran container dengan volume teks.
 - Berikan jarak (padding internal & margin/gap) yang proporsional agar tata letak nyaman dipandang dan tidak sesak.
 
-10. GAYA VISUAL:
-- Terapkan gaya visual: "${options.visualStyleName}" pada skema warna, tipografi judul dan teks, bentuk sudut card/kontainer, ikon edukatif, dan komposisi artistik.
-- Gaya visual hanya memengaruhi tampilan estetika, dan TIDAK BOLEH mengubah format kanvas vertikal rasio 2:3, isi materi, atau urutan pembahasan.
+10. GAYA VISUAL & KARAKTER DESAIN:
+${visualInstruction}
+- Aturan Mutlak Gaya Visual: Gaya visual hanya menentukan karakter estetika (skema warna, tipografi judul dan teks, bentuk sudut kontainer/card, ikonografi edukatif, dan komposisi visual). Gaya visual TIDAK BOLEH mengubah format kanvas vertikal rasio 2:3, judul materi, isi materi, fakta, informasi, struktur urutan pembahasan, atau cakupan pembelajaran.
 
 11. OUTPUT AKHIR:
 Buat satu poster infografis pembelajaran vertikal (rasio 2:3) yang utuh, rapi, proporsional, menarik, mudah dibaca, dan setia pada materi sumber.
@@ -198,6 +207,13 @@ export function generateUniversalInfographicFromRawMaterialPrompt(input: RawMate
   const styleText = visualStyle === 'Custom' && customStyleDescription
     ? `Kustom: ${customStyleDescription}`
     : visualStyle;
+
+  const matchedRawStyle = findStyleByNameOrId(visualStyle);
+  const rawVisualInstruction = matchedRawStyle
+    ? `- Gaya Desain Terpilih: ${matchedRawStyle.name} (Kategori: ${matchedRawStyle.category})
+- Karakteristik Desain: ${matchedRawStyle.characteristics}
+- Instruksi Visual Spesifik: ${matchedRawStyle.promptInstruction}`
+    : `- Terapkan gaya desain: "${styleText}" pada palet warna, tipografi judul dan isi, bentuk sudut card/kontainer, serta ikonografi pelengkap.`;
 
   return `=== UNIVERSAL PROMPT: GENERATE POSTER INFOGRAFIS DARI MATERI SUMBER ASLI (VERTIKAL 2:3) ===
 
@@ -261,9 +277,9 @@ ${rawMaterial.trim() || '[Tempelkan materi pembelajaran Anda di sini]'}
 - Pastikan jarak antarbagian (gap & padding) tertata rapi dan tidak saling bertabrakan.
 - Pastikan tidak ada teks atau elemen grafis yang keluar dari batas kanvas poster vertikal.
 
-10. GAYA VISUAL:
-- Terapkan gaya desain: "${styleText}" pada palet warna, tipografi judul dan isi, bentuk sudut card/kontainer, serta ikonografi pelengkap.
-- Gaya visual hanya diterapkan pada tampilan estetika, dan TIDAK BOLEH mengubah orientasi kanvas vertikal, rasio 2:3, isi materi, atau urutan pembahasan.
+10. GAYA VISUAL & KARAKTER DESAIN:
+${rawVisualInstruction}
+- Aturan Mutlak Gaya Visual: Gaya visual hanya diterapkan pada tampilan estetika (palet warna, tipografi judul dan isi, bentuk sudut card/kontainer, serta ikonografi pelengkap). Gaya visual TIDAK BOLEH mengubah orientasi kanvas vertikal, rasio 2:3, judul materi, isi materi, fakta, informasi, atau urutan pembahasan.
 
 11. OUTPUT AKHIR:
 Buat satu poster infografis pembelajaran vertikal (rasio 2:3, referensi 1200 × 1800 px) yang utuh, rapi, menarik, seimbang, mudah dibaca, dan setia pada materi sumber.

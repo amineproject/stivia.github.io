@@ -24,6 +24,7 @@ import {
   generateUniversalInfographicFromProjectPrompt, 
   generateUniversalInfographicFromRawMaterialPrompt 
 } from '../../services/promptStudioEngine';
+import { PilihGayaInfografis } from '../infographic/PilihGayaInfografis';
 
 interface PromptStudioPageProps {
   projects: InfographicDraft[];
@@ -516,6 +517,23 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                   </div>
                 </div>
 
+                {/* FITUR BARU: PILIH GAYA INFOGRAFIS (SEBELUM GENERATE PROMPT) */}
+                <PilihGayaInfografis
+                  context={{
+                    educationLevel: activeProject?.educationLevel,
+                    grade: activeProject?.grade,
+                    subject: activeProject?.subject,
+                    theme: activeProject?.theme,
+                    topic: activeProject?.rawTopic || activeProject?.title,
+                    scope: activeProject?.scope,
+                  }}
+                  selectedStyleName={selectedVisualStyle}
+                  onSelectStyle={(style) => {
+                    setSelectedVisualStyle(style.name);
+                    onSaveToast(`Gaya visual "${style.name}" dipilih untuk prompt infografis.`);
+                  }}
+                />
+
                 <div className="pt-2">
                   <button
                     id="btn-generate-project-infographic-prompt"
@@ -523,7 +541,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                     className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>Generate Prompt Infografis Proyek</span>
+                    <span>Generate Prompt Desain Infografis</span>
                   </button>
                 </div>
               </div>
@@ -619,6 +637,19 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                   </div>
                 )}
 
+                {/* FITUR BARU: PILIH GAYA INFOGRAFIS UNTUK MATERI SAYA */}
+                <PilihGayaInfografis
+                  context={{
+                    topic: rawTitle,
+                    scope: rawContent,
+                  }}
+                  selectedStyleName={rawVisualStyle}
+                  onSelectStyle={(style) => {
+                    setRawVisualStyle(style.name);
+                    onSaveToast(`Gaya visual "${style.name}" dipilih untuk prompt materi Anda.`);
+                  }}
+                />
+
                 <div className="pt-2">
                   <button
                     id="btn-generate-raw-infographic-prompt"
@@ -626,7 +657,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                     className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>Generate Prompt Infografis dari Materi Saya</span>
+                    <span>Generate Prompt Desain Infografis dari Materi Saya</span>
                   </button>
                 </div>
               </div>

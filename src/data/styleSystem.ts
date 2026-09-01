@@ -885,23 +885,47 @@ export function getStyleConfig(visualStyleName?: string, customDescription?: str
 
   const normalized = visualStyleName.toLowerCase().trim();
 
-  if (normalized.includes('minimalis') || normalized.includes('clean & simple')) {
+  // 1. EDUKATIF & AKADEMIK
+  if (normalized.includes('minimalis edukatif') || normalized === 'minimalis') {
     return STYLE_MINIMALIS;
   }
-  if (normalized.includes('ceria') || normalized.includes('kreatif') || normalized.includes('ramah anak')) {
-    return STYLE_CERIA_KREATIF;
-  }
-  if (normalized.includes('profesional') || normalized.includes('korporat') || normalized.includes('dewasa')) {
-    return STYLE_PROFESIONAL;
-  }
-  if (normalized.includes('ilustratif') || normalized.includes('visual interaktif')) {
-    return STYLE_ILUSTRATIF;
-  }
-  if (normalized.includes('akademik') || normalized.includes('klasik') || normalized.includes('elegan akademik')) {
+  if (normalized.includes('academic clean') || normalized.includes('akademik') || normalized.includes('elegan akademik')) {
     return STYLE_AKADEMIK;
   }
-  if (normalized.includes('colorful') || normalized.includes('dinamis') || normalized.includes('poster')) {
+  if (normalized.includes('modern education') || normalized.includes('modern edukatif') || normalized.includes('vector education') || normalized.includes('flat design')) {
+    return STYLE_MODERN_EDUKATIF;
+  }
+
+  // 2. VISUAL KREATIF
+  if (normalized.includes('pop art') || normalized.includes('collage art') || normalized.includes('clay style')) {
     return STYLE_COLORFUL_INFOGRAFIS;
+  }
+  if (normalized.includes('handwritten') || normalized.includes('doodle education') || normalized.includes('ceria') || normalized.includes('kreatif')) {
+    return STYLE_CERIA_KREATIF;
+  }
+
+  // 3. TEKNOLOGI & MASA DEPAN
+  if (normalized.includes('futuristic') || normalized.includes('cyberpunk') || normalized.includes('glassmorphism') || normalized.includes('aurora') || normalized.includes('digital interface')) {
+    return STYLE_PROFESIONAL;
+  }
+
+  // 4. DATA & INFORMASI
+  if (normalized.includes('data visualization') || normalized.includes('timeline') || normalized.includes('diagrammatic') || normalized.includes('swiss design') || normalized.includes('editorial')) {
+    return STYLE_PROFESIONAL;
+  }
+
+  // 5. KARAKTER & CERITA
+  if (normalized.includes('storytelling') || normalized.includes('cartoon education') || normalized.includes('comic style') || normalized.includes('children friendly') || normalized.includes('character illustration') || normalized.includes('ramah anak')) {
+    return STYLE_CERIA_KREATIF;
+  }
+
+  // 6. KLASIK & TEMATIK
+  if (normalized.includes('vintage') || normalized.includes('victorian') || normalized.includes('bohemian') || normalized.includes('retro education') || normalized.includes('historical') || normalized.includes('klasik')) {
+    return STYLE_AKADEMIK;
+  }
+
+  if (normalized.includes('ilustratif') || normalized.includes('visual interaktif')) {
+    return STYLE_ILUSTRATIF;
   }
   if (normalized.includes('custom') || customDescription) {
     return buildCustomStyleConfig(customDescription || visualStyleName);

@@ -1675,7 +1675,7 @@ export function getContentSnapshotFromDraft(draft: InfographicDraft): import('..
     sections,
     keySummary,
     createdAt: draft.createdAt || new Date().toISOString(),
-    version: '2.0-stabilized',
+    version: '2.1',
   };
 }
 

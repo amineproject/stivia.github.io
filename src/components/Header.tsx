@@ -130,32 +130,32 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="h-16 bg-white/70 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
+    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
       {/* Left: Mobile Toggle & Breadcrumb */}
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenMobileMenu}
-          className="lg:hidden p-2 text-slate-600 hover:text-indigo-600 rounded-lg hover:bg-slate-100"
+          className="lg:hidden p-2 text-slate-600 hover:text-[#3b49df] rounded-xl hover:bg-slate-100 cursor-pointer"
           aria-label="Buka Menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         {/* Breadcrumb matching exact screenshot reference */}
-        <nav className="flex items-center text-xs font-medium text-slate-500">
+        <nav className="flex items-center text-xs font-semibold text-slate-500">
           {breadcrumbs.map((crumb, idx) => {
             const isLast = idx === breadcrumbs.length - 1;
             return (
               <React.Fragment key={idx}>
-                {idx > 0 && <ChevronRight className="w-3.5 h-3.5 mx-1.5 text-slate-400" />}
+                {idx > 0 && <span className="mx-2 text-slate-400 font-normal">›</span>}
                 {isLast ? (
-                  <span className="font-semibold text-slate-800">
+                  <span className="font-bold text-slate-900">
                     {crumb.label}
                   </span>
                 ) : (
                   <button
                     onClick={() => onSelectTab(crumb.tab)}
-                    className="hover:text-indigo-600 transition-colors"
+                    className="hover:text-[#3b49df] transition-colors cursor-pointer"
                   >
                     {crumb.label}
                   </button>
@@ -167,11 +167,11 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right: Responsive Mode Switcher & Notification & Search Action Icons */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* RESPONSIVE VIEW SWITCHER: [ Otomatis | 📱 Mobile | 🖥 Desktop ] */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* RESPONSIVE VIEW SWITCHER: [ • Otomatis | 📱 Mobile | 🖥 Desktop ] */}
         <div 
           id="stivia-responsive-view-switcher"
-          className="flex items-center bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/80 text-xs shadow-2xs"
+          className="flex items-center bg-[#f1f5f9] p-1 rounded-full border border-slate-200/70 text-xs shadow-2xs"
           role="group"
           aria-label="Pengatur Tampilan Responsif"
         >
@@ -179,55 +179,52 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => onSetViewMode('auto')}
-            className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all text-[11px] font-semibold cursor-pointer ${
+            className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all text-xs font-semibold cursor-pointer ${
               viewMode === 'auto'
-                ? 'bg-white text-indigo-700 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white text-[#3b49df] shadow-xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
             title={`Mode Otomatis (Saat ini aktif: ${effectiveMode === 'mobile' ? 'Tampilan Mobile' : 'Tampilan Desktop'})`}
           >
-            <span className="hidden sm:inline">Otomatis</span>
-            <span className="sm:hidden">Auto</span>
-            {viewMode === 'auto' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-            )}
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3b49df] shrink-0"></span>
+            <span>Otomatis</span>
           </button>
 
           {/* Mobile */}
           <button
             type="button"
             onClick={() => onSetViewMode('mobile')}
-            className={`px-2 py-1 rounded-lg flex items-center gap-1 sm:gap-1.5 transition-all text-[11px] font-semibold cursor-pointer ${
+            className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all text-xs font-semibold cursor-pointer ${
               viewMode === 'mobile'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 hover:text-indigo-600'
+                ? 'bg-[#3b49df] text-white shadow-xs font-bold'
+                : 'text-slate-600 hover:text-[#3b49df]'
             }`}
             title="Mode Mobile (1 Kolom, Ramah Sentuhan)"
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Mobile</span>
+            <span className="hidden sm:inline">Mobile</span>
           </button>
 
           {/* Desktop */}
           <button
             type="button"
             onClick={() => onSetViewMode('desktop')}
-            className={`px-2 py-1 rounded-lg flex items-center gap-1 sm:gap-1.5 transition-all text-[11px] font-semibold cursor-pointer ${
+            className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all text-xs font-semibold cursor-pointer ${
               viewMode === 'desktop'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 hover:text-indigo-600'
+                ? 'bg-[#3b49df] text-white shadow-xs font-bold'
+                : 'text-slate-600 hover:text-[#3b49df]'
             }`}
             title="Mode Desktop (Multi-kolom, Area Kerja Luas)"
           >
             <Monitor className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Desktop</span>
+            <span className="hidden sm:inline">Desktop</span>
           </button>
         </div>
 
         {/* Search trigger */}
         <button
           onClick={() => setShowSearchModal(true)}
-          className="p-2 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition-colors relative cursor-pointer"
+          className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer"
           title="Cari Infografis atau Materi"
         >
           <Search className="w-4 h-4" />
@@ -237,11 +234,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-2 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition-colors relative cursor-pointer"
+            className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer"
             title="Notifikasi"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
           </button>
 
           {/* Notifications Dropdown */}

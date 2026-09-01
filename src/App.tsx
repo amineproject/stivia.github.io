@@ -62,17 +62,24 @@ export default function App() {
   const effectiveMode: 'mobile' | 'desktop' = 
     viewMode === 'auto' ? (windowWidth < 1024 ? 'mobile' : 'desktop') : viewMode;
 
-  // User projects & active draft state
+  // User projects & active draft state (only user-created/saved projects)
   const [projects, setProjects] = useState<InfographicDraft[]>(() => {
     const saved = localStorage.getItem('stivia_projects');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Remove default mock sample projects so only real user projects exist
+          return parsed.filter(
+            (p) => !['proj-002', 'proj-003', 'proj-004', 'sample-draft-001'].includes(p.id)
+          );
+        }
+        return [];
       } catch (e) {
-        return INITIAL_PROJECTS;
+        return [];
       }
     }
-    return INITIAL_PROJECTS;
+    return [];
   });
 
   const [currentDraft, setCurrentDraft] = useState<InfographicDraft>(() => {
@@ -225,7 +232,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb] text-slate-800 flex">
+    <div className="min-h-screen bg-[#f8faff] text-slate-800 flex">
       {/* Fixed/Responsive Left Sidebar */}
       <Sidebar
         activeTab={activeTab}
