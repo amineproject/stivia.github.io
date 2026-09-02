@@ -473,7 +473,6 @@ export type NavigationTab =
   | 'preview'
   | 'proyek_saya'
   | 'infografis_saya'
-  | 'ekspor_impor'
   | 'panduan'
   | 'pengaturan';
 

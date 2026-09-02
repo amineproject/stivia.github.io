@@ -100,7 +100,7 @@ export function runContentEnginePipeline(context: ActiveProjectContext): Content
     sections,
     keySummary: stage2COutput.keySummary,
     createdAt: new Date().toISOString(),
-    version: '2.1',
+    version: '2.2',
   };
 
   return {

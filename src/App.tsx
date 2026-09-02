@@ -9,7 +9,6 @@ import { RancanganVisualPage } from './components/pages/RancanganVisualPage';
 import { HasilInfografisPage } from './components/pages/HasilInfografisPage';
 import { PreviewInfografisPage } from './components/pages/PreviewInfografisPage';
 import { InfografisSayaPage } from './components/pages/InfografisSayaPage';
-import { EksporImporPage } from './components/pages/EksporImporPage';
 import { PanduanPage } from './components/pages/PanduanPage';
 import { PengaturanPage } from './components/pages/PengaturanPage';
 import { NotificationToast } from './components/NotificationToast';
@@ -216,17 +215,6 @@ export default function App() {
     showToast('Proyek berhasil diduplikasi.');
   };
 
-  const handleImportProjects = (imported: InfographicDraft[]) => {
-    setProjects((prev) => {
-      const importedIds = new Set(imported.map((p) => p.id));
-      const retained = prev.filter((p) => !importedIds.has(p.id));
-      return [...imported, ...retained];
-    });
-    if (imported.length > 0) {
-      setCurrentDraft(imported[0]);
-    }
-  };
-
   const handleUpdateSettings = (newSettings: UserSettings) => {
     setUserSettings(newSettings);
   };
@@ -358,19 +346,6 @@ export default function App() {
               onSelectProject={handleSelectProject}
               onDeleteProject={handleDeleteProject}
               onDuplicateProject={handleDuplicateProject}
-              onNavigate={(tab) => {
-                setActiveTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onSaveToast={showToast}
-            />
-          )}
-
-          {activeTab === 'ekspor_impor' && (
-            <EksporImporPage
-              projects={projects}
-              currentDraft={currentDraft}
-              onImportProjects={handleImportProjects}
               onNavigate={(tab) => {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -8,8 +8,6 @@ import {
   Sparkles,
   Info,
   X,
-  Smartphone,
-  Monitor,
   Sparkle
 } from 'lucide-react';
 import { NavigationTab, ResponsiveViewMode } from '../types';
@@ -19,9 +17,9 @@ interface HeaderProps {
   onSelectTab: (tab: NavigationTab) => void;
   onOpenMobileMenu: () => void;
   currentDraftTitle?: string;
-  viewMode: ResponsiveViewMode;
-  onSetViewMode: (mode: ResponsiveViewMode) => void;
-  effectiveMode: 'mobile' | 'desktop';
+  viewMode?: ResponsiveViewMode;
+  onSetViewMode?: (mode: ResponsiveViewMode) => void;
+  effectiveMode?: 'mobile' | 'desktop';
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,9 +27,6 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
   onOpenMobileMenu,
   currentDraftTitle,
-  viewMode,
-  onSetViewMode,
-  effectiveMode,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -86,11 +81,6 @@ export const Header: React.FC<HeaderProps> = ({
         return [
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
           { label: 'Proyek Saya', tab: 'infografis_saya' as NavigationTab },
-        ];
-      case 'ekspor_impor':
-        return [
-          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
-          { label: 'Ekspor / Impor', tab: 'ekspor_impor' as NavigationTab },
         ];
       case 'panduan':
         return [
@@ -166,61 +156,8 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
       </div>
 
-      {/* Right: Responsive Mode Switcher & Notification & Search Action Icons */}
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* RESPONSIVE VIEW SWITCHER: [ • Otomatis | 📱 Mobile | 🖥 Desktop ] */}
-        <div 
-          id="stivia-responsive-view-switcher"
-          className="flex items-center bg-[#f1f5f9] p-1 rounded-full border border-slate-200/70 text-xs shadow-2xs"
-          role="group"
-          aria-label="Pengatur Tampilan Responsif"
-        >
-          {/* Otomatis */}
-          <button
-            type="button"
-            onClick={() => onSetViewMode('auto')}
-            className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all text-xs font-semibold cursor-pointer ${
-              viewMode === 'auto'
-                ? 'bg-white text-[#3b49df] shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-            title={`Mode Otomatis (Saat ini aktif: ${effectiveMode === 'mobile' ? 'Tampilan Mobile' : 'Tampilan Desktop'})`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3b49df] shrink-0"></span>
-            <span>Otomatis</span>
-          </button>
-
-          {/* Mobile */}
-          <button
-            type="button"
-            onClick={() => onSetViewMode('mobile')}
-            className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all text-xs font-semibold cursor-pointer ${
-              viewMode === 'mobile'
-                ? 'bg-[#3b49df] text-white shadow-xs font-bold'
-                : 'text-slate-600 hover:text-[#3b49df]'
-            }`}
-            title="Mode Mobile (1 Kolom, Ramah Sentuhan)"
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Mobile</span>
-          </button>
-
-          {/* Desktop */}
-          <button
-            type="button"
-            onClick={() => onSetViewMode('desktop')}
-            className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-all text-xs font-semibold cursor-pointer ${
-              viewMode === 'desktop'
-                ? 'bg-[#3b49df] text-white shadow-xs font-bold'
-                : 'text-slate-600 hover:text-[#3b49df]'
-            }`}
-            title="Mode Desktop (Multi-kolom, Area Kerja Luas)"
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Desktop</span>
-          </button>
-        </div>
-
+      {/* Right: Search Action & Notification Icons */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Search trigger */}
         <button
           onClick={() => setShowSearchModal(true)}
