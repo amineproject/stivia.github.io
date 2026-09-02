@@ -452,6 +452,8 @@ export interface InfographicDraft {
   caseStudyBlock?: CaseStudyData;
   synthesisSteps?: SynthesisStep[];
   conceptHighlights?: string[];
+  layoutTemplate?: string;
+  layoutVariationCycle?: number;
   createdAt: string;
   updatedAt: string;
   status: 'draft' | 'completed';
@@ -558,6 +560,7 @@ export interface FinalOutputState {
     cardDensity?: string;
     layoutTypes: Record<string, LayoutType | undefined>;
     columnsCount?: number;
+    layoutTemplate?: string;
   };
   infographicData: {
     conceptHighlights?: string[];

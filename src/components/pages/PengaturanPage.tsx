@@ -200,14 +200,33 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
     }, 4000);
   };
 
-  // Changelog items for STIVIA Version 2.2
-  const version22Changelog = [
-    'Penyempurnaan tampilan halaman Pengaturan dengan desain yang lebih modern dan terstruktur.',
-    'Menu Pengaturan kini memiliki interaksi popup untuk memberikan pengalaman penggunaan yang lebih menarik dan fokus.',
-    'Informasi Pengaturan ditampilkan secara lebih ringkas dan mudah diakses.',
-    'Penyempurnaan tampilan Informasi Pembuat & Pendidik.',
-    'Penataan Preferensi STIVIA agar lebih nyaman digunakan.',
-    'Optimalisasi pengalaman pengguna tanpa mengubah fungsi utama dan sistem yang telah berjalan.'
+  // Changelog & Fitur Tambahan untuk STIVIA Versi 2.2a
+  const version22aHighlights = [
+    {
+      title: 'Multi-Style Visual Engine (14+ Preset Interaktif)',
+      desc: 'Dukungan penggantian tema gaya visual secara instan (Modern Edukatif, Futuristic, Cyberpunk, Swiss Design, Clay Style, Pop Art, Editorial, Handwritten, Glassmorphism, Aurora, Academic Clean, Ceria, Vintage) tanpa mengubah materi pembelajaran.',
+      tag: 'Fitur Utama 2.2a',
+    },
+    {
+      title: 'Layout Archetype Sync & Auto-Adaptation',
+      desc: 'Tata letak kanvas infografis kini otomatis menyesuaikan arketipe visual (Cyber HUD, Swiss Grid, Tactile 3D, Magazine Layout, Notebook Sketches) saat gaya visual diganti berulang kali.',
+      tag: 'Desain & Kanvas',
+    },
+    {
+      title: 'Zero-Stale State & Deep Clone Immutability',
+      desc: 'Penyempurnaan arsitektur rendering berbasis key-remount dan deep immutability untuk menjamin transisi gaya visual 100% bersih tanpa sisa token warna atau font lama.',
+      tag: 'Performa Sistem',
+    },
+    {
+      title: 'Pilihan Gaya Visual Lengkap di Form Pembuatan',
+      desc: 'Penambahan chip preset visual cepat pada form pembuatan awal dan modal penggantian gaya visual di halaman hasil infografis.',
+      tag: 'Pengalaman Pengguna',
+    },
+    {
+      title: 'Antarmuka Pengaturan Terstruktur Berbasis Popup',
+      desc: 'Pengorganisasian menu pengaturan ke dalam 3 kartu fokus dengan modal dialog interaktif untuk Akun Pendidik, Preferensi STIVIA, dan Informasi Aplikasi.',
+      tag: 'Navigasi',
+    },
   ];
 
   return (
@@ -228,7 +247,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
         {/* Status Badge Ringkas */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-slate-200/80 shadow-2xs self-start sm:self-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-xs font-bold text-slate-700">STIVIA Versi 2.2</span>
+          <span className="text-xs font-bold text-slate-700">STIVIA Versi 2.2a</span>
         </div>
       </div>
 
@@ -395,14 +414,14 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                   Tentang STIVIA
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
-                  Informasi platform AI, identitas rilis, dan catatan pembaruan versi 2.2.
+                  Informasi platform AI, identitas rilis, dan fitur tambahan versi 2.2a.
                 </p>
               </div>
             </div>
 
             <div className="pt-6 flex items-center justify-between text-xs font-bold text-[#3b49df] group-hover:text-indigo-800">
               <span className="text-slate-400 group-hover:text-[#3b49df] transition-colors">
-                Versi 2.2 • Terbaru
+                Versi 2.2a • Rilis Terbaru
               </span>
               <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] flex items-center justify-center transition-all group-hover:translate-x-1">
                 <ChevronRight className="w-4 h-4" />
@@ -783,7 +802,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
 
                     <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#3b49df] text-white text-xs font-bold tracking-wide shadow-xs shrink-0">
                       <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Versi 2.2 • Terbaru</span>
+                      <span>Versi 2.2a • Rilis Terbaru</span>
                     </div>
                   </div>
 
@@ -807,26 +826,36 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Apa yang Baru di Versi 2.2 */}
-                  <div className="space-y-3">
+                  {/* Fitur Tambahan & Pembaruan di Versi 2.2a */}
+                  <div className="space-y-3.5">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-[#3b49df]" />
                       <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
-                        Apa yang Baru di Versi 2.2
+                        Fitur Tambahan di Versi 2.2a
                       </h3>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-2.5">
-                      {version22Changelog.map((item, idx) => (
+                    <div className="grid grid-cols-1 gap-3">
+                      {version22aHighlights.map((item, idx) => (
                         <div 
                           key={idx}
-                          className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs"
+                          className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2 hover:border-indigo-200 transition-colors"
                         >
-                          <div className="w-5 h-5 rounded-full bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0 mt-0.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#3b49df]" />
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-6 h-6 rounded-lg bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="w-4 h-4 text-[#3b49df]" />
+                              </div>
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                                {item.title}
+                              </h4>
+                            </div>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#3b49df] border border-indigo-100 shrink-0">
+                              {item.tag}
+                            </span>
                           </div>
-                          <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                            {item}
+                          <p className="text-xs text-slate-600 leading-relaxed font-normal pl-8">
+                            {item.desc}
                           </p>
                         </div>
                       ))}

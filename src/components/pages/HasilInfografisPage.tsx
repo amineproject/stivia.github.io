@@ -163,6 +163,13 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
     }
   }, [draft.id]);
 
+  // Sync style modal fields when opening
+  const handleOpenStyleModal = () => {
+    setModalSelectedStyle(currentDraft.visualStyle || 'Modern Edukatif');
+    setModalCustomStyle(currentDraft.customVisualStyle || '');
+    setShowStyleModal(true);
+  };
+
   // Sync edit modal fields when opening
   const handleOpenEditDataModal = () => {
     setEditLevel(currentDraft.educationLevel);
@@ -582,11 +589,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
 
             {/* Tombol 2: Ubah Gaya */}
             <button
-              onClick={() => {
-                setModalSelectedStyle(currentDraft.visualStyle || 'Modern Edukatif');
-                setModalCustomStyle(currentDraft.customVisualStyle || '');
-                setShowStyleModal(true);
-              }}
+              onClick={handleOpenStyleModal}
               className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-700 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
             >
               <Palette className="w-3.5 h-3.5 text-teal-600" />
@@ -744,8 +747,8 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
                 Gaya Visual Aktif
               </h3>
               <button
-                onClick={() => setShowStyleModal(true)}
-                className="text-[11px] font-bold text-teal-600 hover:text-teal-700"
+                onClick={handleOpenStyleModal}
+                className="text-[11px] font-bold text-teal-600 hover:text-teal-700 cursor-pointer"
               >
                 Ganti
               </button>
@@ -963,11 +966,19 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
                 const isSelected = modalSelectedStyle === style;
                 const dotColors = 
                   style === 'Modern Edukatif' ? ['bg-indigo-600', 'bg-teal-500'] :
-                  style === 'Minimalis' ? ['bg-slate-700', 'bg-slate-400'] :
+                  style === 'Minimalis' ? ['bg-slate-800', 'bg-slate-400'] :
+                  style === 'Futuristic' ? ['bg-cyan-400', 'bg-teal-400', 'bg-blue-600'] :
+                  style === 'Cyberpunk' ? ['bg-cyan-400', 'bg-fuchsia-500', 'bg-yellow-400'] :
+                  style === 'Swiss Design' ? ['bg-black', 'bg-red-600', 'bg-stone-300'] :
+                  style === 'Clay Style' ? ['bg-purple-500', 'bg-pink-400', 'bg-amber-300'] :
+                  style === 'Pop Art' ? ['bg-yellow-400', 'bg-rose-500', 'bg-black'] :
+                  style === 'Editorial' ? ['bg-stone-900', 'bg-amber-700', 'bg-stone-400'] :
+                  style === 'Handwritten & Doodle' ? ['bg-amber-600', 'bg-stone-700', 'bg-yellow-300'] :
+                  style === 'Glassmorphism' ? ['bg-cyan-300', 'bg-indigo-500', 'bg-fuchsia-400'] :
+                  style === 'Aurora' ? ['bg-emerald-400', 'bg-teal-500', 'bg-indigo-600'] :
+                  style === 'Academic Clean' ? ['bg-blue-700', 'bg-indigo-600', 'bg-slate-500'] :
                   style === 'Ceria & Kreatif' ? ['bg-amber-500', 'bg-rose-500'] :
-                  style === 'Profesional' ? ['bg-sky-800', 'bg-slate-600'] :
-                  style === 'Ilustratif' ? ['bg-teal-600', 'bg-emerald-500'] :
-                  style === 'Akademik' ? ['bg-rose-900', 'bg-amber-700'] :
+                  style === 'Vintage & Historical' ? ['bg-amber-800', 'bg-yellow-700', 'bg-stone-600'] :
                   ['bg-purple-600', 'bg-pink-500', 'bg-cyan-400'];
 
                 return (
@@ -990,11 +1001,19 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
                     </div>
                     <span className="text-[10px] text-slate-400 font-normal">
                       {style === 'Modern Edukatif' ? 'Indigo & Teal Kontemporer' :
-                       style === 'Minimalis' ? 'Monokromatik Bersih' :
+                       style === 'Minimalis' ? 'Monokromatik & Bersih' :
+                       style === 'Futuristic' ? 'HUD Telemetri & Neon' :
+                       style === 'Cyberpunk' ? 'Terminal Dark & Cyber Deck' :
+                       style === 'Swiss Design' ? 'Grid Matematis & Tipografi Tegas' :
+                       style === 'Clay Style' ? '3D Soft Tactile & Pill Badges' :
+                       style === 'Pop Art' ? 'Panel Komik & Bayangan Offset' :
+                       style === 'Editorial' ? 'Majalah Ilmiah & Kolom Masthead' :
+                       style === 'Handwritten & Doodle' ? 'Buku Catatan & Catatan Tempel' :
+                       style === 'Glassmorphism' ? 'Frosted Glass & Kedalaman Dimensi' :
+                       style === 'Aurora' ? 'Cahaya Spektrum Dinamis' :
+                       style === 'Academic Clean' ? 'Struktur Formal & Presisi' :
                        style === 'Ceria & Kreatif' ? 'Hangat & Ramah Siswa' :
-                       style === 'Profesional' ? 'Navy & Elegan' :
-                       style === 'Ilustratif' ? 'Nuansa Alam & Segar' :
-                       style === 'Akademik' ? 'Deep Crimson & Klasik' : 'Warna-warni Dinamis'}
+                       style === 'Vintage & Historical' ? 'Arsip Klasik & Ornamen' : 'Warna-warni Dinamis'}
                     </span>
                   </button>
                 );

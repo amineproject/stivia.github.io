@@ -120,7 +120,7 @@ export function createFinalSnapshot(
   validation?: FinalOutputValidationChecklist
 ): FinalOutputState {
   const resolvedStyleConfig: StyleConfig = 
-    draft.styleConfig || getStyleConfig(draft.visualStyle, draft.customVisualStyle);
+    getStyleConfig(draft.visualStyle, draft.customVisualStyle);
 
   // Deep clone material blocks
   const clonedBlocks: MaterialBlock[] = JSON.parse(JSON.stringify(draft.blocks || []));
@@ -155,15 +155,16 @@ export function createFinalSnapshot(
     materialSections: clonedBlocks,
     materialOrder,
     selectedVisualStyle: draft.visualStyle,
-    visualTheme: resolvedStyleConfig,
-    typographySettings: resolvedStyleConfig.typography,
-    colorSettings: resolvedStyleConfig.colorPalette,
+    visualTheme: JSON.parse(JSON.stringify(resolvedStyleConfig)),
+    typographySettings: JSON.parse(JSON.stringify(resolvedStyleConfig.typography)),
+    colorSettings: JSON.parse(JSON.stringify(resolvedStyleConfig.colorPalette)),
     layoutConfiguration: {
       format: draft.format,
       visualLevel: draft.visualLevel,
       cardDensity: resolvedStyleConfig.cards.density,
       layoutTypes: layoutMap,
       columnsCount: draft.format === 'landscape' ? 3 : 2,
+      layoutTemplate: draft.layoutTemplate,
     },
     infographicData: {
       conceptHighlights: draft.conceptHighlights ? [...draft.conceptHighlights] : [],
@@ -282,7 +283,8 @@ export function getReadonlyInfographicFromLockedOutput(draft: InfographicDraft):
     rawTopic: finalOutput.topic,
     scope: finalOutput.scope,
     visualStyle: finalOutput.selectedVisualStyle,
-    styleConfig: finalOutput.visualTheme,
+    styleConfig: JSON.parse(JSON.stringify(finalOutput.visualTheme || getStyleConfig(finalOutput.selectedVisualStyle))),
+    layoutTemplate: (finalOutput.layoutConfiguration as any)?.layoutTemplate || draft.layoutTemplate,
     format: finalOutput.layoutConfiguration.format,
     visualLevel: finalOutput.layoutConfiguration.visualLevel,
     blocks: JSON.parse(JSON.stringify(finalOutput.materialSections)),

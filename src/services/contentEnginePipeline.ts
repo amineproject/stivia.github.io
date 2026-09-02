@@ -9,6 +9,8 @@ import { runStructureEngine, StructureEngineOutput } from './structureEngine';
 import { runContentWeightEngine, ContentWeightEngineOutput } from './contentWeightEngine';
 import { runContentDepthEngine, ContentDepthEngineOutput } from './contentDepthEngine';
 import { validateFinalContent } from './contentValidationEngine';
+import { analyzeVisualContent, VisualContentAnalysis } from './visualAnalysisEngine';
+import { determineVisualConcept, optimizeBlockLayouts, VisualConceptConfig } from './visualConceptEngine';
 
 export interface ContentEnginePipelineResult {
   blocks: MaterialBlock[];
@@ -16,6 +18,8 @@ export interface ContentEnginePipelineResult {
   overview: string;
   keySummary: string[];
   validation: ContentValidationResult;
+  visualAnalysis: VisualContentAnalysis;
+  visualConcept: VisualConceptConfig;
   stage2AOutput: StructureEngineOutput;
   stage2BOutput: ContentWeightEngineOutput;
   stage2COutput: ContentDepthEngineOutput;
@@ -39,38 +43,39 @@ export interface ContentEnginePipelineResult {
 }
 
 /**
- * PIPELINE UTAMA: STIVIA CONTENT ENGINE (TAHAP 2A, 2B, 2C + CONTENT SNAPSHOT)
+ * PIPELINE UTAMA: STIVIA CONTENT & VISUAL ENGINE
  * 
- * Menghubungkan seluruh rangkaian sebelum diserahkan ke Layout Engine (Tahap 3):
- * 
- * INPUT PENGGUNA
- *   ↓
- * TAHAP 2A — STRUCTURE ENGINE (Menyusun struktur berdasarkan cakupan wajib)
- *   ↓
- * TAHAP 2B — CONTENT WEIGHT ENGINE (Menentukan bobot TINGGI | SEDANG | RENDAH)
- *   ↓
- * TAHAP 2C — CONTENT DEPTH ENGINE (Menentukan kedalaman RINGKAS | SEDANG | MENDALAM)
- *   ↓
- * CONTENT SNAPSHOT (Single Source of Truth terpadu)
- *   ↓
- * VALIDASI CONTENT FINAL (Memverifikasi parameter kualitas)
+ * Rangkaian Tahap Terintegrasi:
+ * 1. TAHAP 1: ANALISIS KONTEN VISUAL (Domain, Objek Visual, Metafora Edukatif)
+ * 2. TAHAP 2A: STRUCTURE ENGINE (Menyusun struktur berdasarkan cakupan wajib)
+ * 3. TAHAP 2B: CONTENT WEIGHT ENGINE (Menentukan bobot TINGGI | SEDANG | RENDAH)
+ * 4. TAHAP 2C: CONTENT DEPTH ENGINE (Menentukan kedalaman RINGKAS | SEDANG | MENDALAM)
+ * 5. TAHAP 2 & 5: VISUAL CONCEPT & LAYOUT OPTIMIZER (Menentukan model visual & layout)
+ * 6. VALIDASI KONTEN FINAL & CONTENT SNAPSHOT (Single Source of Truth)
  */
 export function runContentEnginePipeline(context: ActiveProjectContext): ContentEnginePipelineResult {
-  // 1. TAHAP 2A: STRUCTURE ENGINE
+  // 1. TAHAP 1: ANALISIS KONTEN VISUAL
+  const visualAnalysis = analyzeVisualContent(context);
+
+  // 2. TAHAP 2A: STRUCTURE ENGINE
   const stage2AOutput = runStructureEngine(context);
 
-  // 2. TAHAP 2B: CONTENT WEIGHT ENGINE
+  // 3. TAHAP 2B: CONTENT WEIGHT ENGINE
   const stage2BOutput = runContentWeightEngine(stage2AOutput.structureItems, context);
 
-  // 3. TAHAP 2C: CONTENT DEPTH ENGINE
+  // 4. TAHAP 2C: CONTENT DEPTH ENGINE
   const stage2COutput = runContentDepthEngine(stage2BOutput.weightedItems, context);
 
-  // 4. VALIDASI CONTENT FINAL
-  let blocks = stage2COutput.blocks;
-  const validation = validateFinalContent(blocks, context);
+  // 5. TAHAP 2 & 5: VISUAL CONCEPT ENGINE & LAYOUT OPTIMIZER
+  const initialBlocks = stage2COutput.blocks;
+  const visualConcept = determineVisualConcept(visualAnalysis, initialBlocks, context);
+  const optimizedBlocks = optimizeBlockLayouts(initialBlocks, visualConcept);
 
-  // 5. BANGUN CONTENT SNAPSHOT (SINGLE SOURCE OF TRUTH)
-  const sections: ContentSnapshotSection[] = blocks.map((b, idx) => ({
+  // 6. VALIDASI CONTENT FINAL
+  const validation = validateFinalContent(optimizedBlocks, context);
+
+  // 7. BANGUN CONTENT SNAPSHOT (SINGLE SOURCE OF TRUTH)
+  const sections: ContentSnapshotSection[] = optimizedBlocks.map((b, idx) => ({
     order: b.order,
     letterIndex: b.letterIndex || String.fromCharCode(65 + idx),
     title: b.title,
@@ -104,17 +109,19 @@ export function runContentEnginePipeline(context: ActiveProjectContext): Content
   };
 
   return {
-    blocks,
+    blocks: optimizedBlocks,
     contentSnapshot,
     overview: stage2COutput.overview,
     keySummary: stage2COutput.keySummary,
     validation,
+    visualAnalysis,
+    visualConcept,
     stage2AOutput,
     stage2BOutput,
     stage2COutput,
     metadata: {
       executedAt: new Date().toISOString(),
-      totalBlocks: blocks.length,
+      totalBlocks: optimizedBlocks.length,
       requiredTopicsCount: stage2AOutput.validationCheck.rawScopeItems.length,
       weightSummary: {
         tinggi: stage2BOutput.weightSummary.tinggiCount,

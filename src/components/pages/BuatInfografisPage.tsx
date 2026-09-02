@@ -447,7 +447,22 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             {/* Visual style chips */}
             {!isCustomStyle && (
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {['Modern Edukatif', 'Diagramatis', 'Ilustratif', 'Peta Konsep', 'Minimalis', 'Ramah Anak'].map((st) => (
+                {[
+                  'Modern Edukatif',
+                  'Minimalis',
+                  'Futuristic',
+                  'Cyberpunk',
+                  'Swiss Design',
+                  'Clay Style',
+                  'Pop Art',
+                  'Editorial',
+                  'Handwritten & Doodle',
+                  'Glassmorphism',
+                  'Aurora',
+                  'Academic Clean',
+                  'Ceria & Kreatif',
+                  'Vintage & Historical',
+                ].map((st) => (
                   <button
                     key={st}
                     type="button"

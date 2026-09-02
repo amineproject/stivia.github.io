@@ -21,6 +21,7 @@ import {
   LayoutConfig,
 } from '../types';
 import { getStyleConfig } from './styleSystem';
+import { determineLayoutArchetype } from './layoutEngine';
 import { runContentEnginePipeline } from '../services/contentEnginePipeline';
 
 /**
@@ -1895,9 +1896,17 @@ export function generateLayoutVariations(currentDraft: InfographicDraft, variati
     };
   });
 
+  const nextCycle = (currentDraft.layoutVariationCycle || 0) + 1;
+  const newArchetype = determineLayoutArchetype(
+    { ...currentDraft, blocks: updatedBlocks, layoutVariationCycle: nextCycle },
+    nextCycle
+  );
+
   return {
     ...currentDraft,
     blocks: updatedBlocks,
+    layoutTemplate: newArchetype,
+    layoutVariationCycle: nextCycle,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -1944,15 +1953,36 @@ export function regenerateMaterialContent(currentDraft: InfographicDraft, variat
 
 /**
  * TAHAP 4: Visual Style Switcher Engine
- * Updates design tokens without regenerating or altering material content or layout structures
+ * Updates design tokens, visual configuration, and layout archetype without altering material content facts
  */
 export function updateDraftStyle(currentDraft: InfographicDraft, newStyle: string, customStyleText?: string): InfographicDraft {
   const newStyleConfig = getStyleConfig(newStyle, customStyleText);
-  return {
+  
+  // Clone blocks to preserve 100% of material content while detaching previous references
+  const preservedBlocks = (currentDraft.blocks || []).map((b) => ({ ...b }));
+
+  // Evaluate the ideal layout archetype for this new visual style
+  const matchedLayout = determineLayoutArchetype({
+    ...currentDraft,
+    visualStyle: newStyle,
+    customVisualStyle: customStyleText || '',
+    layoutTemplate: undefined, // ensure layout classifier evaluates the new style cleanly
+    layoutVariationCycle: 0,
+    blocks: preservedBlocks,
+  }, 0);
+
+  // Return a fresh, clean draft with updated visual configuration and no stale cached layout
+  const updatedDraft: InfographicDraft = {
     ...currentDraft,
     visualStyle: newStyle,
     customVisualStyle: customStyleText || '',
     styleConfig: newStyleConfig,
+    layoutTemplate: matchedLayout,
+    layoutVariationCycle: 0,
+    blocks: preservedBlocks,
+    finalOutput: undefined, // invalidate old locked snapshot to trigger fresh lock
     updatedAt: new Date().toISOString(),
   };
+
+  return updatedDraft;
 }

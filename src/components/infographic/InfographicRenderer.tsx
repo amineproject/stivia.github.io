@@ -1,22 +1,39 @@
 import React from 'react';
-import { HeaderSection } from './HeaderSection';
+import { InfographicDraft, MaterialBlock } from '../../types';
+import { getStyleConfig } from '../../data/styleSystem';
+import { determineLayoutArchetype, InfographicLayoutArchetype } from '../../data/layoutEngine';
+
+// Layout Templates
+import { HeroVisualLayout } from './layouts/HeroVisualLayout';
+import { ModularBentoLayout } from './layouts/ModularBentoLayout';
+import { CentralConceptLayout } from './layouts/CentralConceptLayout';
+import { TimelineLayout } from './layouts/TimelineLayout';
+import { ProcessFlowLayout } from './layouts/ProcessFlowLayout';
+import { ComparisonLayout } from './layouts/ComparisonLayout';
+import { EditorialLayout } from './layouts/EditorialLayout';
+import { CyberHudLayout } from './layouts/CyberHudLayout';
+import { SwissDesignLayout } from './layouts/SwissDesignLayout';
+import { ClayTactileLayout } from './layouts/ClayTactileLayout';
+import { PopArtComicLayout } from './layouts/PopArtComicLayout';
+import { NotebookHandwrittenLayout } from './layouts/NotebookHandwrittenLayout';
+import { GlassmorphismLayout } from './layouts/GlassmorphismLayout';
+
+// Block Components
 import { DefinitionCard } from './DefinitionCard';
 import { ComponentsCard } from './ComponentsCard';
 import { ComparisonCard } from './ComparisonCard';
 import { ProcessFlowCard } from './ProcessFlowCard';
 import { NetworkConceptCard } from './NetworkConceptCard';
 import { SummaryCard } from './SummaryCard';
-import { InfographicDraft, MaterialBlock } from '../../types';
 import { GraduationCap, BookOpen } from 'lucide-react';
-import { getStyleConfig } from '../../data/styleSystem';
 
 interface InfographicRendererProps {
   draft: InfographicDraft;
   activeSectionId: string;
   onSelectSection: (id: string) => void;
-  visualStyle: string;
-  format: 'portrait' | 'square' | 'landscape';
-  visualLevel: 'sederhana' | 'seimbang' | 'visual_dominan';
+  visualStyle?: string;
+  format?: 'portrait' | 'square' | 'landscape';
+  visualLevel?: 'sederhana' | 'seimbang' | 'visual_dominan';
 }
 
 export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
@@ -24,17 +41,24 @@ export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
   activeSectionId,
   onSelectSection,
   visualStyle,
-  format,
+  format = 'portrait',
 }) => {
-  // Resolve the visual style tokens from the system
+  // 1. Resolve Style Tokens
+  const effectiveStyle = visualStyle || draft.visualStyle;
   const styleConfig = React.useMemo(() => {
-    return getStyleConfig(visualStyle || draft.visualStyle, draft.customVisualStyle);
-  }, [visualStyle, draft.visualStyle, draft.customVisualStyle]);
+    return getStyleConfig(effectiveStyle, draft.customVisualStyle);
+  }, [effectiveStyle, draft.customVisualStyle]);
 
-  const { colorPalette, composition, cards } = styleConfig;
+  // 2. Resolve Layout Archetype dynamically
+  const layoutArchetype: InfographicLayoutArchetype = React.useMemo(() => {
+    return determineLayoutArchetype(
+      { ...draft, visualStyle: effectiveStyle },
+      draft.layoutVariationCycle || 0
+    );
+  }, [draft.id, draft.visualStyle, effectiveStyle, draft.layoutTemplate, draft.layoutVariationCycle, draft.blocks]);
 
-  // Render appropriate block component based on type and content with styleConfig injected
-  const renderBlock = (block: MaterialBlock) => {
+  // 3. Render individual block helper
+  const renderBlockCard = (block: MaterialBlock) => {
     const isHighlighted = activeSectionId === block.id;
     const clickHandler = () => onSelectSection(block.id);
 
@@ -107,64 +131,69 @@ export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
     }
   };
 
-  // Layout container styling based on format
+  // Layout container sizing
   const getContainerMaxWidth = () => {
     if (format === 'landscape') return 'max-w-5xl';
-    return 'max-w-4xl'; // Default / Portrait / Square
+    return 'max-w-4xl';
   };
 
-  // Separate non-summary blocks and summary blocks
-  const mainBlocks = draft.blocks.filter(b => b.visualElementType !== 'ringkasan_kotak');
-  const summaryBlocks = draft.blocks.filter(b => b.visualElementType === 'ringkasan_kotak');
-  const isOddCount = mainBlocks.length % 2 !== 0;
+  const layoutProps = {
+    draft,
+    activeSectionId,
+    onSelectSection,
+    styleConfig,
+    renderBlockCard,
+  };
+
+  // Render the selected Layout Archetype
+  const renderLayoutContent = () => {
+    switch (layoutArchetype) {
+      case 'cyber_hud':
+        return <CyberHudLayout {...layoutProps} />;
+      case 'swiss_modernist':
+        return <SwissDesignLayout {...layoutProps} />;
+      case 'clay_tactile':
+        return <ClayTactileLayout {...layoutProps} />;
+      case 'pop_comic':
+        return <PopArtComicLayout {...layoutProps} />;
+      case 'notebook_handwritten':
+        return <NotebookHandwrittenLayout {...layoutProps} />;
+      case 'glassmorphism_layers':
+        return <GlassmorphismLayout {...layoutProps} />;
+      case 'editorial_magazine':
+        return <EditorialLayout {...layoutProps} />;
+      case 'central_concept':
+        return <CentralConceptLayout {...layoutProps} />;
+      case 'timeline_flow':
+        return <TimelineLayout {...layoutProps} />;
+      case 'process_flow':
+        return <ProcessFlowLayout {...layoutProps} />;
+      case 'comparison_split':
+        return <ComparisonLayout {...layoutProps} />;
+      case 'modular_bento':
+        return <ModularBentoLayout {...layoutProps} />;
+      case 'hero_visual':
+      default:
+        return <HeroVisualLayout {...layoutProps} />;
+    }
+  };
 
   return (
     <div
       id="infographic-preview-canvas"
-      className={`w-full ${getContainerMaxWidth()} mx-auto ${composition.canvasBg} ${cards.borderRadius} shadow-xl border border-slate-300/80 overflow-hidden text-slate-900 font-sans transition-all duration-300 flex flex-col`}
+      key={`${draft.id || 'draft'}-${effectiveStyle}-${layoutArchetype}-${draft.layoutVariationCycle || 0}`}
+      className={`w-full ${getContainerMaxWidth()} mx-auto ${styleConfig.cards.borderRadius} shadow-xl border border-slate-300/80 overflow-hidden text-slate-900 font-sans transition-all duration-300 flex flex-col bg-slate-50/50`}
     >
-      {/* 1. Header Infografis (Judul dan Pengantar) */}
-      <header className="w-full p-4 sm:p-6 bg-white border-b border-slate-200/80">
-        <HeaderSection draft={draft} visualStyle={visualStyle} styleConfig={styleConfig} />
-      </header>
-
-      {/* 2. Infographic Material Canvas (Sections Materi & Rangkuman Kunci) */}
-      <main className={`w-full ${composition.canvasPadding} ${composition.sectionGap} flex-1`}>
-        {/* Responsive Grid for Material Sections */}
-        {mainBlocks.length > 0 && (
-          <div className={`grid grid-cols-1 md:grid-cols-2 ${composition.gridGap} w-full items-stretch min-w-0`}>
-            {mainBlocks.map((block, index) => {
-              const isLastOdd = isOddCount && index === mainBlocks.length - 1;
-              return (
-                <section
-                  key={block.id}
-                  className={`material-section w-full min-w-0 flex flex-col box-border overflow-hidden ${
-                    isLastOdd ? 'md:col-span-2' : ''
-                  }`}
-                >
-                  {renderBlock(block)}
-                </section>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Section Rangkuman Kunci (Spans 100% full width at bottom) */}
-        {summaryBlocks.map((summaryBlock) => (
-          <section
-            key={summaryBlock.id}
-            className="material-section w-full min-w-0 mt-5 box-border overflow-hidden"
-          >
-            {renderBlock(summaryBlock)}
-          </section>
-        ))}
+      {/* Dynamic Layout Content */}
+      <main className="w-full p-4 sm:p-6 lg:p-8 flex-1">
+        {renderLayoutContent()}
       </main>
 
-      {/* 3. Professional Infographic Educational Footer */}
+      {/* Professional STIVIA Educational Footer */}
       <footer className="w-full bg-slate-900 text-slate-300 p-5 border-t border-slate-800 mt-auto">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 ${styleConfig.icons.containerShape} ${colorPalette.primaryBg} text-white flex items-center justify-center font-black text-sm shadow-md`}>
+            <div className={`w-8 h-8 ${styleConfig.icons.containerShape} ${styleConfig.colorPalette.primaryBg} text-white flex items-center justify-center font-black text-sm shadow-md`}>
               S
             </div>
             <div>
@@ -179,12 +208,12 @@ export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
 
           <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-400">
             <span className="flex items-center gap-1">
-              <GraduationCap className={`w-3.5 h-3.5 ${colorPalette.secondaryText}`} />
+              <GraduationCap className={`w-3.5 h-3.5 text-indigo-400`} />
               {draft.educationLevel} • {draft.grade}
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
-              <BookOpen className={`w-3.5 h-3.5 ${colorPalette.primaryText}`} />
+              <BookOpen className={`w-3.5 h-3.5 text-teal-400`} />
               {draft.subject}
             </span>
             <span>•</span>

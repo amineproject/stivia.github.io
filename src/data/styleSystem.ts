@@ -144,19 +144,19 @@ export const STYLE_MINIMALIS: StyleConfig = {
     lineHeight: 'leading-relaxed',
   },
   cards: {
-    borderRadius: 'rounded-xl',
-    innerRadius: 'rounded-lg',
+    borderRadius: 'rounded-lg',
+    innerRadius: 'rounded-md',
     borderStyle: 'border border-stone-200',
     shadowStyle: 'shadow-none hover:border-stone-400',
     padding: 'p-6 sm:p-7',
     density: 'spacious',
     cardBg: 'bg-white',
-    highlightBorder: 'border-stone-800 ring-2 ring-stone-300 shadow-xs',
+    highlightBorder: 'border-stone-800 ring-2 ring-stone-300 shadow-none',
   },
   icons: {
     style: 'outline',
     size: 'w-4 h-4',
-    containerShape: 'rounded-lg',
+    containerShape: 'rounded-md',
     containerBg: 'bg-stone-100 text-stone-800 border border-stone-300',
   },
   decoration: {
@@ -164,7 +164,7 @@ export const STYLE_MINIMALIS: StyleConfig = {
     shapes: 'minimal',
     pattern: 'none',
     backgroundTreatment: '',
-    badgeStyle: 'rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-wide border',
+    badgeStyle: 'rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide border',
     showAccentBar: false,
   },
   composition: {
@@ -178,7 +178,6 @@ export const STYLE_MINIMALIS: StyleConfig = {
 
 /**
  * PRESET 3: Ceria & Kreatif
- * Ramah, energik, menarik untuk siswa, ekspresif, edukatif.
  */
 export const STYLE_CERIA_KREATIF: StyleConfig = {
   id: 'ceria_kreatif',
@@ -248,175 +247,7 @@ export const STYLE_CERIA_KREATIF: StyleConfig = {
     shapes: 'playful',
     pattern: 'dots',
     backgroundTreatment: 'bg-[radial-gradient(#fde68a_1px,transparent_1px)] [background-size:20px_20px]',
-    badgeStyle: 'rounded-full px-3 py-1 text-[11px] font-extrabold tracking-wide shadow-2xs',
-    showAccentBar: true,
-  },
-  composition: {
-    density: 'balanced',
-    whitespace: 'balanced',
-    alignment: 'left',
-    visualEmphasis: 'balanced',
-    gridGap: 'gap-5',
-  },
-};
-
-/**
- * PRESET 4: Profesional
- * Formal, bersih, terpercaya, terstruktur, dewasa (SMP, SMA, SMK, atau materi sains/teknologi).
- */
-export const STYLE_PROFESIONAL: StyleConfig = {
-  id: 'profesional',
-  name: 'Profesional',
-  tagline: 'Formal, Terstruktur & Presisi Tinggi',
-  description: 'Tampilan rapi dan simetris dengan palet navy/steel blue, sudut tajam presisi, dan hierarki tegas.',
-  colorPalette: {
-    background: 'bg-slate-100/90',
-    surface: 'bg-white',
-    surfaceBorder: 'border-slate-300',
-    primary: 'blue',
-    primaryBg: 'bg-blue-700',
-    primaryText: 'text-blue-800',
-    primaryLight: 'bg-blue-50',
-    primaryBorder: 'border-blue-200',
-    secondary: 'slate',
-    secondaryBg: 'bg-slate-700',
-    secondaryText: 'text-slate-800',
-    secondaryLight: 'bg-slate-100',
-    secondaryBorder: 'border-slate-300',
-    accent: 'cyan',
-    accentBg: 'bg-cyan-600',
-    accentText: 'text-cyan-900',
-    accentLight: 'bg-cyan-50',
-    accentBorder: 'border-cyan-200',
-    textPrimary: 'text-slate-900',
-    textSecondary: 'text-slate-700',
-    textMuted: 'text-slate-500',
-    headerGradient: 'bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900',
-    headerText: 'text-white',
-    headerSubtext: 'text-sky-300',
-    headerBadgeBg: 'bg-blue-900/60 border-blue-400/30 text-white',
-    footerBg: 'bg-slate-950 border-t border-slate-800 text-slate-400',
-    footerText: 'text-slate-300',
-    footerAccent: 'bg-blue-600 text-white',
-    summaryBorder: 'border-blue-700 ring-2 ring-blue-500/20 shadow-md',
-    summaryBadge: 'text-blue-800 bg-blue-50 border-blue-300',
-  },
-  typography: {
-    fontFamily: 'font-sans',
-    headingFont: 'font-sans',
-    headingWeight: 'font-bold',
-    headingTracking: 'tracking-tight',
-    bodyStyle: 'font-sans',
-    bodyWeight: 'font-normal',
-    headingScale: 'text-base sm:text-lg',
-    lineHeight: 'leading-normal',
-  },
-  cards: {
-    borderRadius: 'rounded-xl',
-    innerRadius: 'rounded-lg',
-    borderStyle: 'border border-slate-300',
-    shadowStyle: 'shadow-xs hover:border-blue-500 hover:shadow-sm',
-    padding: 'p-5 sm:p-6',
-    density: 'compact',
-    cardBg: 'bg-white',
-    highlightBorder: 'border-blue-700 ring-2 ring-blue-500/30 shadow-md',
-  },
-  icons: {
-    style: 'geometric',
-    size: 'w-4 h-4',
-    containerShape: 'rounded-lg',
-    containerBg: 'bg-blue-700 text-white shadow-2xs',
-  },
-  decoration: {
-    level: 'minimal',
-    shapes: 'technical',
-    pattern: 'grid',
-    backgroundTreatment: 'bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px]',
-    badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border',
-    showAccentBar: true,
-  },
-  composition: {
-    density: 'compact',
-    whitespace: 'compact',
-    alignment: 'left',
-    visualEmphasis: 'balanced',
-    gridGap: 'gap-4 sm:gap-5',
-  },
-};
-
-/**
- * PRESET 5: Ilustratif
- * Lebih visual, representasi gambar/ikon dominan, membantu pemahaman konsep abstrak.
- */
-export const STYLE_ILUSTRATIF: StyleConfig = {
-  id: 'ilustratif',
-  name: 'Ilustratif',
-  tagline: 'Kaya Visual & Metafora Konseptual',
-  description: 'Menonjolkan blok visual, ikon diagramatis dominan, dan kontras warna yang memperjelas materi abstrak.',
-  colorPalette: {
-    background: 'bg-teal-50/30',
-    surface: 'bg-white',
-    surfaceBorder: 'border-teal-200/80',
-    primary: 'teal',
-    primaryBg: 'bg-teal-600',
-    primaryText: 'text-teal-800',
-    primaryLight: 'bg-teal-50',
-    primaryBorder: 'border-teal-200',
-    secondary: 'emerald',
-    secondaryBg: 'bg-emerald-600',
-    secondaryText: 'text-emerald-800',
-    secondaryLight: 'bg-emerald-50',
-    secondaryBorder: 'border-emerald-200',
-    accent: 'amber',
-    accentBg: 'bg-amber-500',
-    accentText: 'text-amber-800',
-    accentLight: 'bg-amber-50',
-    accentBorder: 'border-amber-200',
-    textPrimary: 'text-slate-900',
-    textSecondary: 'text-slate-700',
-    textMuted: 'text-slate-400',
-    headerGradient: 'bg-gradient-to-r from-teal-950 via-emerald-950 to-slate-900',
-    headerText: 'text-white',
-    headerSubtext: 'text-emerald-200',
-    headerBadgeBg: 'bg-emerald-500/20 border-emerald-400/30 text-white',
-    footerBg: 'bg-slate-900 text-teal-200',
-    footerText: 'text-teal-300/80',
-    footerAccent: 'bg-teal-500 text-slate-950 font-bold',
-    summaryBorder: 'border-teal-600 ring-2 ring-teal-500/20 shadow-md',
-    summaryBadge: 'text-teal-800 bg-teal-50 border-teal-200',
-  },
-  typography: {
-    fontFamily: 'font-sans',
-    headingFont: 'font-sans',
-    headingWeight: 'font-extrabold',
-    headingTracking: 'tracking-tight',
-    bodyStyle: 'font-sans',
-    bodyWeight: 'font-normal',
-    headingScale: 'text-base sm:text-lg',
-    lineHeight: 'leading-relaxed',
-  },
-  cards: {
-    borderRadius: 'rounded-2xl',
-    innerRadius: 'rounded-xl',
-    borderStyle: 'border-2 border-teal-200/80',
-    shadowStyle: 'shadow-xs hover:shadow-md hover:border-teal-400',
-    padding: 'p-5 sm:p-6',
-    density: 'balanced',
-    cardBg: 'bg-white',
-    highlightBorder: 'border-teal-600 ring-2 ring-teal-500/30 shadow-md',
-  },
-  icons: {
-    style: 'rounded-box',
-    size: 'w-5 h-5',
-    containerShape: 'rounded-xl',
-    containerBg: 'bg-teal-600 text-white shadow-xs',
-  },
-  decoration: {
-    level: 'moderate',
-    shapes: 'organic',
-    pattern: 'dots',
-    backgroundTreatment: 'bg-[radial-gradient(#99f6e4_1px,transparent_1px)] [background-size:18px_18px]',
-    badgeStyle: 'rounded-full px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider border shadow-2xs',
+    badgeStyle: 'rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide border shadow-2xs',
     showAccentBar: false,
   },
   composition: {
@@ -429,48 +260,47 @@ export const STYLE_ILUSTRATIF: StyleConfig = {
 };
 
 /**
- * PRESET 6: Akademik
- * Terstruktur, formal, jelas, fokus pada pembelajaran konseptual dan asesmen evaluasi.
+ * PRESET 4: Akademik Elegan
  */
 export const STYLE_AKADEMIK: StyleConfig = {
   id: 'akademik',
-  name: 'Akademik',
-  tagline: 'Ilmiah, Sistematis & Konseptual',
-  description: 'Tata letak ilmiah yang fokus pada hierarki heading, ketegasan konsep, dan ringkasan evaluasi belajar.',
+  name: 'Akademik Elegan',
+  tagline: 'Formal, Berwibawa & Terstruktur',
+  description: 'Tipografi klasik terpandu, palet formal navy-emas, dan kartu berbingkai rapi untuk disiplin ilmiah.',
   colorPalette: {
-    background: 'bg-[#fbfbf9]',
+    background: 'bg-slate-100/90',
     surface: 'bg-white',
-    surfaceBorder: 'border-stone-300',
-    primary: 'rose',
-    primaryBg: 'bg-[#881337]',
-    primaryText: 'text-[#881337]',
-    primaryLight: 'bg-rose-50',
-    primaryBorder: 'border-rose-200',
-    secondary: 'stone',
-    secondaryBg: 'bg-stone-700',
-    secondaryText: 'text-stone-800',
-    secondaryLight: 'bg-stone-100',
-    secondaryBorder: 'border-stone-300',
-    accent: 'amber',
-    accentBg: 'bg-amber-600',
-    accentText: 'text-amber-900',
-    accentLight: 'bg-amber-50',
-    accentBorder: 'border-amber-300',
-    textPrimary: 'text-stone-900',
-    textSecondary: 'text-stone-700',
-    textMuted: 'text-stone-500',
-    headerGradient: 'bg-gradient-to-r from-[#2a0812] via-[#4c0519] to-[#1c1917]',
+    surfaceBorder: 'border-slate-300',
+    primary: 'navy',
+    primaryBg: 'bg-slate-900',
+    primaryText: 'text-slate-900',
+    primaryLight: 'bg-slate-100',
+    primaryBorder: 'border-slate-300',
+    secondary: 'amber',
+    secondaryBg: 'bg-amber-700',
+    secondaryText: 'text-amber-900',
+    secondaryLight: 'bg-amber-50',
+    secondaryBorder: 'border-amber-300',
+    accent: 'emerald',
+    accentBg: 'bg-emerald-800',
+    accentText: 'text-emerald-900',
+    accentLight: 'bg-emerald-50',
+    accentBorder: 'border-emerald-300',
+    textPrimary: 'text-slate-950',
+    textSecondary: 'text-slate-700',
+    textMuted: 'text-slate-500',
+    headerGradient: 'bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950',
     headerText: 'text-white',
     headerSubtext: 'text-amber-200',
-    headerBadgeBg: 'bg-white/10 border-white/20 text-white',
-    footerBg: 'bg-[#1c1917] border-t border-stone-800 text-stone-400',
-    footerText: 'text-stone-300',
-    footerAccent: 'bg-[#881337] text-white',
-    summaryBorder: 'border-[#881337] ring-2 ring-rose-900/20 shadow-xs',
-    summaryBadge: 'text-[#881337] bg-rose-50 border-rose-200',
+    headerBadgeBg: 'bg-amber-500/20 border-amber-400/30 text-amber-100',
+    footerBg: 'bg-slate-950 border-t border-slate-800 text-slate-300',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-amber-600 text-white',
+    summaryBorder: 'border-slate-900 ring-2 ring-slate-800/20 shadow-xs',
+    summaryBadge: 'text-slate-900 bg-slate-100 border-slate-300',
   },
   typography: {
-    fontFamily: 'font-sans',
+    fontFamily: 'font-serif',
     headingFont: 'font-serif',
     headingWeight: 'font-bold',
     headingTracking: 'tracking-tight',
@@ -482,29 +312,29 @@ export const STYLE_AKADEMIK: StyleConfig = {
   cards: {
     borderRadius: 'rounded-xl',
     innerRadius: 'rounded-lg',
-    borderStyle: 'border border-stone-300',
-    shadowStyle: 'shadow-none hover:border-stone-500 hover:shadow-xs',
+    borderStyle: 'border border-slate-300',
+    shadowStyle: 'shadow-2xs hover:border-slate-500',
     padding: 'p-5 sm:p-6',
-    density: 'compact',
-    cardBg: 'bg-white',
-    highlightBorder: 'border-[#881337] ring-2 ring-rose-900/30 shadow-xs',
+    density: 'balanced',
+    cardBg: 'bg-[#fafafa]',
+    highlightBorder: 'border-slate-900 ring-2 ring-slate-700/30 shadow-xs',
   },
   icons: {
     style: 'outline',
     size: 'w-4 h-4',
-    containerShape: 'rounded-md',
-    containerBg: 'bg-[#881337] text-white',
+    containerShape: 'rounded-lg',
+    containerBg: 'bg-slate-900 text-amber-200 border border-slate-800',
   },
   decoration: {
     level: 'minimal',
     shapes: 'geometric',
     pattern: 'lines',
     backgroundTreatment: '',
-    badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border',
+    badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-serif font-bold uppercase tracking-wider border',
     showAccentBar: true,
   },
   composition: {
-    density: 'compact',
+    density: 'balanced',
     whitespace: 'balanced',
     alignment: 'left',
     visualEmphasis: 'text_first',
@@ -513,45 +343,625 @@ export const STYLE_AKADEMIK: StyleConfig = {
 };
 
 /**
- * PRESET 7: Colorful Infografis
- * Kaya visual, berwarna-warni teratur, dinamis, menarik perhatian dengan multi-aksen terpadu.
+ * PRESET 5: Futuristic & Cyber Tech
  */
-export const STYLE_COLORFUL_INFOGRAFIS: StyleConfig = {
-  id: 'colorful_infografis',
-  name: 'Colorful Infografis',
-  tagline: 'Vibran, Dinamis & Multi-Aksen Harmonis',
-  description: 'Kombinasi multi-warna yang dinamis dan kontras namun tetap terpadu dalam satu sistem desain teratur.',
+export const STYLE_FUTURISTIC: StyleConfig = {
+  id: 'futuristic',
+  name: 'Futuristic',
+  tagline: 'Teknologi Tinggi & Grid Digital',
+  description: 'Nuansa masa depan dengan aksen cyan-violet glowing, HUD digital badges, dan grid teknologi modern.',
   colorPalette: {
-    background: 'bg-gradient-to-b from-indigo-50/40 via-purple-50/30 to-sky-50/40',
+    background: 'bg-slate-950',
+    surface: 'bg-slate-900',
+    surfaceBorder: 'border-cyan-500/30',
+    primary: 'cyan',
+    primaryBg: 'bg-cyan-500',
+    primaryText: 'text-cyan-400',
+    primaryLight: 'bg-cyan-950/40',
+    primaryBorder: 'border-cyan-500/40',
+    secondary: 'violet',
+    secondaryBg: 'bg-violet-600',
+    secondaryText: 'text-violet-300',
+    secondaryLight: 'bg-violet-950/40',
+    secondaryBorder: 'border-violet-500/40',
+    accent: 'fuchsia',
+    accentBg: 'bg-fuchsia-500',
+    accentText: 'text-fuchsia-300',
+    accentLight: 'bg-fuchsia-950/40',
+    accentBorder: 'border-fuchsia-500/40',
+    textPrimary: 'text-slate-100',
+    textSecondary: 'text-slate-300',
+    textMuted: 'text-slate-400',
+    headerGradient: 'bg-gradient-to-r from-slate-950 via-cyan-950 to-slate-950 border-b border-cyan-500/30',
+    headerText: 'text-cyan-100',
+    headerSubtext: 'text-cyan-300',
+    headerBadgeBg: 'bg-cyan-500/20 border-cyan-400/40 text-cyan-200',
+    footerBg: 'bg-slate-950 border-t border-cyan-500/30 text-cyan-200',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-cyan-500 text-slate-950 font-bold',
+    summaryBorder: 'border-cyan-500 ring-2 ring-cyan-400/30 shadow-lg shadow-cyan-500/10',
+    summaryBadge: 'text-cyan-300 bg-cyan-950/80 border-cyan-500/50',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-sans',
+    headingWeight: 'font-black',
+    headingTracking: 'tracking-wide',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-normal',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-xl',
+    innerRadius: 'rounded-lg',
+    borderStyle: 'border border-cyan-500/30 backdrop-blur-md',
+    shadowStyle: 'shadow-lg shadow-cyan-500/5 hover:border-cyan-400 hover:shadow-cyan-500/15',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-slate-900/90',
+    highlightBorder: 'border-cyan-400 ring-2 ring-cyan-500/40 shadow-cyan-500/20',
+  },
+  icons: {
+    style: 'outline',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-lg',
+    containerBg: 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'geometric',
+    pattern: 'grid',
+    backgroundTreatment: 'bg-[linear-gradient(to_right,#06b6d410_1px,transparent_1px),linear-gradient(to_bottom,#06b6d410_1px,transparent_1px)] bg-[size:24px_24px]',
+    badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest border border-cyan-500/40 bg-cyan-950/60 text-cyan-300',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 6: Pop Art
+ */
+export const STYLE_POP_ART: StyleConfig = {
+  id: 'pop_art',
+  name: 'Pop Art',
+  tagline: 'Bold Halftone & Komik Energik',
+  description: 'Garis luar hitam tebal, warna-warna primer cerah, pola titik halftone komik, dan badge bertema seru.',
+  colorPalette: {
+    background: 'bg-amber-100',
     surface: 'bg-white',
-    surfaceBorder: 'border-purple-200/80',
-    primary: 'purple',
-    primaryBg: 'bg-purple-600',
-    primaryText: 'text-purple-700',
-    primaryLight: 'bg-purple-50',
-    primaryBorder: 'border-purple-200',
+    surfaceBorder: 'border-3 border-black',
+    primary: 'amber',
+    primaryBg: 'bg-yellow-400',
+    primaryText: 'text-black font-extrabold',
+    primaryLight: 'bg-yellow-100',
+    primaryBorder: 'border-2 border-black',
+    secondary: 'rose',
+    secondaryBg: 'bg-rose-500',
+    secondaryText: 'text-black font-extrabold',
+    secondaryLight: 'bg-rose-100',
+    secondaryBorder: 'border-2 border-black',
+    accent: 'sky',
+    accentBg: 'bg-sky-400',
+    accentText: 'text-black font-extrabold',
+    accentLight: 'bg-sky-100',
+    accentBorder: 'border-2 border-black',
+    textPrimary: 'text-black',
+    textSecondary: 'text-slate-900',
+    textMuted: 'text-slate-600',
+    headerGradient: 'bg-yellow-400 border-b-4 border-black text-black',
+    headerText: 'text-black font-black',
+    headerSubtext: 'text-black font-bold',
+    headerBadgeBg: 'bg-white border-2 border-black text-black',
+    footerBg: 'bg-black text-white border-t-4 border-yellow-400',
+    footerText: 'text-yellow-200',
+    footerAccent: 'bg-rose-500 text-white font-bold',
+    summaryBorder: 'border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]',
+    summaryBadge: 'text-black bg-yellow-300 border-2 border-black font-black',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-sans',
+    headingWeight: 'font-black',
+    headingTracking: 'tracking-tight',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-medium',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-snug',
+  },
+  cards: {
+    borderRadius: 'rounded-xl',
+    innerRadius: 'rounded-lg',
+    borderStyle: 'border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]',
+    shadowStyle: 'hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all',
+    padding: 'p-5 sm:p-6',
+    density: 'compact',
+    cardBg: 'bg-white',
+    highlightBorder: 'border-4 border-black shadow-[6px_6px_0px_0px_rgba(244,63,94,1)]',
+  },
+  icons: {
+    style: 'filled',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-lg',
+    containerBg: 'bg-yellow-400 text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'playful',
+    pattern: 'dots',
+    backgroundTreatment: 'bg-[radial-gradient(#00000015_2px,transparent_2px)] [background-size:12px_12px]',
+    badgeStyle: 'rounded-md px-3 py-1 text-[11px] font-black uppercase tracking-wider border-2 border-black bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]',
+    showAccentBar: false,
+  },
+  composition: {
+    density: 'compact',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'visual_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 7: Cyberpunk
+ */
+export const STYLE_CYBERPUNK: StyleConfig = {
+  id: 'cyberpunk',
+  name: 'Cyberpunk',
+  tagline: 'Neon High-Tech & Kontras Ekstrem',
+  description: 'Palet neon cyan-magenta dengan latar belakang gelap kontras tinggi, elemen siber terminal, dan garis tegas.',
+  colorPalette: {
+    background: 'bg-[#090a0f]',
+    surface: 'bg-[#121420]',
+    surfaceBorder: 'border-fuchsia-500/40',
+    primary: 'fuchsia',
+    primaryBg: 'bg-fuchsia-600',
+    primaryText: 'text-fuchsia-400',
+    primaryLight: 'bg-fuchsia-950/50',
+    primaryBorder: 'border-fuchsia-500/50',
     secondary: 'cyan',
-    secondaryBg: 'bg-cyan-600',
-    secondaryText: 'text-cyan-800',
-    secondaryLight: 'bg-cyan-50',
-    secondaryBorder: 'border-cyan-200',
-    accent: 'pink',
-    accentBg: 'bg-pink-500',
-    accentText: 'text-pink-800',
-    accentLight: 'bg-pink-50',
-    accentBorder: 'border-pink-200',
+    secondaryBg: 'bg-cyan-500',
+    secondaryText: 'text-cyan-300',
+    secondaryLight: 'bg-cyan-950/50',
+    secondaryBorder: 'border-cyan-500/50',
+    accent: 'yellow',
+    accentBg: 'bg-yellow-400',
+    accentText: 'text-yellow-300',
+    accentLight: 'bg-yellow-950/50',
+    accentBorder: 'border-yellow-500/50',
+    textPrimary: 'text-slate-100',
+    textSecondary: 'text-slate-300',
+    textMuted: 'text-slate-400',
+    headerGradient: 'bg-gradient-to-r from-fuchsia-950 via-[#121420] to-cyan-950 border-b-2 border-fuchsia-500',
+    headerText: 'text-cyan-200 font-mono',
+    headerSubtext: 'text-fuchsia-300',
+    headerBadgeBg: 'bg-fuchsia-500/20 border-fuchsia-400 text-fuchsia-200',
+    footerBg: 'bg-[#090a0f] border-t border-fuchsia-500/50 text-cyan-300',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-fuchsia-600 text-white font-mono',
+    summaryBorder: 'border-fuchsia-500 ring-2 ring-cyan-500 shadow-lg shadow-fuchsia-500/20',
+    summaryBadge: 'text-cyan-300 bg-cyan-950 border-cyan-400 font-mono',
+  },
+  typography: {
+    fontFamily: 'font-mono',
+    headingFont: 'font-mono',
+    headingWeight: 'font-black',
+    headingTracking: 'tracking-tight',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-normal',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-none',
+    innerRadius: 'rounded-none',
+    borderStyle: 'border border-fuchsia-500/40 border-l-4 border-l-cyan-400',
+    shadowStyle: 'shadow-md shadow-fuchsia-500/10 hover:border-cyan-400',
+    padding: 'p-5 sm:p-6',
+    density: 'compact',
+    cardBg: 'bg-[#121420]/95',
+    highlightBorder: 'border-2 border-cyan-400 ring-2 ring-fuchsia-500',
+  },
+  icons: {
+    style: 'outline',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-none',
+    containerBg: 'bg-fuchsia-950 text-cyan-300 border border-cyan-400',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'geometric',
+    pattern: 'grid',
+    backgroundTreatment: 'bg-[linear-gradient(to_right,#ec489915_1px,transparent_1px),linear-gradient(to_bottom,#06b6d415_1px,transparent_1px)] bg-[size:20px_20px]',
+    badgeStyle: 'rounded-none px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest border border-cyan-400 bg-black text-cyan-300',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'compact',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 8: Clay Style (3D Soft Tactile)
+ */
+export const STYLE_CLAY_STYLE: StyleConfig = {
+  id: 'clay_style',
+  name: 'Clay Style',
+  tagline: 'Sentuhan 3D Lembut & Ramah',
+  description: 'Efek claymorphic tanah liat 3D dengan sudut bulat lembut, bayangan halus, dan suasana belajar yang hangat.',
+  colorPalette: {
+    background: 'bg-orange-50/50',
+    surface: 'bg-[#ffffff]',
+    surfaceBorder: 'border-orange-200',
+    primary: 'orange',
+    primaryBg: 'bg-orange-500',
+    primaryText: 'text-orange-900',
+    primaryLight: 'bg-orange-100',
+    primaryBorder: 'border-orange-300',
+    secondary: 'teal',
+    secondaryBg: 'bg-teal-500',
+    secondaryText: 'text-teal-900',
+    secondaryLight: 'bg-teal-100',
+    secondaryBorder: 'border-teal-300',
+    accent: 'purple',
+    accentBg: 'bg-purple-500',
+    accentText: 'text-purple-900',
+    accentLight: 'bg-purple-100',
+    accentBorder: 'border-purple-300',
     textPrimary: 'text-slate-900',
     textSecondary: 'text-slate-700',
     textMuted: 'text-slate-400',
-    headerGradient: 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500',
+    headerGradient: 'bg-gradient-to-r from-orange-400 via-amber-400 to-rose-400',
     headerText: 'text-white',
-    headerSubtext: 'text-pink-100',
+    headerSubtext: 'text-orange-950',
+    headerBadgeBg: 'bg-white/30 border-white/40 text-orange-950 font-bold',
+    footerBg: 'bg-slate-900 text-orange-100',
+    footerText: 'text-orange-200/80',
+    footerAccent: 'bg-orange-500 text-white font-bold',
+    summaryBorder: 'border-orange-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_10px_20px_rgba(249,115,22,0.15)]',
+    summaryBadge: 'text-orange-900 bg-orange-100 border-orange-300',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-sans',
+    headingWeight: 'font-extrabold',
+    headingTracking: 'tracking-tight',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-medium',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-3xl',
+    innerRadius: 'rounded-2xl',
+    borderStyle: 'border border-orange-200/60',
+    shadowStyle: 'shadow-[inset_0_2px_4px_rgba(255,255,255,0.9),0_8px_16px_rgba(0,0,0,0.06)] hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.9),0_12px_24px_rgba(249,115,22,0.12)]',
+    padding: 'p-6',
+    density: 'spacious',
+    cardBg: 'bg-[#ffffff]',
+    highlightBorder: 'border-2 border-orange-400 ring-4 ring-orange-200',
+  },
+  icons: {
+    style: 'filled',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-2xl',
+    containerBg: 'bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-sm',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'playful',
+    pattern: 'none',
+    backgroundTreatment: '',
+    badgeStyle: 'rounded-full px-3 py-1 text-[11px] font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_4px_rgba(0,0,0,0.05)]',
+    showAccentBar: false,
+  },
+  composition: {
+    density: 'spacious',
+    whitespace: 'generous',
+    alignment: 'left',
+    visualEmphasis: 'visual_first',
+    gridGap: 'gap-6',
+  },
+};
+
+/**
+ * PRESET 9: Swiss Design (Grid Ketat & Tipografi Kuat)
+ */
+export const STYLE_SWISS_DESIGN: StyleConfig = {
+  id: 'swiss_design',
+  name: 'Swiss Design',
+  tagline: 'Grid Matematis & Tipografi Kuat',
+  description: 'Sistem tata letak presisi tinggi, tipografi sans-serif tebal, kontras hitam-putih-merah, dan keterbacaan mutlak.',
+  colorPalette: {
+    background: 'bg-[#f4f4f4]',
+    surface: 'bg-white',
+    surfaceBorder: 'border-2 border-black',
+    primary: 'red',
+    primaryBg: 'bg-[#e11d48]',
+    primaryText: 'text-[#e11d48]',
+    primaryLight: 'bg-red-50',
+    primaryBorder: 'border-black',
+    secondary: 'slate',
+    secondaryBg: 'bg-black',
+    secondaryText: 'text-black',
+    secondaryLight: 'bg-slate-100',
+    secondaryBorder: 'border-black',
+    accent: 'red',
+    accentBg: 'bg-[#e11d48]',
+    accentText: 'text-[#e11d48]',
+    accentLight: 'bg-red-50',
+    accentBorder: 'border-black',
+    textPrimary: 'text-black',
+    textSecondary: 'text-slate-800',
+    textMuted: 'text-slate-500',
+    headerGradient: 'bg-black border-b-4 border-[#e11d48] text-white',
+    headerText: 'text-white font-black',
+    headerSubtext: 'text-red-200 font-bold',
+    headerBadgeBg: 'bg-[#e11d48] text-white border-none',
+    footerBg: 'bg-black text-white border-t-2 border-black',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-[#e11d48] text-white font-bold',
+    summaryBorder: 'border-2 border-black ring-4 ring-[#e11d48]/20',
+    summaryBadge: 'text-white bg-[#e11d48] border-none font-bold',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-sans',
+    headingWeight: 'font-black',
+    headingTracking: 'tracking-tighter',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-medium',
+    headingScale: 'text-base sm:text-xl',
+    lineHeight: 'leading-tight',
+  },
+  cards: {
+    borderRadius: 'rounded-none',
+    innerRadius: 'rounded-none',
+    borderStyle: 'border-2 border-black',
+    shadowStyle: 'shadow-none hover:bg-slate-50',
+    padding: 'p-6',
+    density: 'compact',
+    cardBg: 'bg-white',
+    highlightBorder: 'border-4 border-[#e11d48]',
+  },
+  icons: {
+    style: 'outline',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-none',
+    containerBg: 'bg-black text-white',
+  },
+  decoration: {
+    level: 'minimal',
+    shapes: 'geometric',
+    pattern: 'none',
+    backgroundTreatment: '',
+    badgeStyle: 'rounded-none px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-black text-white',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'compact',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'text_first',
+    gridGap: 'gap-6',
+  },
+};
+
+/**
+ * PRESET 10: Editorial (Majalah Ilmiah & Publikasi)
+ */
+export const STYLE_EDITORIAL: StyleConfig = {
+  id: 'editorial',
+  name: 'Editorial',
+  tagline: 'Gaya Majalah Edukatif & Serif Elegan',
+  description: 'Tipografi serif klasik berkualitas tinggi, pembagian kolom majalah berkelas, dan bingkai bernuansa editorial.',
+  colorPalette: {
+    background: 'bg-[#fcfbf9]',
+    surface: 'bg-[#ffffff]',
+    surfaceBorder: 'border-[#dfd7c5]',
+    primary: 'emerald',
+    primaryBg: 'bg-[#1c3d2e]',
+    primaryText: 'text-[#1c3d2e]',
+    primaryLight: 'bg-[#edf5f0]',
+    primaryBorder: 'border-[#b8d4c3]',
+    secondary: 'amber',
+    secondaryBg: 'bg-[#8a5d25]',
+    secondaryText: 'text-[#8a5d25]',
+    secondaryLight: 'bg-[#f9f3ea]',
+    secondaryBorder: 'border-[#ded1be]',
+    accent: 'stone',
+    accentBg: 'bg-stone-700',
+    accentText: 'text-stone-900',
+    accentLight: 'bg-stone-100',
+    accentBorder: 'border-stone-300',
+    textPrimary: 'text-[#1c241d]',
+    textSecondary: 'text-[#444f46]',
+    textMuted: 'text-[#7d8c80]',
+    headerGradient: 'bg-gradient-to-r from-[#14261c] via-[#1c3d2e] to-[#14261c] text-[#f4f1ea]',
+    headerText: 'text-[#f4f1ea] font-serif',
+    headerSubtext: 'text-[#c6dcbe]',
+    headerBadgeBg: 'bg-white/15 border-white/20 text-[#f4f1ea]',
+    footerBg: 'bg-[#14261c] text-[#d6cdbd]',
+    footerText: 'text-[#a99f8d]',
+    footerAccent: 'bg-[#1c3d2e] text-white',
+    summaryBorder: 'border-[#1c3d2e] ring-1 ring-[#1c3d2e]/30 shadow-xs',
+    summaryBadge: 'text-[#1c3d2e] bg-[#edf5f0] border-[#b8d4c3] font-serif',
+  },
+  typography: {
+    fontFamily: 'font-serif',
+    headingFont: 'font-serif',
+    headingWeight: 'font-bold',
+    headingTracking: 'tracking-tight',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-normal',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-xl',
+    innerRadius: 'rounded-lg',
+    borderStyle: 'border border-[#dfd7c5]',
+    shadowStyle: 'shadow-2xs hover:border-[#1c3d2e]',
+    padding: 'p-6',
+    density: 'balanced',
+    cardBg: 'bg-[#ffffff]',
+    highlightBorder: 'border-[#1c3d2e] ring-2 ring-[#1c3d2e]/20',
+  },
+  icons: {
+    style: 'outline',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-lg',
+    containerBg: 'bg-[#1c3d2e] text-white',
+  },
+  decoration: {
+    level: 'minimal',
+    shapes: 'geometric',
+    pattern: 'lines',
+    backgroundTreatment: '',
+    badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-serif font-bold uppercase tracking-wider border border-[#b8d4c3] bg-[#edf5f0] text-[#1c3d2e]',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'text_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 11: Handwritten & Doodle
+ */
+export const STYLE_HANDWRITTEN: StyleConfig = {
+  id: 'handwritten',
+  name: 'Handwritten',
+  tagline: 'Sketsa Tulisan Tangan & Catatan Guru',
+  description: 'Nuansa catatan belajar personal dengan garis sketsa organik, aksen tulisan tangan, dan border bergaya buku tulis.',
+  colorPalette: {
+    background: 'bg-[#fdfaf5]',
+    surface: 'bg-white',
+    surfaceBorder: 'border-2 border-dashed border-amber-300',
+    primary: 'amber',
+    primaryBg: 'bg-amber-600',
+    primaryText: 'text-amber-900',
+    primaryLight: 'bg-amber-50',
+    primaryBorder: 'border-amber-300',
+    secondary: 'sky',
+    secondaryBg: 'bg-sky-600',
+    secondaryText: 'text-sky-900',
+    secondaryLight: 'bg-sky-50',
+    secondaryBorder: 'border-sky-300',
+    accent: 'rose',
+    accentBg: 'bg-rose-500',
+    accentText: 'text-rose-900',
+    accentLight: 'bg-rose-50',
+    accentBorder: 'border-rose-300',
+    textPrimary: 'text-slate-900',
+    textSecondary: 'text-slate-700',
+    textMuted: 'text-slate-400',
+    headerGradient: 'bg-gradient-to-r from-amber-600 to-orange-500 text-white border-b-2 border-dashed border-amber-300',
+    headerText: 'text-white font-bold',
+    headerSubtext: 'text-amber-100',
+    headerBadgeBg: 'bg-white/20 border border-white/40 text-white',
+    footerBg: 'bg-slate-900 text-amber-100',
+    footerText: 'text-amber-200/80',
+    footerAccent: 'bg-amber-500 text-slate-950 font-bold',
+    summaryBorder: 'border-2 border-dashed border-amber-500 ring-2 ring-amber-300/30',
+    summaryBadge: 'text-amber-900 bg-amber-100 border border-amber-400',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-sans',
+    headingWeight: 'font-extrabold',
+    headingTracking: 'tracking-normal',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-normal',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-2xl',
+    innerRadius: 'rounded-xl',
+    borderStyle: 'border-2 border-dashed border-amber-300/90',
+    shadowStyle: 'shadow-xs hover:border-amber-400',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-white',
+    highlightBorder: 'border-2 border-dashed border-amber-500 ring-2 ring-amber-300',
+  },
+  icons: {
+    style: 'outline',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-xl',
+    containerBg: 'bg-amber-100 text-amber-800 border border-amber-300',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'playful',
+    pattern: 'lines',
+    backgroundTreatment: 'bg-[radial-gradient(#fde68a_1px,transparent_1px)] [background-size:16px_16px]',
+    badgeStyle: 'rounded-xl px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border-2 border-dashed border-amber-300 bg-amber-50 text-amber-900',
+    showAccentBar: false,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'visual_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 12: Glassmorphism
+ */
+export const STYLE_GLASSMORPHISM: StyleConfig = {
+  id: 'glassmorphism',
+  name: 'Glassmorphism',
+  tagline: 'Kaca Transparan & Lapisan Elegan',
+  description: 'Kartu frosted glass berlatar belakang gradasi halus dengan border tipis berkilau yang elegan.',
+  colorPalette: {
+    background: 'bg-gradient-to-br from-indigo-100 via-sky-50 to-teal-100',
+    surface: 'bg-white/70 backdrop-blur-md',
+    surfaceBorder: 'border-white/60',
+    primary: 'indigo',
+    primaryBg: 'bg-indigo-600',
+    primaryText: 'text-indigo-800',
+    primaryLight: 'bg-indigo-50/70 backdrop-blur-xs',
+    primaryBorder: 'border-indigo-200/60',
+    secondary: 'teal',
+    secondaryBg: 'bg-teal-600',
+    secondaryText: 'text-teal-800',
+    secondaryLight: 'bg-teal-50/70 backdrop-blur-xs',
+    secondaryBorder: 'border-teal-200/60',
+    accent: 'sky',
+    accentBg: 'bg-sky-500',
+    accentText: 'text-sky-800',
+    accentLight: 'bg-sky-50/70 backdrop-blur-xs',
+    accentBorder: 'border-sky-200/60',
+    textPrimary: 'text-slate-900',
+    textSecondary: 'text-slate-700',
+    textMuted: 'text-slate-500',
+    headerGradient: 'bg-gradient-to-r from-indigo-900/90 via-sky-900/90 to-teal-900/90 backdrop-blur-md text-white border-b border-white/20',
+    headerText: 'text-white',
+    headerSubtext: 'text-sky-200',
     headerBadgeBg: 'bg-white/20 border-white/30 text-white',
-    footerBg: 'bg-slate-950 text-slate-300',
-    footerText: 'text-purple-200/80',
-    footerAccent: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold',
-    summaryBorder: 'border-purple-600 ring-2 ring-purple-500/20 shadow-md',
-    summaryBadge: 'text-purple-800 bg-purple-100 border-purple-300',
+    footerBg: 'bg-slate-900/90 backdrop-blur-md text-white',
+    footerText: 'text-slate-300',
+    footerAccent: 'bg-indigo-600 text-white font-bold',
+    summaryBorder: 'border-white/80 ring-2 ring-indigo-400/30 shadow-lg shadow-indigo-500/10',
+    summaryBadge: 'text-indigo-800 bg-white/80 border-indigo-200',
   },
   typography: {
     fontFamily: 'font-sans',
@@ -566,375 +976,379 @@ export const STYLE_COLORFUL_INFOGRAFIS: StyleConfig = {
   cards: {
     borderRadius: 'rounded-2xl',
     innerRadius: 'rounded-xl',
-    borderStyle: 'border border-purple-200/80',
-    shadowStyle: 'shadow-xs hover:shadow-md hover:border-purple-400',
+    borderStyle: 'border border-white/80 backdrop-blur-md',
+    shadowStyle: 'shadow-md shadow-indigo-500/5 hover:shadow-lg hover:border-white',
     padding: 'p-5 sm:p-6',
     density: 'balanced',
-    cardBg: 'bg-white',
-    highlightBorder: 'border-purple-600 ring-3 ring-purple-400/30 shadow-md',
+    cardBg: 'bg-white/75',
+    highlightBorder: 'border-2 border-indigo-500 ring-2 ring-indigo-400/30 shadow-md',
   },
   icons: {
     style: 'rounded-box',
     size: 'w-4 h-4',
     containerShape: 'rounded-xl',
-    containerBg: 'bg-gradient-to-tr from-purple-600 to-pink-500 text-white shadow-2xs',
+    containerBg: 'bg-indigo-600 text-white shadow-xs',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'geometric',
+    pattern: 'none',
+    backgroundTreatment: '',
+    badgeStyle: 'rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide border border-white/80 bg-white/60 backdrop-blur-xs text-indigo-900 shadow-2xs',
+    showAccentBar: false,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 13: Aurora (Gradasi Cahaya Kutub)
+ */
+export const STYLE_AURORA: StyleConfig = {
+  id: 'aurora',
+  name: 'Aurora',
+  tagline: 'Cahaya Kutub & Gradasi Lembut',
+  description: 'Palet gradasi lembut teal-emerald-violet bertekstur cahaya kutub malam yang menenangkan.',
+  colorPalette: {
+    background: 'bg-slate-950',
+    surface: 'bg-slate-900/90',
+    surfaceBorder: 'border-teal-500/30',
+    primary: 'teal',
+    primaryBg: 'bg-teal-500',
+    primaryText: 'text-teal-300',
+    primaryLight: 'bg-teal-950/40',
+    primaryBorder: 'border-teal-500/40',
+    secondary: 'emerald',
+    secondaryBg: 'bg-emerald-500',
+    secondaryText: 'text-emerald-300',
+    secondaryLight: 'bg-emerald-950/40',
+    secondaryBorder: 'border-emerald-500/40',
+    accent: 'violet',
+    accentBg: 'bg-violet-500',
+    accentText: 'text-violet-300',
+    accentLight: 'bg-violet-950/40',
+    accentBorder: 'border-violet-500/40',
+    textPrimary: 'text-slate-100',
+    textSecondary: 'text-slate-300',
+    textMuted: 'text-slate-400',
+    headerGradient: 'bg-gradient-to-r from-teal-900 via-emerald-900 to-violet-900 text-white border-b border-teal-500/30',
+    headerText: 'text-teal-100',
+    headerSubtext: 'text-emerald-200',
+    headerBadgeBg: 'bg-teal-500/20 border-teal-400/40 text-teal-200',
+    footerBg: 'bg-slate-950 border-t border-teal-500/30 text-teal-200',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-teal-500 text-slate-950 font-bold',
+    summaryBorder: 'border-teal-400 ring-2 ring-emerald-500/30 shadow-lg shadow-teal-500/10',
+    summaryBadge: 'text-teal-300 bg-teal-950/80 border-teal-400/40',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-sans',
+    headingWeight: 'font-bold',
+    headingTracking: 'tracking-tight',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-normal',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-2xl',
+    innerRadius: 'rounded-xl',
+    borderStyle: 'border border-teal-500/30',
+    shadowStyle: 'shadow-lg shadow-teal-500/5 hover:border-teal-400 hover:shadow-teal-500/15',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-slate-900/90',
+    highlightBorder: 'border-teal-400 ring-2 ring-emerald-400/30',
+  },
+  icons: {
+    style: 'outline',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-xl',
+    containerBg: 'bg-teal-500/20 text-teal-300 border border-teal-400/30',
   },
   decoration: {
     level: 'expressive',
     shapes: 'geometric',
     pattern: 'dots',
-    backgroundTreatment: 'bg-[radial-gradient(#e9d5ff_1px,transparent_1px)] [background-size:16px_16px]',
-    badgeStyle: 'rounded-full px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-wider border shadow-2xs',
+    backgroundTreatment: 'bg-[radial-gradient(#14b8a620_1px,transparent_1px)] [background-size:20px_20px]',
+    badgeStyle: 'rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border border-teal-400/40 bg-teal-950/80 text-teal-300',
     showAccentBar: true,
   },
   composition: {
     density: 'balanced',
     whitespace: 'balanced',
     alignment: 'left',
-    visualEmphasis: 'visual_first',
+    visualEmphasis: 'balanced',
     gridGap: 'gap-5',
   },
 };
 
 /**
- * List of all standard available Style Presets
+ * PRESET 14: Bohemian (Earthy Terracotta & Botanical)
  */
+export const STYLE_BOHEMIAN: StyleConfig = {
+  id: 'bohemian',
+  name: 'Bohemian',
+  tagline: 'Warna Alami Bumi & Nuansa Botani',
+  description: 'Palet terracotta, sage green, warm beige, dan aksen organik ramah lingkungan.',
+  colorPalette: {
+    background: 'bg-[#fbf7f2]',
+    surface: 'bg-[#ffffff]',
+    surfaceBorder: 'border-[#e3d7c7]',
+    primary: 'amber',
+    primaryBg: 'bg-[#c26d48]',
+    primaryText: 'text-[#9c4d29]',
+    primaryLight: 'bg-[#f7ece5]',
+    primaryBorder: 'border-[#e4cfc2]',
+    secondary: 'emerald',
+    secondaryBg: 'bg-[#5c7a65]',
+    secondaryText: 'text-[#3f5747]',
+    secondaryLight: 'bg-[#edf3ee]',
+    secondaryBorder: 'border-[#cfded2]',
+    accent: 'stone',
+    accentBg: 'bg-[#8c7866]',
+    accentText: 'text-[#5e4f42]',
+    accentLight: 'bg-[#f2eee9]',
+    accentBorder: 'border-[#ded6cd]',
+    textPrimary: 'text-[#2e261f]',
+    textSecondary: 'text-[#574a3f]',
+    textMuted: 'text-[#8c7e73]',
+    headerGradient: 'bg-gradient-to-r from-[#9c4d29] via-[#c26d48] to-[#5c7a65] text-white',
+    headerText: 'text-white',
+    headerSubtext: 'text-amber-100',
+    headerBadgeBg: 'bg-white/20 border-white/30 text-white',
+    footerBg: 'bg-[#2e261f] text-[#fbf7f2]',
+    footerText: 'text-[#cfded2]',
+    footerAccent: 'bg-[#c26d48] text-white font-bold',
+    summaryBorder: 'border-[#c26d48] ring-2 ring-[#c26d48]/20 shadow-xs',
+    summaryBadge: 'text-[#9c4d29] bg-[#f7ece5] border-[#e4cfc2]',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-serif',
+    headingWeight: 'font-bold',
+    headingTracking: 'tracking-tight',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-normal',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-2xl',
+    innerRadius: 'rounded-xl',
+    borderStyle: 'border border-[#e3d7c7]',
+    shadowStyle: 'shadow-2xs hover:border-[#c26d48]',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-[#ffffff]',
+    highlightBorder: 'border-2 border-[#c26d48] ring-2 ring-[#c26d48]/20',
+  },
+  icons: {
+    style: 'filled',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-xl',
+    containerBg: 'bg-[#c26d48] text-white',
+  },
+  decoration: {
+    level: 'minimal',
+    shapes: 'playful',
+    pattern: 'dots',
+    backgroundTreatment: 'bg-[radial-gradient(#e3d7c7_1px,transparent_1px)] [background-size:16px_16px]',
+    badgeStyle: 'rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-[#e4cfc2] bg-[#f7ece5] text-[#9c4d29]',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 15: Vector Art & Flat Design
+ */
+export const STYLE_VECTOR_ART: StyleConfig = {
+  id: 'vector_art',
+  name: 'Vector Art',
+  tagline: 'Vektor Tajam & Geometri Bersih',
+  description: 'Ilustrasi vektor bersih, bentuk flat terstandar, ikon solid berenergi, dan keterbacaan tinggi.',
+  colorPalette: {
+    background: 'bg-slate-100/90',
+    surface: 'bg-white',
+    surfaceBorder: 'border-slate-300',
+    primary: 'indigo',
+    primaryBg: 'bg-blue-600',
+    primaryText: 'text-blue-700',
+    primaryLight: 'bg-blue-50',
+    primaryBorder: 'border-blue-200',
+    secondary: 'emerald',
+    secondaryBg: 'bg-emerald-600',
+    secondaryText: 'text-emerald-700',
+    secondaryLight: 'bg-emerald-50',
+    secondaryBorder: 'border-emerald-200',
+    accent: 'amber',
+    accentBg: 'bg-amber-500',
+    accentText: 'text-amber-800',
+    accentLight: 'bg-amber-50',
+    accentBorder: 'border-amber-200',
+    textPrimary: 'text-slate-900',
+    textSecondary: 'text-slate-700',
+    textMuted: 'text-slate-400',
+    headerGradient: 'bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white',
+    headerText: 'text-white font-black',
+    headerSubtext: 'text-blue-100',
+    headerBadgeBg: 'bg-white/20 border-white/30 text-white',
+    footerBg: 'bg-slate-900 text-white',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-blue-600 text-white font-bold',
+    summaryBorder: 'border-blue-600 ring-2 ring-blue-500/20 shadow-sm',
+    summaryBadge: 'text-blue-800 bg-blue-50 border-blue-200',
+  },
+  typography: {
+    fontFamily: 'font-sans',
+    headingFont: 'font-sans',
+    headingWeight: 'font-extrabold',
+    headingTracking: 'tracking-tight',
+    bodyStyle: 'font-sans',
+    bodyWeight: 'font-normal',
+    headingScale: 'text-base sm:text-lg',
+    lineHeight: 'leading-relaxed',
+  },
+  cards: {
+    borderRadius: 'rounded-xl',
+    innerRadius: 'rounded-lg',
+    borderStyle: 'border border-slate-200',
+    shadowStyle: 'shadow-xs hover:border-blue-400 hover:shadow-sm',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-white',
+    highlightBorder: 'border-2 border-blue-600 ring-2 ring-blue-400/20 shadow-sm',
+  },
+  icons: {
+    style: 'filled',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-lg',
+    containerBg: 'bg-blue-600 text-white',
+  },
+  decoration: {
+    level: 'minimal',
+    shapes: 'geometric',
+    pattern: 'dots',
+    backgroundTreatment: 'bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px]',
+    badgeStyle: 'rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+    showAccentBar: false,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+// All Presets Combined
 export const AVAILABLE_STYLE_PRESETS: StyleConfig[] = [
   STYLE_MODERN_EDUKATIF,
   STYLE_MINIMALIS,
   STYLE_CERIA_KREATIF,
-  STYLE_PROFESIONAL,
-  STYLE_ILUSTRATIF,
   STYLE_AKADEMIK,
-  STYLE_COLORFUL_INFOGRAFIS,
+  STYLE_FUTURISTIC,
+  STYLE_POP_ART,
+  STYLE_CYBERPUNK,
+  STYLE_CLAY_STYLE,
+  STYLE_SWISS_DESIGN,
+  STYLE_EDITORIAL,
+  STYLE_HANDWRITTEN,
+  STYLE_GLASSMORPHISM,
+  STYLE_AURORA,
+  STYLE_BOHEMIAN,
+  STYLE_VECTOR_ART,
 ];
 
 /**
- * Translate user custom prompt / custom visual style description into a coherent StyleConfig
- */
-export function buildCustomStyleConfig(customDescription: string): StyleConfig {
-  const desc = (customDescription || '').toLowerCase();
-
-  // Determine base tone
-  const isPastelOrSoft = desc.includes('pastel') || desc.includes('lembut') || desc.includes('soft') || desc.includes('majalah');
-  const isDarkOrTech = desc.includes('dark') || desc.includes('gelap') || desc.includes('cyber') || desc.includes('futuristik') || desc.includes('tech') || desc.includes('neon');
-  const isNatureOrVintage = desc.includes('vintage') || desc.includes('klasik') || desc.includes('alam') || desc.includes('botani') || desc.includes('retro');
-  const isPlayful = desc.includes('anak') || desc.includes('playful') || desc.includes('ceria') || desc.includes('lucu') || desc.includes('ramah');
-
-  if (isDarkOrTech) {
-    return {
-      id: 'custom_tech',
-      name: 'Custom (Futuristik & Tech)',
-      tagline: 'Modern Digital & High-Contrast Tech',
-      description: customDescription || 'Tampilan bertema futuristik dengan aksen neon dan kontras tajam.',
-      colorPalette: {
-        background: 'bg-slate-900',
-        surface: 'bg-slate-950',
-        surfaceBorder: 'border-cyan-800/80',
-        primary: 'cyan',
-        primaryBg: 'bg-cyan-500',
-        primaryText: 'text-cyan-400',
-        primaryLight: 'bg-cyan-950/80',
-        primaryBorder: 'border-cyan-700/60',
-        secondary: 'indigo',
-        secondaryBg: 'bg-indigo-600',
-        secondaryText: 'text-indigo-400',
-        secondaryLight: 'bg-indigo-950/80',
-        secondaryBorder: 'border-indigo-700/60',
-        accent: 'emerald',
-        accentBg: 'bg-emerald-500',
-        accentText: 'text-emerald-400',
-        accentLight: 'bg-emerald-950/80',
-        accentBorder: 'border-emerald-700/60',
-        textPrimary: 'text-white',
-        textSecondary: 'text-slate-300',
-        textMuted: 'text-slate-400',
-        headerGradient: 'bg-gradient-to-r from-slate-950 via-cyan-950 to-slate-950 border border-cyan-800/50',
-        headerText: 'text-white',
-        headerSubtext: 'text-cyan-300',
-        headerBadgeBg: 'bg-cyan-950 border-cyan-500/40 text-cyan-200',
-        footerBg: 'bg-slate-950 border-t border-cyan-900/50 text-slate-400',
-        footerText: 'text-cyan-200/80',
-        footerAccent: 'bg-cyan-500 text-slate-950 font-bold',
-        summaryBorder: 'border-cyan-400 ring-2 ring-cyan-400/20 shadow-md',
-        summaryBadge: 'text-cyan-300 bg-cyan-950 border-cyan-700',
-      },
-      typography: {
-        fontFamily: 'font-mono',
-        headingFont: 'font-mono',
-        headingWeight: 'font-bold',
-        headingTracking: 'tracking-tight',
-        bodyStyle: 'font-sans',
-        bodyWeight: 'font-normal',
-        headingScale: 'text-base sm:text-lg',
-        lineHeight: 'leading-relaxed',
-      },
-      cards: {
-        borderRadius: 'rounded-xl',
-        innerRadius: 'rounded-lg',
-        borderStyle: 'border border-cyan-800/80',
-        shadowStyle: 'shadow-xs hover:border-cyan-400 hover:shadow-md hover:shadow-cyan-500/10',
-        padding: 'p-5 sm:p-6',
-        density: 'compact',
-        cardBg: 'bg-slate-950 text-slate-100',
-        highlightBorder: 'border-cyan-400 ring-2 ring-cyan-400/30 shadow-md',
-      },
-      icons: {
-        style: 'geometric',
-        size: 'w-4 h-4',
-        containerShape: 'rounded-lg',
-        containerBg: 'bg-cyan-500 text-slate-950 font-bold',
-      },
-      decoration: {
-        level: 'moderate',
-        shapes: 'technical',
-        pattern: 'grid',
-        backgroundTreatment: 'bg-[radial-gradient(#0891b2_1px,transparent_1px)] [background-size:20px_20px]',
-        badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider border',
-        showAccentBar: true,
-      },
-      composition: {
-        density: 'compact',
-        whitespace: 'compact',
-        alignment: 'left',
-        visualEmphasis: 'balanced',
-        gridGap: 'gap-5',
-      },
-    };
-  }
-
-  if (isPastelOrSoft) {
-    return {
-      id: 'custom_pastel',
-      name: 'Custom (Soft Pastel Edukatif)',
-      tagline: 'Nuansa Majalah, Warna Lembut & Bersih',
-      description: customDescription || 'Tampilan lembut bergaya majalah edukasi dengan warna pastel harmonis.',
-      colorPalette: {
-        background: 'bg-[#faf7f5]',
-        surface: 'bg-white',
-        surfaceBorder: 'border-rose-100',
-        primary: 'rose',
-        primaryBg: 'bg-rose-400',
-        primaryText: 'text-rose-800',
-        primaryLight: 'bg-rose-50',
-        primaryBorder: 'border-rose-200',
-        secondary: 'teal',
-        secondaryBg: 'bg-teal-400',
-        secondaryText: 'text-teal-800',
-        secondaryLight: 'bg-teal-50',
-        secondaryBorder: 'border-teal-200',
-        accent: 'amber',
-        accentBg: 'bg-amber-400',
-        accentText: 'text-amber-800',
-        accentLight: 'bg-amber-50',
-        accentBorder: 'border-amber-200',
-        textPrimary: 'text-slate-800',
-        textSecondary: 'text-slate-600',
-        textMuted: 'text-slate-400',
-        headerGradient: 'bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300',
-        headerText: 'text-slate-900',
-        headerSubtext: 'text-rose-900',
-        headerBadgeBg: 'bg-white/50 border-white/60 text-slate-800',
-        footerBg: 'bg-slate-900 text-slate-200',
-        footerText: 'text-rose-200/80',
-        footerAccent: 'bg-rose-400 text-slate-900 font-bold',
-        summaryBorder: 'border-rose-400 ring-2 ring-rose-300/30 shadow-sm',
-        summaryBadge: 'text-rose-800 bg-rose-50 border-rose-200',
-      },
-      typography: {
-        fontFamily: 'font-sans',
-        headingFont: 'font-serif',
-        headingWeight: 'font-bold',
-        headingTracking: 'tracking-normal',
-        bodyStyle: 'font-sans',
-        bodyWeight: 'font-normal',
-        headingScale: 'text-base sm:text-lg',
-        lineHeight: 'leading-relaxed',
-      },
-      cards: {
-        borderRadius: 'rounded-2xl',
-        innerRadius: 'rounded-xl',
-        borderStyle: 'border border-rose-100/80',
-        shadowStyle: 'shadow-2xs hover:shadow-md hover:border-rose-300',
-        padding: 'p-5 sm:p-6',
-        density: 'balanced',
-        cardBg: 'bg-white',
-        highlightBorder: 'border-rose-400 ring-2 ring-rose-200 shadow-sm',
-      },
-      icons: {
-        style: 'rounded-box',
-        size: 'w-4 h-4',
-        containerShape: 'rounded-xl',
-        containerBg: 'bg-rose-400 text-white',
-      },
-      decoration: {
-        level: 'moderate',
-        shapes: 'organic',
-        pattern: 'dots',
-        backgroundTreatment: 'bg-[radial-gradient(#fecdd3_1px,transparent_1px)] [background-size:20px_20px]',
-        badgeStyle: 'rounded-full px-3 py-0.5 text-[11px] font-bold tracking-wide border',
-        showAccentBar: false,
-      },
-      composition: {
-        density: 'balanced',
-        whitespace: 'generous',
-        alignment: 'left',
-        visualEmphasis: 'balanced',
-        gridGap: 'gap-5',
-      },
-    };
-  }
-
-  if (isNatureOrVintage) {
-    return {
-      id: 'custom_vintage',
-      name: 'Custom (Vintage Botanik / Sains Klasik)',
-      tagline: 'Koleksi Ilmiah Klasik & Natural',
-      description: customDescription || 'Tampilan bertema natural/vintage dengan warna tanah dan botanical green.',
-      colorPalette: {
-        background: 'bg-[#f4f1ea]',
-        surface: 'bg-[#fcfbf9]',
-        surfaceBorder: 'border-[#dfd7c5]',
-        primary: 'emerald',
-        primaryBg: 'bg-emerald-800',
-        primaryText: 'text-emerald-900',
-        primaryLight: 'bg-emerald-50',
-        primaryBorder: 'border-emerald-200',
-        secondary: 'amber',
-        secondaryBg: 'bg-amber-800',
-        secondaryText: 'text-amber-900',
-        secondaryLight: 'bg-amber-50',
-        secondaryBorder: 'border-amber-200',
-        accent: 'stone',
-        accentBg: 'bg-stone-700',
-        accentText: 'text-stone-900',
-        accentLight: 'bg-stone-100',
-        accentBorder: 'border-stone-300',
-        textPrimary: 'text-[#2b251d]',
-        textSecondary: 'text-[#564e43]',
-        textMuted: 'text-[#8b8273]',
-        headerGradient: 'bg-gradient-to-r from-[#243325] via-[#2f4331] to-[#1c241d]',
-        headerText: 'text-[#f4f1ea]',
-        headerSubtext: 'text-[#c6dcbe]',
-        headerBadgeBg: 'bg-white/15 border-white/20 text-[#f4f1ea]',
-        footerBg: 'bg-[#1c241d] text-[#d6cdbd]',
-        footerText: 'text-[#a99f8d]',
-        footerAccent: 'bg-emerald-700 text-white',
-        summaryBorder: 'border-emerald-800 ring-2 ring-emerald-900/20 shadow-xs',
-        summaryBadge: 'text-emerald-900 bg-emerald-50 border-emerald-300',
-      },
-      typography: {
-        fontFamily: 'font-serif',
-        headingFont: 'font-serif',
-        headingWeight: 'font-bold',
-        headingTracking: 'tracking-tight',
-        bodyStyle: 'font-sans',
-        bodyWeight: 'font-normal',
-        headingScale: 'text-base sm:text-lg',
-        lineHeight: 'leading-relaxed',
-      },
-      cards: {
-        borderRadius: 'rounded-xl',
-        innerRadius: 'rounded-lg',
-        borderStyle: 'border border-[#dfd7c5]',
-        shadowStyle: 'shadow-2xs hover:border-emerald-800',
-        padding: 'p-5 sm:p-6',
-        density: 'balanced',
-        cardBg: 'bg-[#fcfbf9]',
-        highlightBorder: 'border-emerald-800 ring-2 ring-emerald-700/30 shadow-xs',
-      },
-      icons: {
-        style: 'outline',
-        size: 'w-4 h-4',
-        containerShape: 'rounded-lg',
-        containerBg: 'bg-emerald-800 text-white',
-      },
-      decoration: {
-        level: 'minimal',
-        shapes: 'geometric',
-        pattern: 'lines',
-        backgroundTreatment: '',
-        badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-serif font-bold uppercase tracking-wider border',
-        showAccentBar: true,
-      },
-      composition: {
-        density: 'balanced',
-        whitespace: 'balanced',
-        alignment: 'left',
-        visualEmphasis: 'balanced',
-        gridGap: 'gap-5',
-      },
-    };
-  }
-
-  // Generic customized adaptive style
-  return {
-    ...STYLE_MODERN_EDUKATIF,
-    id: 'custom_style',
-    name: 'Custom',
-    tagline: 'Gaya Kustom Sesuai Arahan',
-    description: customDescription || 'Gaya visual khusus berdasarkan instruksi pengguna dengan tetap menjaga keterbacaan materi.',
-  };
-}
-
-/**
- * Main resolver: converts any visualStyle string into a full StyleConfig
+ * Main resolver: converts any visualStyle string into a full, high-fidelity StyleConfig
+ * Always returns a fresh, deep copy to prevent stale mutations or shared object references across style changes.
  */
 export function getStyleConfig(visualStyleName?: string, customDescription?: string): StyleConfig {
-  if (!visualStyleName) return STYLE_MODERN_EDUKATIF;
+  let matchedPreset = STYLE_MODERN_EDUKATIF;
 
-  const normalized = visualStyleName.toLowerCase().trim();
+  if (visualStyleName) {
+    const normalized = visualStyleName.toLowerCase().trim();
 
-  // 1. EDUKATIF & AKADEMIK
-  if (normalized.includes('minimalis edukatif') || normalized === 'minimalis') {
-    return STYLE_MINIMALIS;
-  }
-  if (normalized.includes('academic clean') || normalized.includes('akademik') || normalized.includes('elegan akademik')) {
-    return STYLE_AKADEMIK;
-  }
-  if (normalized.includes('modern education') || normalized.includes('modern edukatif') || normalized.includes('vector education') || normalized.includes('flat design')) {
-    return STYLE_MODERN_EDUKATIF;
+    // 1. MINIMALIS
+    if (normalized.includes('minimalis') || normalized === 'minimalism') {
+      matchedPreset = STYLE_MINIMALIS;
+    }
+    // 2. FUTURISTIC & HIGH TECH
+    else if (normalized.includes('cyberpunk')) {
+      matchedPreset = STYLE_CYBERPUNK;
+    }
+    else if (normalized.includes('futuristic') || normalized.includes('digital interface') || normalized.includes('teknologi')) {
+      matchedPreset = STYLE_FUTURISTIC;
+    }
+    else if (normalized.includes('glassmorphism')) {
+      matchedPreset = STYLE_GLASSMORPHISM;
+    }
+    else if (normalized.includes('aurora')) {
+      matchedPreset = STYLE_AURORA;
+    }
+    // 3. KREATIF & POP
+    else if (normalized.includes('pop art')) {
+      matchedPreset = STYLE_POP_ART;
+    }
+    else if (normalized.includes('clay style') || normalized.includes('claymorphic')) {
+      matchedPreset = STYLE_CLAY_STYLE;
+    }
+    else if (normalized.includes('handwritten') || normalized.includes('doodle') || normalized.includes('sketsa')) {
+      matchedPreset = STYLE_HANDWRITTEN;
+    }
+    else if (normalized.includes('bohemian') || normalized.includes('botani')) {
+      matchedPreset = STYLE_BOHEMIAN;
+    }
+    else if (normalized.includes('vector') || normalized.includes('flat design') || normalized.includes('ilustratif')) {
+      matchedPreset = STYLE_VECTOR_ART;
+    }
+    // 4. DATA & STRUKTUR
+    else if (normalized.includes('swiss design')) {
+      matchedPreset = STYLE_SWISS_DESIGN;
+    }
+    else if (normalized.includes('editorial') || normalized.includes('majalah')) {
+      matchedPreset = STYLE_EDITORIAL;
+    }
+    // 5. AKADEMIK & CERIA & VINTAGE
+    else if (normalized.includes('vintage') || normalized.includes('historical') || normalized.includes('arsip')) {
+      matchedPreset = STYLE_AKADEMIK;
+    }
+    else if (normalized.includes('akademik') || normalized.includes('academic') || normalized.includes('formal') || normalized.includes('clean')) {
+      matchedPreset = STYLE_AKADEMIK;
+    }
+    else if (normalized.includes('ceria') || normalized.includes('kartun') || normalized.includes('comic') || normalized.includes('children') || normalized.includes('ramah anak')) {
+      matchedPreset = STYLE_CERIA_KREATIF;
+    }
+    else {
+      // Exact preset match check
+      const found = AVAILABLE_STYLE_PRESETS.find(p => p.id === normalized || p.name.toLowerCase() === normalized);
+      if (found) {
+        matchedPreset = found;
+      }
+    }
   }
 
-  // 2. VISUAL KREATIF
-  if (normalized.includes('pop art') || normalized.includes('collage art') || normalized.includes('clay style')) {
-    return STYLE_COLORFUL_INFOGRAFIS;
-  }
-  if (normalized.includes('handwritten') || normalized.includes('doodle education') || normalized.includes('ceria') || normalized.includes('kreatif')) {
-    return STYLE_CERIA_KREATIF;
+  // Deep clone to guarantee immutability and brand new object instance
+  const freshConfig: StyleConfig = JSON.parse(JSON.stringify(matchedPreset));
+
+  if (customDescription && customDescription.trim()) {
+    freshConfig.description = `${freshConfig.description} (Kustom: ${customDescription.trim()})`;
   }
 
-  // 3. TEKNOLOGI & MASA DEPAN
-  if (normalized.includes('futuristic') || normalized.includes('cyberpunk') || normalized.includes('glassmorphism') || normalized.includes('aurora') || normalized.includes('digital interface')) {
-    return STYLE_PROFESIONAL;
-  }
-
-  // 4. DATA & INFORMASI
-  if (normalized.includes('data visualization') || normalized.includes('timeline') || normalized.includes('diagrammatic') || normalized.includes('swiss design') || normalized.includes('editorial')) {
-    return STYLE_PROFESIONAL;
-  }
-
-  // 5. KARAKTER & CERITA
-  if (normalized.includes('storytelling') || normalized.includes('cartoon education') || normalized.includes('comic style') || normalized.includes('children friendly') || normalized.includes('character illustration') || normalized.includes('ramah anak')) {
-    return STYLE_CERIA_KREATIF;
-  }
-
-  // 6. KLASIK & TEMATIK
-  if (normalized.includes('vintage') || normalized.includes('victorian') || normalized.includes('bohemian') || normalized.includes('retro education') || normalized.includes('historical') || normalized.includes('klasik')) {
-    return STYLE_AKADEMIK;
-  }
-
-  if (normalized.includes('ilustratif') || normalized.includes('visual interaktif')) {
-    return STYLE_ILUSTRATIF;
-  }
-  if (normalized.includes('custom') || customDescription) {
-    return buildCustomStyleConfig(customDescription || visualStyleName);
-  }
-
-  // Exact match search
-  const found = AVAILABLE_STYLE_PRESETS.find(p => p.name.toLowerCase() === normalized);
-  if (found) return found;
-
-  // Default fallback
-  return STYLE_MODERN_EDUKATIF;
+  return freshConfig;
 }
