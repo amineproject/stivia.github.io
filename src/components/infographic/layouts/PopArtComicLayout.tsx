@@ -46,11 +46,17 @@ export const PopArtComicLayout: React.FC<LayoutProps> = ({
         </div>
 
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-black leading-none drop-shadow-[2px_2px_0px_#fff]">
+          <h1 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-black leading-none drop-shadow-[2px_2px_0px_#fff]"
+          >
             {draft.title}
           </h1>
           {draft.subTitle && (
-            <p className="text-xs sm:text-sm font-black text-slate-900 bg-white/70 px-3 py-1 inline-block border-2 border-black mt-2">
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className="text-xs sm:text-sm font-black text-slate-900 bg-white/70 px-3 py-1 inline-block border-2 border-black mt-2"
+            >
               "{draft.subTitle}"
             </p>
           )}

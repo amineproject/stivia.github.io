@@ -43,7 +43,7 @@ export const CyberHudLayout: React.FC<LayoutProps> = ({
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/40">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>SYS.ONLINE // v2.2</span>
+              <span>SYS.ONLINE // v2.2c</span>
             </span>
             <span className="text-slate-400 hidden sm:inline">
               MOD: {draft.subject.toUpperCase()}
@@ -66,11 +66,17 @@ export const CyberHudLayout: React.FC<LayoutProps> = ({
             <Terminal className="w-3.5 h-3.5" />
             <span>&gt; INITIALIZE_LESSON_INTERFACE</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-wider font-mono text-white bg-gradient-to-r from-cyan-300 via-teal-200 to-fuchsia-400 bg-clip-text text-transparent">
+          <h1 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className="text-2xl sm:text-3xl font-black tracking-wider font-mono text-white bg-gradient-to-r from-cyan-300 via-teal-200 to-fuchsia-400 bg-clip-text text-transparent"
+          >
             {draft.title}
           </h1>
           {draft.subTitle && (
-            <p className="text-xs sm:text-sm font-mono text-cyan-200/80">
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className="text-xs sm:text-sm font-mono text-cyan-200/80"
+            >
               // {draft.subTitle}
             </p>
           )}

@@ -185,7 +185,10 @@ export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
       ref={canvasRef}
       id="infographic-preview-canvas"
       key={`${draft.id || 'draft'}-${effectiveStyle}-${layoutArchetype}-${draft.layoutVariationCycle || 0}`}
-      className={`w-full ${getContainerMaxWidth()} mx-auto ${styleConfig.cards.borderRadius} shadow-xl border border-slate-300/80 overflow-hidden text-slate-900 font-sans transition-all duration-300 flex flex-col bg-slate-50/50`}
+      style={{
+        fontFamily: styleConfig.typographyProfile?.bodyFontFamilyCss || styleConfig.typography.fontFamily,
+      }}
+      className={`w-full ${getContainerMaxWidth()} mx-auto ${styleConfig.cards.borderRadius} shadow-xl border border-slate-300/80 overflow-hidden text-slate-900 transition-all duration-300 flex flex-col bg-slate-50/50`}
     >
       {/* Dynamic Layout Content */}
       <main className="w-full p-4 sm:p-6 lg:p-8 flex-1">

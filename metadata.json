@@ -1,6 +1,6 @@
 {
   "name": "STIVIA",
-  "description": "Platform pendidikan untuk menyusun materi pembelajaran menjadi rancangan infografis edukatif yang terstruktur dan visual.",
+  "description": "Platform pendidikan STIVIA v2.2c untuk menyusun materi pembelajaran menjadi rancangan infografis edukatif dengan integrasi Typography Profile 20 gaya visual.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

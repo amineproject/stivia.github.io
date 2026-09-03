@@ -126,7 +126,7 @@ export const StiviaThinkingPanel: React.FC<StiviaThinkingPanelProps> = ({
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-2xs font-bold uppercase tracking-wider">
             <Sparkles className="w-3 h-3 text-indigo-400" />
-            <span>Kerangka Berpikir STIVIA v2.2</span>
+            <span>Kerangka Berpikir STIVIA v2.2c</span>
           </div>
           <h3 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
             <span>Hasil Analisis 7 Tahap Kerangka Berpikir</span>

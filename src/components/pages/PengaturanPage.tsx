@@ -200,41 +200,46 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
     }, 4000);
   };
 
-  // Changelog & Fitur Tambahan untuk STIVIA Versi 2.2a
-  const version22aHighlights = [
+  // Changelog & Fitur Tambahan untuk STIVIA Versi 2.2c
+  const version22cHighlights = [
     {
-      title: 'Sistem Ekspor Infografis Beresolusi Tinggi (PNG & JPG)',
-      desc: 'Mesin ekspor gambar terpusat beresolusi tinggi (High-DPI) untuk format PNG dan JPG/JPEG langsung dari kanvas infografis aktif, lengkap dengan penamaan berkas otomatis berdasarkan topik pembelajaran.',
+      title: 'Sistem Tipografi 3-Tier Terintegrasi (Heading, Subheading, & Body)',
+      desc: 'Integrasi sistem profil tipografi terstruktur pada seluruh 20+ gaya visual dengan kurasi font tematik profesional (Editorial Newsreader/Lora, Swiss Archivo/Inter, Cyberpunk Orbitron/Chakra, Clay Fredoka/Nunito, Pop Art Bangers/Poppins) yang terhubung langsung ke kanvas render dan kartu konten pembelajaran.',
+      tag: 'Fitur Utama 2.2c',
+    },
+    {
+      title: 'Multi-Style Visual Engine (20+ Preset Terkategori)',
+      desc: 'Dukungan penggantian gaya visual secara instan dari 5 kategori visual utama (Modern Edukatif, Futuristik & Teknologi, Artistik & Kreatif, Editorial & Publikasi, serta Komik & Kartun) dengan penyesuaian tata letak otomatis tanpa mengubah keaslian isi materi.',
+      tag: 'Visual Engine',
+    },
+    {
+      title: 'Sinkronisasi Arketipe Tata Letak Dinamis (13 Layout Khusus)',
+      desc: 'Kanvas infografis kini otomatis mereorganisasi tata letak mengikuti arketipe visual masing-masing gaya (Hero Visual, Central Concept, Modular Bento, Timeline, Process Flow, Cyber HUD, Swiss Grid, Tactile 3D, Pop Art Comic, Notebook Sketches, Glassmorphism, Editorial) saat gaya visual diganti.',
+      tag: 'Desain & Kanvas',
+    },
+    {
+      title: 'Sistem Ekspor Infografis Beresolusi Tinggi (High-DPI PNG & JPG)',
+      desc: 'Mesin ekspor gambar terpusat beresolusi tinggi (High-DPI) untuk format PNG jernih dan JPG tajam langsung dari kanvas infografis aktif, lengkap dengan penamaan berkas otomatis sesuai judul materi pelajaran.',
       tag: 'Ekspor Grafis',
     },
     {
-      title: 'Dukungan Ekspor Lengkap pada Tampilan Penuh (Fullscreen)',
+      title: 'Dukungan Ekspor Lengkap pada Mode Layar Penuh (Fullscreen)',
       desc: 'Kemudahan mengunduh infografis (PNG, JPG, Word DOCX, dan Cetak/PDF) langsung dari modal Tampilan Penuh tanpa harus kembali ke tampilan editor.',
       tag: 'Tampilan Penuh',
     },
     {
-      title: 'Multi-Style Visual Engine (14+ Preset Interaktif)',
-      desc: 'Dukungan penggantian tema gaya visual secara instan (Modern Edukatif, Futuristic, Cyberpunk, Swiss Design, Clay Style, Pop Art, Editorial, Handwritten, Glassmorphism, Aurora, Academic Clean, Ceria, Vintage) tanpa mengubah materi pembelajaran.',
-      tag: 'Fitur Utama 2.2a',
-    },
-    {
-      title: 'Layout Archetype Sync & Auto-Adaptation',
-      desc: 'Tata letak kanvas infografis kini otomatis menyesuaikan arketipe visual (Cyber HUD, Swiss Grid, Tactile 3D, Magazine Layout, Notebook Sketches) saat gaya visual diganti berulang kali.',
-      tag: 'Desain & Kanvas',
-    },
-    {
       title: 'Zero-Stale State & Deep Clone Immutability',
-      desc: 'Penyempurnaan arsitektur rendering berbasis key-remount dan deep immutability untuk menjamin transisi gaya visual 100% bersih tanpa sisa token warna atau font lama.',
+      desc: 'Penyempurnaan arsitektur rendering berbasis dynamic key-remount dan deep clone immutability untuk menjamin transisi gaya visual 100% bersih tanpa sisa token warna atau font lama.',
       tag: 'Performa Sistem',
     },
     {
-      title: 'Pilihan Gaya Visual Lengkap di Form Pembuatan',
-      desc: 'Penambahan chip preset visual cepat pada form pembuatan awal dan modal penggantian gaya visual di halaman hasil infografis.',
+      title: 'Pilihan Gaya Visual Lengkap di Form Pembuatan & Modal Pratinjau',
+      desc: 'Penambahan chip preset visual cepat pada form pembuatan awal dan modal penggantian gaya visual interaktif dengan preview swatch warna dan indikator arketipe tata letak.',
       tag: 'Pengalaman Pengguna',
     },
     {
-      title: 'Antarmuka Pengaturan Terstruktur Berbasis Popup',
-      desc: 'Pengorganisasian menu pengaturan ke dalam 3 kartu fokus dengan modal dialog interaktif untuk Akun Pendidik, Preferensi STIVIA, dan Informasi Aplikasi.',
+      title: 'Antarmuka Pengaturan Terstruktur Berbasis Popup Dialog',
+      desc: 'Pengorganisasian menu pengaturan ke dalam 3 kartu fokus dengan modal dialog interaktif beranimasi halus untuk Akun Pendidik, Preferensi STIVIA, dan Informasi Aplikasi.',
       tag: 'Navigasi',
     },
   ];
@@ -257,7 +262,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
         {/* Status Badge Ringkas */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-slate-200/80 shadow-2xs self-start sm:self-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-xs font-bold text-slate-700">STIVIA Versi 2.2a</span>
+          <span className="text-xs font-bold text-slate-700">STIVIA Versi 2.2c</span>
         </div>
       </div>
 
@@ -424,14 +429,14 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                   Tentang STIVIA
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
-                  Informasi platform AI, identitas rilis, dan fitur tambahan versi 2.2a.
+                  Informasi platform AI, identitas rilis, dan fitur tambahan versi 2.2c.
                 </p>
               </div>
             </div>
 
             <div className="pt-6 flex items-center justify-between text-xs font-bold text-[#3b49df] group-hover:text-indigo-800">
               <span className="text-slate-400 group-hover:text-[#3b49df] transition-colors">
-                Versi 2.2a • Rilis Terbaru
+                Versi 2.2c • Rilis Terbaru
               </span>
               <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] flex items-center justify-center transition-all group-hover:translate-x-1">
                 <ChevronRight className="w-4 h-4" />
@@ -812,7 +817,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
 
                     <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#3b49df] text-white text-xs font-bold tracking-wide shadow-xs shrink-0">
                       <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Versi 2.2a • Rilis Terbaru</span>
+                      <span>Versi 2.2c • Rilis Terbaru</span>
                     </div>
                   </div>
 
@@ -836,17 +841,17 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Fitur Tambahan & Pembaruan di Versi 2.2a */}
+                  {/* Fitur Tambahan & Pembaruan di Versi 2.2c */}
                   <div className="space-y-3.5">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-[#3b49df]" />
                       <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
-                        Fitur Tambahan di Versi 2.2a
+                        Fitur Tambahan di Versi 2.2c
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                      {version22aHighlights.map((item, idx) => (
+                      {version22cHighlights.map((item, idx) => (
                         <div 
                           key={idx}
                           className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2 hover:border-indigo-200 transition-colors"

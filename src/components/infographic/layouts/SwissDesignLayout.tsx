@@ -40,13 +40,21 @@ export const SwissDesignLayout: React.FC<LayoutProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
           <div className="lg:col-span-8">
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tighter uppercase leading-none font-sans">
+            <h1 
+              style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+              className="text-3xl sm:text-5xl font-black tracking-tighter uppercase leading-none font-sans"
+            >
               {draft.title}
             </h1>
           </div>
           <div className="lg:col-span-4 text-xs font-sans text-stone-700 leading-relaxed border-l-2 border-black pl-4">
             {draft.subTitle && (
-              <p className="font-bold text-black uppercase mb-1">{draft.subTitle}</p>
+              <p 
+                style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+                className="font-bold text-black uppercase mb-1"
+              >
+                {draft.subTitle}
+              </p>
             )}
             {draft.learningObjective && (
               <p className="text-[11px] text-stone-600">Objektif: {draft.learningObjective}</p>

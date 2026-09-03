@@ -51,11 +51,17 @@ export const TimelineLayout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <h1 className={`text-2xl sm:text-3xl ${typography.headingFont} ${typography.headingWeight} tracking-tight leading-snug`}>
+            <h1 
+              style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+              className={`text-2xl sm:text-3xl ${typography.headingFont} ${typography.headingWeight} tracking-tight leading-snug`}
+            >
               {draft.title}
             </h1>
             {draft.subTitle && (
-              <p className={`text-xs sm:text-sm font-medium ${colorPalette.headerSubtext} leading-relaxed`}>
+              <p 
+                style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+                className={`text-xs sm:text-sm font-medium ${colorPalette.headerSubtext} leading-relaxed`}
+              >
                 {draft.subTitle}
               </p>
             )}

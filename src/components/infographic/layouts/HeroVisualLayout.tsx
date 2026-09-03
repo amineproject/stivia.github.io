@@ -61,11 +61,17 @@ export const HeroVisualLayout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="space-y-2">
-            <h1 className={`text-2xl sm:text-3xl lg:text-4xl ${typography.headingFont} ${typography.headingWeight} tracking-tight leading-tight`}>
+            <h1 
+              style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+              className={`text-2xl sm:text-3xl lg:text-4xl ${typography.headingFont} ${typography.headingWeight} tracking-tight leading-tight`}
+            >
               {draft.title}
             </h1>
             {draft.subTitle && (
-              <p className={`text-sm sm:text-base font-medium ${colorPalette.headerSubtext} max-w-3xl leading-relaxed`}>
+              <p 
+                style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+                className={`text-sm sm:text-base font-medium ${colorPalette.headerSubtext} max-w-3xl leading-relaxed`}
+              >
                 {draft.subTitle}
               </p>
             )}
@@ -103,12 +109,18 @@ export const HeroVisualLayout: React.FC<LayoutProps> = ({
                 <span className="text-xs text-slate-400 font-medium">Bagian Utama</span>
               </div>
 
-              <h2 className={`text-xl sm:text-2xl ${typography.headingFont} font-extrabold ${colorPalette.textPrimary}`}>
+              <h2 
+                style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+                className={`text-xl sm:text-2xl ${typography.headingFont} font-extrabold ${colorPalette.textPrimary}`}
+              >
                 {heroBlock.title}
               </h2>
 
               {heroBlock.subTitle && (
-                <p className={`text-sm font-semibold ${colorPalette.primaryText}`}>
+                <p 
+                  style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+                  className={`text-sm font-semibold ${colorPalette.primaryText}`}
+                >
                   {heroBlock.subTitle}
                 </p>
               )}

@@ -103,10 +103,16 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
       <div className="w-full min-w-0">
         {/* Section Header */}
         <div className="space-y-1 mb-5 pb-3.5 border-b border-slate-100 min-w-0">
-          <h3 className={`${typography.headingScale} ${typography.headingFont} ${typography.headingWeight} ${typography.headingTracking} ${colorPalette.textPrimary} leading-snug tracking-tight break-words whitespace-normal`}>
+          <h3 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className={`${typography.headingScale} ${typography.headingFont} ${typography.headingWeight} ${typography.headingTracking} ${colorPalette.textPrimary} leading-snug tracking-tight break-words whitespace-normal`}
+          >
             RANGKUMAN KUNCI
           </h3>
-          <p className={`text-xs sm:text-sm font-semibold ${colorPalette.primaryText} ${typography.lineHeight} break-words whitespace-normal`}>
+          <p 
+            style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+            className={`text-xs sm:text-sm font-semibold ${colorPalette.primaryText} ${typography.lineHeight} break-words whitespace-normal`}
+          >
             Intisari Pembelajaran untuk Evaluasi
           </p>
         </div>

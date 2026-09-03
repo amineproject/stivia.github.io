@@ -234,15 +234,42 @@ export interface ColorPaletteTokens {
   summaryBadge: string;
 }
 
+export interface TypographyProfile {
+  headingFont: string;
+  subheadingFont: string;
+  bodyFont: string;
+  headingWeight: 'bold' | 'extra bold' | 'black' | 'normal' | string;
+  subheadingWeight: 'semi bold' | 'bold' | 'medium' | string;
+  bodyWeight: 'regular' | 'medium' | string;
+  headingCase: 'uppercase' | 'titlecase' | 'normal';
+  letterSpacing: 'normal' | 'wide' | 'wider' | 'tight';
+  lineHeight: 'tight' | 'normal' | 'relaxed';
+  typographyCharacter: string;
+  readabilityRules: string;
+  headingFontFamilyCss?: string;
+  subheadingFontFamilyCss?: string;
+  bodyFontFamilyCss?: string;
+}
+
 export interface TypographyTokens {
   fontFamily: string;
   headingFont: string;
+  subheadingFont?: string;
+  bodyFont?: string;
   headingWeight: string;
+  subheadingWeight?: string;
   headingTracking: string;
   bodyStyle: string;
   bodyWeight: string;
   headingScale: string;
   lineHeight: string;
+  headingCase?: 'uppercase' | 'titlecase' | 'normal';
+  letterSpacing?: 'normal' | 'wide' | 'wider' | 'tight';
+  typographyCharacter?: string;
+  readabilityRules?: string;
+  headingFontFamilyCss?: string;
+  subheadingFontFamilyCss?: string;
+  bodyFontFamilyCss?: string;
 }
 
 export interface CardTokens {
@@ -287,6 +314,7 @@ export interface StyleConfig {
   description: string;
   colorPalette: ColorPaletteTokens;
   typography: TypographyTokens;
+  typographyProfile?: TypographyProfile;
   cards: CardTokens;
   icons: IconTokens;
   decoration: DecorationTokens;

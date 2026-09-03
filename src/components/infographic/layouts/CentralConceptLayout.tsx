@@ -42,12 +42,18 @@ export const CentralConceptLayout: React.FC<LayoutProps> = ({
             <span>Central Concept & System Network</span>
           </div>
 
-          <h1 className={`text-2xl sm:text-3xl ${typography.headingFont} ${typography.headingWeight} tracking-tight leading-tight`}>
+          <h1 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className={`text-2xl sm:text-3xl ${typography.headingFont} ${typography.headingWeight} tracking-tight leading-tight`}
+          >
             {draft.title}
           </h1>
 
           {draft.subTitle && (
-            <p className={`text-xs sm:text-sm font-medium ${colorPalette.headerSubtext} leading-relaxed`}>
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className={`text-xs sm:text-sm font-medium ${colorPalette.headerSubtext} leading-relaxed`}
+            >
               {draft.subTitle}
             </p>
           )}
@@ -83,7 +89,10 @@ export const CentralConceptLayout: React.FC<LayoutProps> = ({
               <span className="text-xs text-slate-400 font-medium">Node Inti</span>
             </div>
 
-            <h2 className={`text-xl sm:text-2xl ${typography.headingFont} font-extrabold ${colorPalette.textPrimary} mb-2`}>
+            <h2 
+              style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+              className={`text-xl sm:text-2xl ${typography.headingFont} font-extrabold ${colorPalette.textPrimary} mb-2`}
+            >
               {centralBlock.title}
             </h2>
 

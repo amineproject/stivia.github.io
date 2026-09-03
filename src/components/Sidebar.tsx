@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   STIVIA
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e0e7ff] text-[#3b49df] tracking-wide">
-                  V2.2a
+                  V2.2c
                 </span>
               </div>
               <p className="text-[11px] leading-tight text-slate-500 font-normal mt-1.5 max-w-[200px]">

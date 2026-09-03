@@ -45,11 +45,17 @@ export const EditorialLayout: React.FC<LayoutProps> = ({
 
         {/* Big Editorial Headline */}
         <div className="text-center py-2 space-y-2">
-          <h1 className="text-2xl sm:text-4xl font-serif font-black tracking-tight text-stone-900 leading-tight">
+          <h1 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className="text-2xl sm:text-4xl font-serif font-black tracking-tight text-stone-900 leading-tight"
+          >
             {draft.title}
           </h1>
           {draft.subTitle && (
-            <p className="text-sm sm:text-base font-serif italic text-stone-600 max-w-2xl mx-auto">
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className="text-sm sm:text-base font-serif italic text-stone-600 max-w-2xl mx-auto"
+            >
               "{draft.subTitle}"
             </p>
           )}

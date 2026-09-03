@@ -1,3 +1,6 @@
+import { TypographyProfile } from '../types';
+import { getTypographyProfile } from './typographyProfiles';
+
 export interface InfographicStyleItem {
   id: string;
   name: string;
@@ -12,6 +15,7 @@ export interface InfographicStyleItem {
   promptInstruction: string;
   accentColor: string;
   tags: string[];
+  typographyProfile?: TypographyProfile;
 }
 
 export interface InfographicStyleCategory {
@@ -907,9 +911,13 @@ export const INFOGRAPHIC_STYLE_CATEGORIES: InfographicStyleCategory[] = [
   }
 ];
 
-// Flat list of all available styles
+// Flat list of all available styles with typographyProfile populated
 export const ALL_INFOGRAPHIC_STYLES: InfographicStyleItem[] = INFOGRAPHIC_STYLE_CATEGORIES.flatMap(
-  (c) => c.styles
+  (c) =>
+    c.styles.map((s) => ({
+      ...s,
+      typographyProfile: s.typographyProfile || getTypographyProfile(s.id || s.name),
+    }))
 );
 
 /**

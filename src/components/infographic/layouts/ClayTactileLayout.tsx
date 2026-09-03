@@ -49,11 +49,17 @@ export const ClayTactileLayout: React.FC<LayoutProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight drop-shadow-sm">
+          <h1 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className="text-2xl sm:text-4xl font-black tracking-tight leading-tight drop-shadow-sm"
+          >
             {draft.title}
           </h1>
           {draft.subTitle && (
-            <p className="text-xs sm:text-sm font-medium text-pink-100 leading-relaxed max-w-2xl">
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className="text-xs sm:text-sm font-medium text-pink-100 leading-relaxed max-w-2xl"
+            >
               {draft.subTitle}
             </p>
           )}

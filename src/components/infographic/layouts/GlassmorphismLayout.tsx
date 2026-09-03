@@ -53,11 +53,17 @@ export const GlassmorphismLayout: React.FC<LayoutProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-cyan-100 to-indigo-200 bg-clip-text text-transparent">
+          <h1 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className="text-2xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-cyan-100 to-indigo-200 bg-clip-text text-transparent"
+          >
             {draft.title}
           </h1>
           {draft.subTitle && (
-            <p className="text-xs sm:text-sm font-medium text-slate-300 leading-relaxed max-w-2xl">
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className="text-xs sm:text-sm font-medium text-slate-300 leading-relaxed max-w-2xl"
+            >
               {draft.subTitle}
             </p>
           )}

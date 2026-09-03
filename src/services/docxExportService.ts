@@ -68,7 +68,7 @@ export async function exportMaterialToDocx(
     .trim()
     .replace(/\s+/g, '_')
     .substring(0, 50);
-  const filename = `STIVIA_${cleanTitle}_v2.2.docx`;
+  const filename = `STIVIA_${cleanTitle}_v2.2c.docx`;
 
   try {
     // 3. Build docx elements
@@ -448,7 +448,7 @@ export async function exportMaterialToDocx(
         ],
       }),
       new Paragraph({
-        text: 'Versi 2.2',
+        text: 'Versi 2.2c',
         alignment: AlignmentType.CENTER,
         spacing: { before: 0, after: 100 },
         run: {

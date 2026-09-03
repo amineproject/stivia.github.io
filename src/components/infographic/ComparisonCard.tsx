@@ -59,11 +59,17 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = ({
 
         {/* Title & Subtitle */}
         <div className="space-y-1 mb-3 w-full min-w-0">
-          <h3 className={`${typography.headingScale} ${typography.headingFont} ${typography.headingWeight} ${typography.headingTracking} ${colorPalette.textPrimary} leading-snug break-words whitespace-normal`}>
+          <h3 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className={`${typography.headingScale} ${typography.headingFont} ${typography.headingWeight} ${typography.headingTracking} ${colorPalette.textPrimary} leading-snug break-words whitespace-normal`}
+          >
             {block.title}
           </h3>
           {block.subTitle && (
-            <p className={`text-xs sm:text-sm font-semibold ${colorPalette.accentText} ${typography.lineHeight} break-words whitespace-normal`}>
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className={`text-xs sm:text-sm font-semibold ${colorPalette.accentText} ${typography.lineHeight} break-words whitespace-normal`}
+            >
               {block.subTitle}
             </p>
           )}

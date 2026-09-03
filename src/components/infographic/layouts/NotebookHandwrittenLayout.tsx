@@ -51,11 +51,17 @@ export const NotebookHandwrittenLayout: React.FC<LayoutProps> = ({
         </div>
 
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 leading-tight">
+          <h1 
+            style={{ fontFamily: styleConfig.typographyProfile?.headingFontFamilyCss }}
+            className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 leading-tight"
+          >
             {draft.title}
           </h1>
           {draft.subTitle && (
-            <p className="text-xs sm:text-sm font-serif italic text-stone-600">
+            <p 
+              style={{ fontFamily: styleConfig.typographyProfile?.subheadingFontFamilyCss }}
+              className="text-xs sm:text-sm font-serif italic text-stone-600"
+            >
               ~ {draft.subTitle} ~
             </p>
           )}

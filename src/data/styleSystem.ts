@@ -5,8 +5,34 @@ import {
   IconTokens, 
   DecorationTokens, 
   CompositionTokens, 
-  StyleConfig 
+  StyleConfig,
+  TypographyProfile
 } from '../types';
+import {
+  TYPOGRAPHY_MINIMALISM,
+  TYPOGRAPHY_MAXIMALISM,
+  TYPOGRAPHY_FUTURISTIC,
+  TYPOGRAPHY_VECTOR_ART,
+  TYPOGRAPHY_COLLAGE_ART,
+  TYPOGRAPHY_CYBERPUNK,
+  TYPOGRAPHY_POP_ART,
+  TYPOGRAPHY_GLASSMORPHISM,
+  TYPOGRAPHY_CLAY_STYLE,
+  TYPOGRAPHY_PIXEL_STYLE,
+  TYPOGRAPHY_EDITORIAL,
+  TYPOGRAPHY_Y2K,
+  TYPOGRAPHY_SWISS_DESIGN,
+  TYPOGRAPHY_SURREALISM,
+  TYPOGRAPHY_BOHEMIAN,
+  TYPOGRAPHY_VICTORIAN,
+  TYPOGRAPHY_GRAFFITI,
+  TYPOGRAPHY_AURORA,
+  TYPOGRAPHY_HANDWRITTEN,
+  TYPOGRAPHY_RETRO,
+  TYPOGRAPHY_MODERN_EDUKATIF,
+  getTypographyProfile,
+  createTypographyTokensFromProfile,
+} from './typographyProfiles';
 
 /**
  * PRESET 1: Modern Edukatif (Default STIVIA)
@@ -1255,7 +1281,615 @@ export const STYLE_VECTOR_ART: StyleConfig = {
   },
 };
 
-// All Presets Combined
+/**
+ * PRESET 16: Maximalism
+ * Kaya detail visual, warna berani, ornamen berlapis, kehadiran visual bertenaga.
+ */
+export const STYLE_MAXIMALISM: StyleConfig = {
+  id: 'maximalism',
+  name: 'Maximalism',
+  tagline: 'Kaya Detail, Berani & Penuh Energi Visual',
+  description: 'Gaya ekspresif dengan detail kaya, ornamen beragam, warna berani, dan tipografi tegas penuh percaya diri.',
+  colorPalette: {
+    background: 'bg-amber-50/50',
+    surface: 'bg-white',
+    surfaceBorder: 'border-amber-300',
+    primary: 'amber',
+    primaryBg: 'bg-amber-600',
+    primaryText: 'text-amber-800',
+    primaryLight: 'bg-amber-100',
+    primaryBorder: 'border-amber-400',
+    secondary: 'violet',
+    secondaryBg: 'bg-violet-700',
+    secondaryText: 'text-violet-800',
+    secondaryLight: 'bg-violet-100',
+    secondaryBorder: 'border-violet-300',
+    accent: 'rose',
+    accentBg: 'bg-rose-600',
+    accentText: 'text-rose-800',
+    accentLight: 'bg-rose-100',
+    accentBorder: 'border-rose-300',
+    textPrimary: 'text-slate-950',
+    textSecondary: 'text-slate-800',
+    textMuted: 'text-slate-500',
+    headerGradient: 'bg-gradient-to-r from-amber-700 via-rose-700 to-violet-800 text-white',
+    headerText: 'text-white font-black',
+    headerSubtext: 'text-amber-100',
+    headerBadgeBg: 'bg-white/20 border-white/30 text-white',
+    footerBg: 'bg-slate-950 text-white',
+    footerText: 'text-amber-200',
+    footerAccent: 'bg-amber-500 text-slate-950 font-black',
+    summaryBorder: 'border-amber-600 ring-2 ring-amber-400/30 shadow-md',
+    summaryBadge: 'text-amber-900 bg-amber-100 border-amber-300',
+  },
+  typographyProfile: TYPOGRAPHY_MAXIMALISM,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_MAXIMALISM),
+  cards: {
+    borderRadius: 'rounded-2xl',
+    innerRadius: 'rounded-xl',
+    borderStyle: 'border-2 border-amber-300 shadow-sm',
+    shadowStyle: 'shadow-md hover:shadow-lg hover:border-amber-500',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-white',
+    highlightBorder: 'border-2 border-amber-600 ring-2 ring-amber-400/30 shadow-lg',
+  },
+  icons: {
+    style: 'geometric',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-xl',
+    containerBg: 'bg-amber-600 text-white shadow-sm',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'geometric',
+    pattern: 'dots',
+    backgroundTreatment: 'bg-[radial-gradient(#f59e0b_1.5px,transparent_1.5px)] [background-size:20px_20px]',
+    badgeStyle: 'rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'visual_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 17: Collage Art
+ * Guntingan majalah artistik, palet monokromatik dengan aksen tajam, tekstur kaya.
+ */
+export const STYLE_COLLAGE_ART: StyleConfig = {
+  id: 'collage_art',
+  name: 'Collage Art',
+  tagline: 'Guntingan Majalah & Tekstur Kolase Artistik',
+  description: 'Komposisi kreatif bergaya guntingan kertas dan majalah dengan kontras tajam serta tipografi display tegas.',
+  colorPalette: {
+    background: 'bg-stone-100',
+    surface: 'bg-white',
+    surfaceBorder: 'border-stone-400',
+    primary: 'red',
+    primaryBg: 'bg-red-700',
+    primaryText: 'text-red-800',
+    primaryLight: 'bg-red-50',
+    primaryBorder: 'border-red-400',
+    secondary: 'stone',
+    secondaryBg: 'bg-stone-800',
+    secondaryText: 'text-stone-900',
+    secondaryLight: 'bg-stone-200',
+    secondaryBorder: 'border-stone-400',
+    accent: 'yellow',
+    accentBg: 'bg-yellow-400',
+    accentText: 'text-stone-950',
+    accentLight: 'bg-yellow-100',
+    accentBorder: 'border-yellow-400',
+    textPrimary: 'text-stone-950',
+    textSecondary: 'text-stone-700',
+    textMuted: 'text-stone-500',
+    headerGradient: 'bg-gradient-to-r from-stone-900 via-red-900 to-black text-white',
+    headerText: 'text-white font-black',
+    headerSubtext: 'text-stone-200',
+    headerBadgeBg: 'bg-yellow-400 text-stone-950 font-black',
+    footerBg: 'bg-stone-950 text-white',
+    footerText: 'text-stone-400',
+    footerAccent: 'bg-red-600 text-white font-black',
+    summaryBorder: 'border-2 border-red-700 ring-2 ring-stone-400',
+    summaryBadge: 'text-white bg-red-700 border-red-800',
+  },
+  typographyProfile: TYPOGRAPHY_COLLAGE_ART,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_COLLAGE_ART),
+  cards: {
+    borderRadius: 'rounded-none',
+    innerRadius: 'rounded-none',
+    borderStyle: 'border-2 border-stone-800 shadow-[3px_3px_0px_0px_rgba(28,25,23,1)]',
+    shadowStyle: 'shadow-[4px_4px_0px_0px_rgba(28,25,23,1)] hover:shadow-[6px_6px_0px_0px_rgba(28,25,23,1)]',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-stone-50',
+    highlightBorder: 'border-2 border-red-700 shadow-[5px_5px_0px_0px_rgba(185,28,28,1)]',
+  },
+  icons: {
+    style: 'geometric',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-none',
+    containerBg: 'bg-stone-900 text-white',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'geometric',
+    pattern: 'lines',
+    backgroundTreatment: 'bg-[radial-gradient(#a8a29e_1px,transparent_1px)] [background-size:12px_12px]',
+    badgeStyle: 'rounded-none px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'visual_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 18: Pixel Style
+ * Retro arcade 8-bit/16-bit, warna neon cerah, grid tegas.
+ */
+export const STYLE_PIXEL_STYLE: StyleConfig = {
+  id: 'pixel_style',
+  name: 'Pixel Style',
+  tagline: 'Nostalgia Game Retro 8-Bit & Grid Modular',
+  description: 'Estetika video game pixel art retro dengan sudut modular tajam, warna arcade semarak, dan teks materi bersih.',
+  colorPalette: {
+    background: 'bg-slate-950 text-white',
+    surface: 'bg-slate-900',
+    surfaceBorder: 'border-emerald-500/70',
+    primary: 'emerald',
+    primaryBg: 'bg-emerald-500',
+    primaryText: 'text-emerald-400',
+    primaryLight: 'bg-emerald-950/80',
+    primaryBorder: 'border-emerald-400',
+    secondary: 'fuchsia',
+    secondaryBg: 'bg-fuchsia-500',
+    secondaryText: 'text-fuchsia-400',
+    secondaryLight: 'bg-fuchsia-950/80',
+    secondaryBorder: 'border-fuchsia-400',
+    accent: 'yellow',
+    accentBg: 'bg-yellow-400',
+    accentText: 'text-yellow-300',
+    accentLight: 'bg-yellow-950/80',
+    accentBorder: 'border-yellow-400',
+    textPrimary: 'text-emerald-100',
+    textSecondary: 'text-slate-300',
+    textMuted: 'text-slate-500',
+    headerGradient: 'bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-emerald-400',
+    headerText: 'text-yellow-300 font-bold',
+    headerSubtext: 'text-emerald-200',
+    headerBadgeBg: 'bg-emerald-500/20 border border-emerald-400 text-emerald-300',
+    footerBg: 'bg-black text-emerald-400',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-emerald-500 text-slate-950 font-bold',
+    summaryBorder: 'border-2 border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.4)]',
+    summaryBadge: 'text-yellow-300 bg-yellow-950 border border-yellow-400',
+  },
+  typographyProfile: TYPOGRAPHY_PIXEL_STYLE,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_PIXEL_STYLE),
+  cards: {
+    borderRadius: 'rounded-none',
+    innerRadius: 'rounded-none',
+    borderStyle: 'border-2 border-emerald-500/80 shadow-[4px_4px_0px_0px_rgba(16,185,129,0.3)]',
+    shadowStyle: 'shadow-[4px_4px_0px_0px_rgba(16,185,129,0.4)] hover:border-emerald-400',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-slate-900/90',
+    highlightBorder: 'border-2 border-yellow-400 shadow-[4px_4px_0px_0px_rgba(250,204,21,0.6)]',
+  },
+  icons: {
+    style: 'geometric',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-none',
+    containerBg: 'bg-emerald-500 text-slate-950',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'geometric',
+    pattern: 'grid',
+    backgroundTreatment: 'bg-[linear-gradient(to_right,#064e3b15_1px,transparent_1px),linear-gradient(to_bottom,#064e3b15_1px,transparent_1px)] bg-[size:16px_16px]',
+    badgeStyle: 'rounded-none px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 19: Y2K
+ * Estetika retro-futuristik era 2000-an, kilau chrome dan cyan-magenta.
+ */
+export const STYLE_Y2K: StyleConfig = {
+  id: 'y2k',
+  name: 'Y2K',
+  tagline: 'Retro-Futuristik Era 2000-an & Aksen Cyber Metalik',
+  description: 'Estetika pergantian milenium dengan lengkungan geometris khas, warna biru es, magenta elektrik, dan tipografi Space Grotesk.',
+  colorPalette: {
+    background: 'bg-slate-100',
+    surface: 'bg-white',
+    surfaceBorder: 'border-cyan-300',
+    primary: 'cyan',
+    primaryBg: 'bg-cyan-500',
+    primaryText: 'text-cyan-800',
+    primaryLight: 'bg-cyan-50',
+    primaryBorder: 'border-cyan-300',
+    secondary: 'fuchsia',
+    secondaryBg: 'bg-fuchsia-500',
+    secondaryText: 'text-fuchsia-800',
+    secondaryLight: 'bg-fuchsia-50',
+    secondaryBorder: 'border-fuchsia-300',
+    accent: 'blue',
+    accentBg: 'bg-blue-600',
+    accentText: 'text-blue-800',
+    accentLight: 'bg-blue-50',
+    accentBorder: 'border-blue-300',
+    textPrimary: 'text-slate-900',
+    textSecondary: 'text-slate-700',
+    textMuted: 'text-slate-400',
+    headerGradient: 'bg-gradient-to-r from-cyan-600 via-blue-600 to-fuchsia-600 text-white',
+    headerText: 'text-white font-black',
+    headerSubtext: 'text-cyan-100',
+    headerBadgeBg: 'bg-white/20 border-white/30 text-white',
+    footerBg: 'bg-slate-900 text-white',
+    footerText: 'text-cyan-300',
+    footerAccent: 'bg-cyan-400 text-slate-900 font-black',
+    summaryBorder: 'border-2 border-cyan-400 ring-2 ring-cyan-200 shadow-sm',
+    summaryBadge: 'text-cyan-900 bg-cyan-100 border-cyan-300',
+  },
+  typographyProfile: TYPOGRAPHY_Y2K,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_Y2K),
+  cards: {
+    borderRadius: 'rounded-3xl',
+    innerRadius: 'rounded-2xl',
+    borderStyle: 'border border-cyan-200 shadow-sm',
+    shadowStyle: 'shadow-md hover:shadow-cyan-500/10 hover:border-cyan-400',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-white/95',
+    highlightBorder: 'border-2 border-cyan-500 ring-2 ring-cyan-300/30 shadow-md',
+  },
+  icons: {
+    style: 'rounded-box',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-2xl',
+    containerBg: 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm',
+  },
+  decoration: {
+    level: 'moderate',
+    shapes: 'organic',
+    pattern: 'grid',
+    backgroundTreatment: 'bg-[radial-gradient(#06b6d4_1px,transparent_1px)] [background-size:20px_20px]',
+    badgeStyle: 'rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 20: Surrealism
+ * Puitis, imajinatif, atmosfer mistis dengan nuansa indigo-violet dan emas.
+ */
+export const STYLE_SURREALISM: StyleConfig = {
+  id: 'surrealism',
+  name: 'Surrealism',
+  tagline: 'Puitis, Imajinatif & Eksplorasi Artistik',
+  description: 'Sentuhan seni surealis yang memadukan keajaiban imajinasi visual, warna malam mistis, dan tipografi berwibawa.',
+  colorPalette: {
+    background: 'bg-slate-900 text-white',
+    surface: 'bg-slate-800/90',
+    surfaceBorder: 'border-indigo-700/60',
+    primary: 'indigo',
+    primaryBg: 'bg-indigo-600',
+    primaryText: 'text-indigo-300',
+    primaryLight: 'bg-indigo-950/80',
+    primaryBorder: 'border-indigo-500/50',
+    secondary: 'purple',
+    secondaryBg: 'bg-purple-600',
+    secondaryText: 'text-purple-300',
+    secondaryLight: 'bg-purple-950/80',
+    secondaryBorder: 'border-purple-500/50',
+    accent: 'amber',
+    accentBg: 'bg-amber-400',
+    accentText: 'text-amber-300',
+    accentLight: 'bg-amber-950/80',
+    accentBorder: 'border-amber-400/60',
+    textPrimary: 'text-slate-100',
+    textSecondary: 'text-slate-300',
+    textMuted: 'text-slate-400',
+    headerGradient: 'bg-gradient-to-r from-slate-950 via-indigo-950 to-purple-950 text-white',
+    headerText: 'text-amber-300 font-bold',
+    headerSubtext: 'text-indigo-200',
+    headerBadgeBg: 'bg-indigo-500/20 border border-indigo-400/40 text-indigo-200',
+    footerBg: 'bg-black text-slate-300',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-amber-400 text-slate-950 font-bold',
+    summaryBorder: 'border-indigo-500 ring-2 ring-purple-500/20 shadow-md',
+    summaryBadge: 'text-amber-300 bg-indigo-950 border border-amber-400/40',
+  },
+  typographyProfile: TYPOGRAPHY_SURREALISM,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_SURREALISM),
+  cards: {
+    borderRadius: 'rounded-2xl',
+    innerRadius: 'rounded-xl',
+    borderStyle: 'border border-indigo-700/50 shadow-sm',
+    shadowStyle: 'shadow-md hover:shadow-indigo-500/20 hover:border-indigo-500',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-slate-800/80 backdrop-blur-xs',
+    highlightBorder: 'border-2 border-amber-400 ring-2 ring-indigo-500/30 shadow-lg',
+  },
+  icons: {
+    style: 'tinted',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-xl',
+    containerBg: 'bg-indigo-600 text-white shadow-sm',
+  },
+  decoration: {
+    level: 'moderate',
+    shapes: 'organic',
+    pattern: 'dots',
+    backgroundTreatment: 'bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:24px_24px]',
+    badgeStyle: 'rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+    showAccentBar: false,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'generous',
+    alignment: 'left',
+    visualEmphasis: 'visual_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 21: Victorian
+ * Arsip sejarah klasik, ornamen ukiran halus, keanggunan abad ke-19.
+ */
+export const STYLE_VICTORIAN: StyleConfig = {
+  id: 'victorian',
+  name: 'Victorian',
+  tagline: 'Keanggunan Klasik, Arsip Sejarah & Wibawa',
+  description: 'Estetika dokumen arsip sejarah berwibawa dengan palet warna tanah hangat, bingkai teratur, dan serif klasik terkurasi.',
+  colorPalette: {
+    background: 'bg-stone-200/80',
+    surface: 'bg-stone-50',
+    surfaceBorder: 'border-stone-300',
+    primary: 'stone',
+    primaryBg: 'bg-stone-800',
+    primaryText: 'text-stone-900',
+    primaryLight: 'bg-stone-200',
+    primaryBorder: 'border-stone-400',
+    secondary: 'amber',
+    secondaryBg: 'bg-amber-800',
+    secondaryText: 'text-amber-900',
+    secondaryLight: 'bg-amber-100',
+    secondaryBorder: 'border-amber-300',
+    accent: 'amber',
+    accentBg: 'bg-amber-600',
+    accentText: 'text-amber-900',
+    accentLight: 'bg-amber-50',
+    accentBorder: 'border-amber-300',
+    textPrimary: 'text-stone-900',
+    textSecondary: 'text-stone-700',
+    textMuted: 'text-stone-500',
+    headerGradient: 'bg-gradient-to-r from-stone-950 via-stone-900 to-amber-950 text-white',
+    headerText: 'text-amber-200 font-bold',
+    headerSubtext: 'text-stone-300',
+    headerBadgeBg: 'bg-white/10 border border-stone-400 text-stone-200',
+    footerBg: 'bg-stone-950 text-stone-300',
+    footerText: 'text-stone-400',
+    footerAccent: 'bg-amber-700 text-white font-bold',
+    summaryBorder: 'border-2 border-amber-800 ring-2 ring-stone-400/30',
+    summaryBadge: 'text-amber-950 bg-amber-100 border-amber-400',
+  },
+  typographyProfile: TYPOGRAPHY_VICTORIAN,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_VICTORIAN),
+  cards: {
+    borderRadius: 'rounded-xl',
+    innerRadius: 'rounded-lg',
+    borderStyle: 'border border-stone-300 shadow-xs',
+    shadowStyle: 'shadow-sm hover:border-amber-700',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-[#faf8f5]',
+    highlightBorder: 'border-2 border-amber-800 ring-2 ring-amber-600/20 shadow-sm',
+  },
+  icons: {
+    style: 'outline',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-lg',
+    containerBg: 'bg-stone-800 text-amber-200',
+  },
+  decoration: {
+    level: 'moderate',
+    shapes: 'geometric',
+    pattern: 'lines',
+    backgroundTreatment: 'bg-[radial-gradient(#d6d3d1_1px,transparent_1px)] [background-size:16px_16px]',
+    badgeStyle: 'rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'text_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 22: Graffiti
+ * Seni mural jalanan, garis bebas energik, semprotan cat dan stensil urban.
+ */
+export const STYLE_GRAFFITI: StyleConfig = {
+  id: 'graffiti',
+  name: 'Graffiti',
+  tagline: 'Seni Mural Urban, Ekspresif & Berjiwa Muda',
+  description: 'Energi mural perkotaan dengan semprotan warna dinamis, aksen stensil modern, dan tipografi display berani.',
+  colorPalette: {
+    background: 'bg-slate-950 text-white',
+    surface: 'bg-slate-900',
+    surfaceBorder: 'border-lime-400/60',
+    primary: 'lime',
+    primaryBg: 'bg-lime-500',
+    primaryText: 'text-lime-400',
+    primaryLight: 'bg-lime-950/80',
+    primaryBorder: 'border-lime-400',
+    secondary: 'fuchsia',
+    secondaryBg: 'bg-fuchsia-500',
+    secondaryText: 'text-fuchsia-400',
+    secondaryLight: 'bg-fuchsia-950/80',
+    secondaryBorder: 'border-fuchsia-400',
+    accent: 'yellow',
+    accentBg: 'bg-yellow-400',
+    accentText: 'text-yellow-300',
+    accentLight: 'bg-yellow-950/80',
+    accentBorder: 'border-yellow-400',
+    textPrimary: 'text-slate-100',
+    textSecondary: 'text-slate-300',
+    textMuted: 'text-slate-500',
+    headerGradient: 'bg-gradient-to-r from-slate-950 via-slate-900 to-black text-lime-400',
+    headerText: 'text-yellow-300 font-black',
+    headerSubtext: 'text-lime-200',
+    headerBadgeBg: 'bg-lime-500 text-slate-950 font-black',
+    footerBg: 'bg-black text-white',
+    footerText: 'text-slate-400',
+    footerAccent: 'bg-lime-500 text-slate-950 font-black',
+    summaryBorder: 'border-2 border-lime-400 shadow-[0_0_12px_rgba(132,204,22,0.4)]',
+    summaryBadge: 'text-lime-950 bg-lime-400 font-black',
+  },
+  typographyProfile: TYPOGRAPHY_GRAFFITI,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_GRAFFITI),
+  cards: {
+    borderRadius: 'rounded-xl',
+    innerRadius: 'rounded-lg',
+    borderStyle: 'border-2 border-lime-500/70 shadow-sm',
+    shadowStyle: 'shadow-md hover:border-lime-400 hover:shadow-lime-500/20',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-slate-900/90',
+    highlightBorder: 'border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]',
+  },
+  icons: {
+    style: 'geometric',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-xl',
+    containerBg: 'bg-lime-500 text-slate-950',
+  },
+  decoration: {
+    level: 'expressive',
+    shapes: 'geometric',
+    pattern: 'dots',
+    backgroundTreatment: 'bg-[radial-gradient(#84cc16_1px,transparent_1px)] [background-size:20px_20px]',
+    badgeStyle: 'rounded-lg px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'visual_first',
+    gridGap: 'gap-5',
+  },
+};
+
+/**
+ * PRESET 23: Retro
+ * Poster sains dan ensiklopedia 1970-an, palet hangat nostalgia.
+ */
+export const STYLE_RETRO: StyleConfig = {
+  id: 'retro',
+  name: 'Retro',
+  tagline: 'Nostalgia Sains & Ensiklopedia Era 70-an',
+  description: 'Estetika ensiklopedia sains klasik era 1970-an dengan palet warna mustard, hangat nostalgia, dan tipografi display berkarakter.',
+  colorPalette: {
+    background: 'bg-amber-50/70',
+    surface: 'bg-[#fffdf7]',
+    surfaceBorder: 'border-amber-300',
+    primary: 'amber',
+    primaryBg: 'bg-amber-700',
+    primaryText: 'text-amber-900',
+    primaryLight: 'bg-amber-100',
+    primaryBorder: 'border-amber-300',
+    secondary: 'stone',
+    secondaryBg: 'bg-stone-700',
+    secondaryText: 'text-stone-800',
+    secondaryLight: 'bg-stone-100',
+    secondaryBorder: 'border-stone-300',
+    accent: 'orange',
+    accentBg: 'bg-orange-600',
+    accentText: 'text-orange-900',
+    accentLight: 'bg-orange-100',
+    accentBorder: 'border-orange-300',
+    textPrimary: 'text-stone-900',
+    textSecondary: 'text-stone-700',
+    textMuted: 'text-stone-400',
+    headerGradient: 'bg-gradient-to-r from-amber-900 via-orange-900 to-stone-900 text-white',
+    headerText: 'text-amber-100 font-bold',
+    headerSubtext: 'text-amber-200',
+    headerBadgeBg: 'bg-white/20 border border-white/20 text-white',
+    footerBg: 'bg-stone-900 text-amber-100',
+    footerText: 'text-stone-400',
+    footerAccent: 'bg-amber-600 text-white font-bold',
+    summaryBorder: 'border-2 border-amber-700 ring-2 ring-amber-300/40',
+    summaryBadge: 'text-amber-900 bg-amber-100 border-amber-300',
+  },
+  typographyProfile: TYPOGRAPHY_RETRO,
+  typography: createTypographyTokensFromProfile(TYPOGRAPHY_RETRO),
+  cards: {
+    borderRadius: 'rounded-2xl',
+    innerRadius: 'rounded-xl',
+    borderStyle: 'border border-amber-300/80 shadow-xs',
+    shadowStyle: 'shadow-sm hover:border-amber-500',
+    padding: 'p-5 sm:p-6',
+    density: 'balanced',
+    cardBg: 'bg-[#fffdf7]',
+    highlightBorder: 'border-2 border-amber-700 ring-2 ring-amber-400/30 shadow-sm',
+  },
+  icons: {
+    style: 'rounded-box',
+    size: 'w-4 h-4',
+    containerShape: 'rounded-xl',
+    containerBg: 'bg-amber-700 text-white',
+  },
+  decoration: {
+    level: 'moderate',
+    shapes: 'geometric',
+    pattern: 'dots',
+    backgroundTreatment: 'bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:16px_16px]',
+    badgeStyle: 'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+    showAccentBar: true,
+  },
+  composition: {
+    density: 'balanced',
+    whitespace: 'balanced',
+    alignment: 'left',
+    visualEmphasis: 'balanced',
+    gridGap: 'gap-5',
+  },
+};
+
+// All 20+ Canonical Presets Combined
 export const AVAILABLE_STYLE_PRESETS: StyleConfig[] = [
   STYLE_MODERN_EDUKATIF,
   STYLE_MINIMALIS,
@@ -1272,11 +1906,27 @@ export const AVAILABLE_STYLE_PRESETS: StyleConfig[] = [
   STYLE_AURORA,
   STYLE_BOHEMIAN,
   STYLE_VECTOR_ART,
+  STYLE_MAXIMALISM,
+  STYLE_COLLAGE_ART,
+  STYLE_PIXEL_STYLE,
+  STYLE_Y2K,
+  STYLE_SURREALISM,
+  STYLE_VICTORIAN,
+  STYLE_GRAFFITI,
+  STYLE_RETRO,
 ];
 
 /**
  * Main resolver: converts any visualStyle string into a full, high-fidelity StyleConfig
  * Always returns a fresh, deep copy to prevent stale mutations or shared object references across style changes.
+ *
+ * Alur Pergantian Gaya STIVIA v2.2c:
+ * 1. PENGGUNA MEMILIH GAYA BARU
+ * 2. BERSIHKAN KONFIGURASI VISUAL SEMENTARA
+ * 3. BERSIHKAN TYPOGRAPHY PROFILE LAMA
+ * 4. MUAT STYLE PROFILE BARU
+ * 5. MUAT TYPOGRAPHY PROFILE BARU
+ * 6. TENTUKAN ULANG LAYOUT & FONT BARU
  */
 export function getStyleConfig(visualStyleName?: string, customDescription?: string): StyleConfig {
   let matchedPreset = STYLE_MODERN_EDUKATIF;
@@ -1284,49 +1934,89 @@ export function getStyleConfig(visualStyleName?: string, customDescription?: str
   if (visualStyleName) {
     const normalized = visualStyleName.toLowerCase().trim();
 
-    // 1. MINIMALIS
+    // 1. MINIMALISM
     if (normalized.includes('minimalis') || normalized === 'minimalism') {
       matchedPreset = STYLE_MINIMALIS;
     }
-    // 2. FUTURISTIC & HIGH TECH
-    else if (normalized.includes('cyberpunk')) {
-      matchedPreset = STYLE_CYBERPUNK;
+    // 2. MAXIMALISM
+    else if (normalized.includes('maximalis') || normalized.includes('maksimal')) {
+      matchedPreset = STYLE_MAXIMALISM;
     }
+    // 3. FUTURISTIC
     else if (normalized.includes('futuristic') || normalized.includes('digital interface') || normalized.includes('teknologi')) {
       matchedPreset = STYLE_FUTURISTIC;
     }
-    else if (normalized.includes('glassmorphism')) {
-      matchedPreset = STYLE_GLASSMORPHISM;
-    }
-    else if (normalized.includes('aurora')) {
-      matchedPreset = STYLE_AURORA;
-    }
-    // 3. KREATIF & POP
-    else if (normalized.includes('pop art')) {
-      matchedPreset = STYLE_POP_ART;
-    }
-    else if (normalized.includes('clay style') || normalized.includes('claymorphic')) {
-      matchedPreset = STYLE_CLAY_STYLE;
-    }
-    else if (normalized.includes('handwritten') || normalized.includes('doodle') || normalized.includes('sketsa')) {
-      matchedPreset = STYLE_HANDWRITTEN;
-    }
-    else if (normalized.includes('bohemian') || normalized.includes('botani')) {
-      matchedPreset = STYLE_BOHEMIAN;
-    }
+    // 4. VECTOR ART
     else if (normalized.includes('vector') || normalized.includes('flat design') || normalized.includes('ilustratif')) {
       matchedPreset = STYLE_VECTOR_ART;
     }
-    // 4. DATA & STRUKTUR
-    else if (normalized.includes('swiss design')) {
-      matchedPreset = STYLE_SWISS_DESIGN;
+    // 5. COLLAGE ART
+    else if (normalized.includes('collage') || normalized.includes('kolase')) {
+      matchedPreset = STYLE_COLLAGE_ART;
     }
+    // 6. CYBERPUNK
+    else if (normalized.includes('cyberpunk')) {
+      matchedPreset = STYLE_CYBERPUNK;
+    }
+    // 7. POP ART
+    else if (normalized.includes('pop art')) {
+      matchedPreset = STYLE_POP_ART;
+    }
+    // 8. GLASSMORPHISM
+    else if (normalized.includes('glassmorphism')) {
+      matchedPreset = STYLE_GLASSMORPHISM;
+    }
+    // 9. CLAY STYLE
+    else if (normalized.includes('clay style') || normalized.includes('claymorphic') || normalized.includes('clay')) {
+      matchedPreset = STYLE_CLAY_STYLE;
+    }
+    // 10. PIXEL STYLE
+    else if (normalized.includes('pixel')) {
+      matchedPreset = STYLE_PIXEL_STYLE;
+    }
+    // 11. EDITORIAL
     else if (normalized.includes('editorial') || normalized.includes('majalah')) {
       matchedPreset = STYLE_EDITORIAL;
     }
-    // 5. AKADEMIK & CERIA & VINTAGE
+    // 12. Y2K
+    else if (normalized.includes('y2k')) {
+      matchedPreset = STYLE_Y2K;
+    }
+    // 13. SWISS DESIGN
+    else if (normalized.includes('swiss design') || normalized.includes('swiss')) {
+      matchedPreset = STYLE_SWISS_DESIGN;
+    }
+    // 14. SURREALISM
+    else if (normalized.includes('surreal') || normalized.includes('surealis')) {
+      matchedPreset = STYLE_SURREALISM;
+    }
+    // 15. BOHEMIAN
+    else if (normalized.includes('bohemian') || normalized.includes('botani') || normalized.includes('boho')) {
+      matchedPreset = STYLE_BOHEMIAN;
+    }
+    // 16. VICTORIAN
+    else if (normalized.includes('victorian') || normalized.includes('viktorian')) {
+      matchedPreset = STYLE_VICTORIAN;
+    }
+    // 17. GRAFFITI
+    else if (normalized.includes('graffiti') || normalized.includes('grafiti') || normalized.includes('street art')) {
+      matchedPreset = STYLE_GRAFFITI;
+    }
+    // 18. AURORA
+    else if (normalized.includes('aurora')) {
+      matchedPreset = STYLE_AURORA;
+    }
+    // 19. HANDWRITTEN
+    else if (normalized.includes('handwritten') || normalized.includes('doodle') || normalized.includes('sketsa') || normalized.includes('tangan')) {
+      matchedPreset = STYLE_HANDWRITTEN;
+    }
+    // 20. RETRO
+    else if (normalized.includes('retro')) {
+      matchedPreset = STYLE_RETRO;
+    }
+    // AKADEMIK & CERIA & VINTAGE (Legacy / Secondary mappings)
     else if (normalized.includes('vintage') || normalized.includes('historical') || normalized.includes('arsip')) {
-      matchedPreset = STYLE_AKADEMIK;
+      matchedPreset = STYLE_VICTORIAN;
     }
     else if (normalized.includes('akademik') || normalized.includes('academic') || normalized.includes('formal') || normalized.includes('clean')) {
       matchedPreset = STYLE_AKADEMIK;
@@ -1335,7 +2025,6 @@ export function getStyleConfig(visualStyleName?: string, customDescription?: str
       matchedPreset = STYLE_CERIA_KREATIF;
     }
     else {
-      // Exact preset match check
       const found = AVAILABLE_STYLE_PRESETS.find(p => p.id === normalized || p.name.toLowerCase() === normalized);
       if (found) {
         matchedPreset = found;
@@ -1343,8 +2032,13 @@ export function getStyleConfig(visualStyleName?: string, customDescription?: str
     }
   }
 
-  // Deep clone to guarantee immutability and brand new object instance
+  // Deep clone to guarantee complete isolation across style switches
   const freshConfig: StyleConfig = JSON.parse(JSON.stringify(matchedPreset));
+
+  // MUAT TYPOGRAPHY PROFILE BARU SECARA DINAMIS & TERINTEGRASI
+  const resolvedProfile = getTypographyProfile(visualStyleName || matchedPreset.id);
+  freshConfig.typographyProfile = resolvedProfile;
+  freshConfig.typography = createTypographyTokensFromProfile(resolvedProfile);
 
   if (customDescription && customDescription.trim()) {
     freshConfig.description = `${freshConfig.description} (Kustom: ${customDescription.trim()})`;

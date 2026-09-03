@@ -134,7 +134,7 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
             <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               <span>Sistem Gaya Infografis STIVIA</span>
               <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-                v2.2
+                v2.2c
               </span>
             </h3>
           </div>
