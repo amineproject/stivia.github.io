@@ -34,6 +34,7 @@ interface InfographicRendererProps {
   visualStyle?: string;
   format?: 'portrait' | 'square' | 'landscape';
   visualLevel?: 'sederhana' | 'seimbang' | 'visual_dominan';
+  canvasRef?: React.Ref<HTMLDivElement>;
 }
 
 export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
@@ -42,6 +43,7 @@ export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
   onSelectSection,
   visualStyle,
   format = 'portrait',
+  canvasRef,
 }) => {
   // 1. Resolve Style Tokens
   const effectiveStyle = visualStyle || draft.visualStyle;
@@ -180,6 +182,7 @@ export const InfographicRenderer: React.FC<InfographicRendererProps> = ({
 
   return (
     <div
+      ref={canvasRef}
       id="infographic-preview-canvas"
       key={`${draft.id || 'draft'}-${effectiveStyle}-${layoutArchetype}-${draft.layoutVariationCycle || 0}`}
       className={`w-full ${getContainerMaxWidth()} mx-auto ${styleConfig.cards.borderRadius} shadow-xl border border-slate-300/80 overflow-hidden text-slate-900 font-sans transition-all duration-300 flex flex-col bg-slate-50/50`}

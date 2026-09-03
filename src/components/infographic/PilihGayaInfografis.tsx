@@ -4,27 +4,25 @@ import {
   Palette, 
   GraduationCap, 
   Cpu, 
-  BarChart2, 
-  Smile, 
-  Landmark, 
   Check, 
   CheckCircle2, 
   Info, 
-  ChevronRight, 
-  Wand2, 
-  Layers,
   HelpCircle,
-  RotateCcw
+  Eye,
+  Layers,
+  Search,
+  BookOpen
 } from 'lucide-react';
 import { 
   INFOGRAPHIC_STYLE_CATEGORIES, 
   ALL_INFOGRAPHIC_STYLES, 
   InfographicStyleItem, 
-  InfographicStyleCategory, 
   getAIStyleRecommendations, 
   findStyleByNameOrId,
   StyleContextInput
 } from '../../data/infographicStylesData';
+import { StyleInfoModal } from './StyleInfoModal';
+import { HowStiviaWorksModal } from './HowStiviaWorksModal';
 
 interface PilihGayaInfografisProps {
   context: StyleContextInput;
@@ -39,8 +37,16 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
   onSelectStyle,
   className = '',
 }) => {
-  // Mode selection: 'ai_recom' (Rekomendasi AI) or 'manual' (Pilih Manual)
-  const [selectionMode, setSelectionMode] = useState<'ai_recom' | 'manual'>('ai_recom');
+  // Mode pemilihan: 'kategori' (5 Kategori STIVIA v2.2) atau 'ai_recom' (Rekomendasi Cerdas)
+  const [activeTab, setActiveTab] = useState<'kategori' | 'ai_recom'>('kategori');
+
+  // Modal State
+  const [inspectingStyle, setInspectingStyle] = useState<InfographicStyleItem | null>(null);
+  const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
+  const [isHowWorksModalOpen, setIsHowWorksModalOpen] = useState(false);
+
+  // Search filter
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   // AI recommendations based on context data
   const aiRecommendations = useMemo(() => {
@@ -58,21 +64,40 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
   const currentStyle: InfographicStyleItem = useMemo(() => {
     const found = findStyleByNameOrId(selectedStyleName);
     if (found) return found;
-    // Default to first AI recommendation or Modern Education
     return aiRecommendations[0] || ALL_INFOGRAPHIC_STYLES[0];
   }, [selectedStyleName, aiRecommendations]);
 
-  // Active Category for manual browsing
-  const [activeCategoryId, setActiveCategoryId] = useState<string>(() => {
+  // Active Category (default ke kategori dari style yang sedang terpilih atau kategori pertama)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(() => {
     return currentStyle.categoryId || INFOGRAPHIC_STYLE_CATEGORIES[0].id;
   });
 
   const activeCategory = useMemo(() => {
+    if (selectedCategoryId === 'all') return null;
     return (
-      INFOGRAPHIC_STYLE_CATEGORIES.find((c) => c.id === activeCategoryId) ||
+      INFOGRAPHIC_STYLE_CATEGORIES.find((c) => c.id === selectedCategoryId) ||
       INFOGRAPHIC_STYLE_CATEGORIES[0]
     );
-  }, [activeCategoryId]);
+  }, [selectedCategoryId]);
+
+  // List of styles filtered by category and search
+  const displayedStyles = useMemo(() => {
+    let list = selectedCategoryId === 'all' 
+      ? ALL_INFOGRAPHIC_STYLES 
+      : activeCategory ? activeCategory.styles : ALL_INFOGRAPHIC_STYLES;
+
+    if (searchKeyword.trim()) {
+      const q = searchKeyword.toLowerCase().trim();
+      list = ALL_INFOGRAPHIC_STYLES.filter(s => 
+        s.name.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        s.tags.some(t => t.toLowerCase().includes(q)) ||
+        (s.suitableFor && s.suitableFor.some(sf => sf.toLowerCase().includes(q)))
+      );
+    }
+    return list;
+  }, [selectedCategoryId, activeCategory, searchKeyword]);
 
   // Category Icon Resolver
   const renderCategoryIcon = (iconName: string, classNameStr: string = 'w-4 h-4') => {
@@ -83,15 +108,18 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
         return <Palette className={classNameStr} />;
       case 'Cpu':
         return <Cpu className={classNameStr} />;
-      case 'BarChart2':
-        return <BarChart2 className={classNameStr} />;
-      case 'Smile':
-        return <Smile className={classNameStr} />;
-      case 'Landmark':
-        return <Landmark className={classNameStr} />;
+      case 'Sparkles':
+        return <Sparkles className={classNameStr} />;
       default:
-        return <Palette className={classNameStr} />;
+        return <Layers className={classNameStr} />;
     }
+  };
+
+  // Handler buka modal info gaya
+  const handleOpenStyleInfo = (style: InfographicStyleItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setInspectingStyle(style);
+    setIsStyleModalOpen(true);
   };
 
   return (
@@ -104,48 +132,257 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
               <Palette className="w-4 h-4" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <span>🎨 Pilih Gaya Infografis</span>
+              <span>Sistem Gaya Infografis STIVIA</span>
+              <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                v2.2
+              </span>
             </h3>
           </div>
           <p className="text-xs text-slate-500 max-w-xl">
-            Tentukan gaya visual yang akan diinstruksikan ke dalam Prompt Desain Infografis. Pilihan gaya hanya memengaruhi karakter estetika, tanpa mengubah isi materi.
+            Pilih gaya visual untuk poster infografis pembelajaran Anda. Gaya visual memperindah estetika tanpa pernah mengubah kebenaran isi, judul, atau fakta materi.
           </p>
         </div>
 
-        {/* Tab Pemilihan: Rekomendasi AI vs Pilih Manual */}
-        <div className="flex items-center p-1 bg-[#f1f5f9] rounded-2xl border border-slate-200/70 self-start sm:self-auto">
+        {/* Action Buttons: Bagaimana STIVIA Bekerja + Tabs */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tombol Bagaimana STIVIA Bekerja (POIN E) */}
           <button
             type="button"
-            id="tab-style-ai-recom"
-            onClick={() => setSelectionMode('ai_recom')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              selectionMode === 'ai_recom'
-                ? 'bg-white text-[#3b49df] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
+            onClick={() => setIsHowWorksModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-amber-900 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            title="Pelajari 7 Tahap Kerangka Berpikir STIVIA"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#3b49df]" />
-            <span>✨ Rekomendasi AI</span>
+            <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
+            <span>Bagaimana STIVIA Bekerja?</span>
           </button>
 
-          <button
-            type="button"
-            id="tab-style-manual"
-            onClick={() => setSelectionMode('manual')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              selectionMode === 'manual'
-                ? 'bg-white text-[#3b49df] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
-          >
-            <Palette className="w-3.5 h-3.5 text-[#3b49df]" />
-            <span>🎨 Pilih Manual</span>
-          </button>
+          {/* Toggle Tab */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/70">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('kategori');
+                setSearchKeyword('');
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'kategori'
+                  ? 'bg-white text-indigo-600 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>5 Kategori Gaya</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('ai_recom')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'ai_recom'
+                  ? 'bg-white text-indigo-600 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Rekomendasi AI</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* METODE 1: REKOMENDASI AI */}
-      {selectionMode === 'ai_recom' && (
+      {/* ========================================================================= */}
+      {/* MODE 1: STRUKTUR MENU 5 KATEGORI GAYA (B & A)                             */}
+      {/* ========================================================================= */}
+      {activeTab === 'kategori' && (
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* TAHAP 1: PILIH KATEGORI GAYA */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-2xs flex items-center justify-center font-bold">1</span>
+                <span>PILIH KATEGORI GAYA</span>
+              </label>
+
+              {/* Pencarian Gaya */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Cari gaya (misal: Clay, Y2K, Swiss)..."
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  className="pl-8 pr-3 py-1 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 w-52 sm:w-64 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* 5 Tab Kategori Utama + Opsi Semua Gaya */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {INFOGRAPHIC_STYLE_CATEGORIES.map((cat) => {
+                const isActive = selectedCategoryId === cat.id && !searchKeyword;
+                const isCatContainingSelected = cat.styles.some((s) => s.id === currentStyle.id);
+
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategoryId(cat.id);
+                      setSearchKeyword('');
+                    }}
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-2 cursor-pointer ${
+                      isActive
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        : isCatContainingSelected
+                        ? 'bg-indigo-50/80 text-indigo-900 border-indigo-300'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-indigo-600'}`}>
+                        {renderCategoryIcon(cat.iconName, 'w-3.5 h-3.5')}
+                      </div>
+                      {isCatContainingSelected && (
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-indigo-600'}`} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-2xs font-extrabold uppercase tracking-tight leading-tight line-clamp-2">
+                        {cat.name}
+                      </div>
+                      <span className={`text-[10px] block mt-0.5 ${isActive ? 'text-indigo-100' : 'text-slate-400'}`}>
+                        {cat.styles.length} gaya
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {/* Tab Semua Gaya */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategoryId('all');
+                  setSearchKeyword('');
+                }}
+                className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-2 cursor-pointer ${
+                  selectedCategoryId === 'all' && !searchKeyword
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className={`p-1.5 rounded-lg ${selectedCategoryId === 'all' && !searchKeyword ? 'bg-white/20 text-white' : 'bg-slate-100 text-indigo-600'}`}>
+                    <Layers className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xs font-extrabold uppercase tracking-tight leading-tight">
+                    SEMUA GAYA
+                  </div>
+                  <span className={`text-[10px] block mt-0.5 ${selectedCategoryId === 'all' && !searchKeyword ? 'text-indigo-100' : 'text-slate-400'}`}>
+                    {ALL_INFOGRAPHIC_STYLES.length} pilihan
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* TAHAP 2: PILIH GAYA INFOGRAFIS & LIHAT INFORMASI */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/80">
+              <div>
+                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">
+                  {searchKeyword ? 'Hasil Pencarian Gaya' : activeCategory ? `Kategori: ${activeCategory.name}` : 'Semua Koleksi Gaya'}
+                </span>
+                <h4 className="text-sm sm:text-base font-bold text-slate-900">
+                  {searchKeyword ? `Mencari "${searchKeyword}"` : activeCategory ? activeCategory.tagline : 'Seluruh Gaya Infografis STIVIA'}
+                </h4>
+                {activeCategory && !searchKeyword && (
+                  <p className="text-xs text-slate-600 mt-0.5 max-w-2xl">
+                    {activeCategory.description}
+                  </p>
+                )}
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 shrink-0 self-start sm:self-auto">
+                {displayedStyles.length} Gaya Tersedia
+              </span>
+            </div>
+
+            {/* Grid Gaya Infografis */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {displayedStyles.map((style) => {
+                const isSelected = currentStyle.id === style.id;
+
+                return (
+                  <div
+                    key={style.id}
+                    id={`style-card-${style.id}`}
+                    onClick={() => onSelectStyle(style)}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 bg-white relative group ${
+                      isSelected
+                        ? 'border-indigo-600 bg-indigo-50/40 shadow-xs ring-2 ring-indigo-500/20'
+                        : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-2xs'
+                    }`}
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-indigo-600/90 uppercase tracking-wider">
+                          {style.category}
+                        </span>
+                        {isSelected ? (
+                          <div className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-2xs">
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-300 group-hover:border-indigo-400" />
+                        )}
+                      </div>
+
+                      <h5 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
+                        {style.name}
+                      </h5>
+
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                        {style.shortDescription || style.description}
+                      </p>
+                    </div>
+
+                    {/* Tombol Lihat Informasi Gaya (POIN B & C) */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap gap-1">
+                        {style.tags.slice(0, 1).map((t) => (
+                          <span
+                            key={t}
+                            className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenStyleInfo(style, e)}
+                        className="inline-flex items-center gap-1 text-2xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                        title="Buka pop-up informasi lengkap gaya ini"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Lihat Info</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODE 2: REKOMENDASI AI BERDASARKAN MATA PELAJARAN                         */}
+      {/* ========================================================================= */}
+      {activeTab === 'ai_recom' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
@@ -167,7 +404,7 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
                   onClick={() => onSelectStyle(style)}
                   className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 relative group ${
                     isSelected
-                      ? 'bg-indigo-50/60 border-indigo-600 shadow-sm ring-2 ring-indigo-500/20'
+                      ? 'bg-indigo-50/60 border-indigo-600 shadow-xs ring-2 ring-indigo-500/20'
                       : 'bg-white border-slate-200/90 hover:border-indigo-300 hover:bg-slate-50/50'
                   }`}
                 >
@@ -195,19 +432,30 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
                     </div>
 
                     <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                      {style.characteristics}
+                      {style.shortDescription || style.description}
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-1 pt-2 border-t border-slate-100">
-                    {style.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex flex-wrap gap-1">
+                      {style.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenStyleInfo(style, e)}
+                      className="inline-flex items-center gap-1 text-2xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>Info</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -216,142 +464,29 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
         </div>
       )}
 
-      {/* METODE 2: PILIH MANUAL (6 KATEGORI & 5 GAYA PER KATEGORI) */}
-      {selectionMode === 'manual' && (
-        <div className="space-y-5 animate-in fade-in duration-200">
-          {/* List 6 Kategori Tab Buttons */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              1. Pilih Kategori Gaya
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-              {INFOGRAPHIC_STYLE_CATEGORIES.map((cat) => {
-                const isActive = activeCategoryId === cat.id;
-                const isCatContainingSelected = cat.styles.some((s) => s.id === currentStyle.id);
-
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    id={`btn-cat-${cat.id}`}
-                    onClick={() => setActiveCategoryId(cat.id)}
-                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-2 cursor-pointer ${
-                      isActive
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                        : isCatContainingSelected
-                        ? 'bg-indigo-50/80 text-indigo-900 border-indigo-300'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-indigo-600'}`}>
-                        {renderCategoryIcon(cat.iconName, 'w-3.5 h-3.5')}
-                      </div>
-                      {isCatContainingSelected && (
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-indigo-600'}`} />
-                      )}
-                    </div>
-                    <div className="text-[11px] font-bold tracking-tight leading-tight line-clamp-2">
-                      {cat.name}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Deskripsi Kategori Aktif & List 5 Gaya */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/80">
-              <div>
-                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">
-                  Kategori Terpilih
-                </span>
-                <h4 className="text-sm sm:text-base font-bold text-slate-900">
-                  {activeCategory.name}
-                </h4>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  {activeCategory.description}
-                </p>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 shrink-0 self-start sm:self-auto">
-                {activeCategory.styles.length} Pilihan Gaya
-              </span>
-            </div>
-
-            {/* List 5 Gaya dalam Kategori Aktif */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {activeCategory.styles.map((style) => {
-                const isSelected = currentStyle.id === style.id;
-
-                return (
-                  <div
-                    key={style.id}
-                    id={`manual-style-card-${style.id}`}
-                    onClick={() => onSelectStyle(style)}
-                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-2.5 bg-white ${
-                      isSelected
-                        ? 'border-indigo-600 bg-indigo-50/50 shadow-xs ring-2 ring-indigo-500/20'
-                        : 'border-slate-200 hover:border-indigo-300 hover:shadow-2xs'
-                    }`}
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-slate-400">
-                          {style.category}
-                        </span>
-                        {isSelected ? (
-                          <div className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">
-                            <Check className="w-2.5 h-2.5" />
-                          </div>
-                        ) : (
-                          <div className="w-4 h-4 rounded-full border border-slate-300" />
-                        )}
-                      </div>
-
-                      <h5 className="text-xs font-bold text-slate-900 leading-snug">
-                        {style.name}
-                      </h5>
-
-                      <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3">
-                        {style.characteristics}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-100">
-                      {style.tags.slice(0, 2).map((t) => (
-                        <span
-                          key={t}
-                          className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* STATUS PILIHAN GAYA SAAT INI (✓ Gaya Infografis Terpilih) */}
+      {/* ========================================================================= */}
+      {/* TAHAP 4: GUNAKAN GAYA (STATUS PILIHAN GAYA SAAT INI)                       */}
+      {/* ========================================================================= */}
       <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/80 border border-indigo-200/80 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2 text-xs font-bold text-indigo-900">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>✓ Gaya Infografis Terpilih</span>
           </div>
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white text-indigo-700 border border-indigo-200 shadow-2xs">
-            Siap Dimasukkan ke Prompt
-          </span>
+          <button
+            type="button"
+            onClick={() => handleOpenStyleInfo(currentStyle)}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-white px-3 py-1 rounded-full border border-indigo-200 shadow-2xs cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Lihat Rincian Gaya Ini</span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white p-3.5 rounded-xl border border-indigo-100">
           <div>
             <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">
-              Kategori
+              Kategori Gaya
             </span>
             <span className="font-bold text-indigo-950">
               {currentStyle.category}
@@ -360,7 +495,7 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
 
           <div>
             <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">
-              Gaya Visual
+              Nama Gaya Visual
             </span>
             <span className="font-extrabold text-indigo-600 text-sm">
               {currentStyle.name}
@@ -372,7 +507,7 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
               Karakter Utama
             </span>
             <span className="font-medium text-slate-700 line-clamp-2">
-              {currentStyle.characteristics}
+              {currentStyle.characterExample || currentStyle.shortDescription || currentStyle.description}
             </span>
           </div>
         </div>
@@ -380,10 +515,25 @@ export const PilihGayaInfografis: React.FC<PilihGayaInfografisProps> = ({
         <div className="text-[11px] text-slate-600 flex items-start gap-1.5 pt-0.5">
           <Info className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
           <span>
-            Instruksi visual untuk gaya <strong className="text-slate-900">{currentStyle.name}</strong> akan otomatis ditambahkan ke bagian spesifikasi visual prompt saat Anda menekan tombol Generate.
+            Kerangka Berpikir STIVIA akan secara otomatis menyesuaikan ilustrasi, ikon, dan komposisi visual sesuai gaya <strong className="text-slate-900">{currentStyle.name}</strong> tanpa mengubah materi asli.
           </span>
         </div>
       </div>
+
+      {/* Pop-up Modal Informasi Gaya (POIN C) */}
+      <StyleInfoModal
+        styleItem={inspectingStyle}
+        isOpen={isStyleModalOpen}
+        onClose={() => setIsStyleModalOpen(false)}
+        onSelectAndApply={(style) => onSelectStyle(style)}
+        isSelected={currentStyle.id === inspectingStyle?.id}
+      />
+
+      {/* Pop-up Modal Bagaimana STIVIA Bekerja (POIN E) */}
+      <HowStiviaWorksModal
+        isOpen={isHowWorksModalOpen}
+        onClose={() => setIsHowWorksModalOpen(false)}
+      />
     </div>
   );
 };

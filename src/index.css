@@ -21,3 +21,46 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Print optimizations: Print only the active infographic canvas */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide all interactive UI elements from printout */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make sure the infographic canvas and its children remain visible */
+  #infographic-preview-canvas,
+  #infographic-preview-canvas * {
+    visibility: visible !important;
+  }
+
+  #infographic-preview-canvas {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Ensure modal backdrop does not obscure or colorize the canvas */
+  .fixed.z-50 {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+}

@@ -203,6 +203,16 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
   // Changelog & Fitur Tambahan untuk STIVIA Versi 2.2a
   const version22aHighlights = [
     {
+      title: 'Sistem Ekspor Infografis Beresolusi Tinggi (PNG & JPG)',
+      desc: 'Mesin ekspor gambar terpusat beresolusi tinggi (High-DPI) untuk format PNG dan JPG/JPEG langsung dari kanvas infografis aktif, lengkap dengan penamaan berkas otomatis berdasarkan topik pembelajaran.',
+      tag: 'Ekspor Grafis',
+    },
+    {
+      title: 'Dukungan Ekspor Lengkap pada Tampilan Penuh (Fullscreen)',
+      desc: 'Kemudahan mengunduh infografis (PNG, JPG, Word DOCX, dan Cetak/PDF) langsung dari modal Tampilan Penuh tanpa harus kembali ke tampilan editor.',
+      tag: 'Tampilan Penuh',
+    },
+    {
       title: 'Multi-Style Visual Engine (14+ Preset Interaktif)',
       desc: 'Dukungan penggantian tema gaya visual secara instan (Modern Edukatif, Futuristic, Cyberpunk, Swiss Design, Clay Style, Pop Art, Editorial, Handwritten, Glassmorphism, Aurora, Academic Clean, Ceria, Vintage) tanpa mengubah materi pembelajaran.',
       tag: 'Fitur Utama 2.2a',

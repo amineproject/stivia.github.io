@@ -15,16 +15,23 @@ import {
   ArrowLeft,
   Monitor,
   LayoutTemplate,
-  Lock
+  Lock,
+  Loader2
 } from 'lucide-react';
 import { InfographicDraft, NavigationTab } from '../../types';
 import { VISUAL_STYLE_OPTIONS } from '../../data/mockData';
 import { 
   generateUniversalMaterialPrompt, 
   generateUniversalInfographicFromProjectPrompt, 
-  generateUniversalInfographicFromRawMaterialPrompt 
+  generateUniversalInfographicFromRawMaterialPrompt,
+  analyzeAndGenerateProjectInfographicPrompt,
+  analyzeAndGenerateRawInfographicPrompt,
+  analyzeAndGenerateMaterialPrompt
 } from '../../services/promptStudioEngine';
+import { StiviaThinkingResult } from '../../services/stiviaThinkingFramework';
 import { PilihGayaInfografis } from '../infographic/PilihGayaInfografis';
+import { StiviaThinkingPanel } from '../infographic/StiviaThinkingPanel';
+import { HowStiviaWorksModal } from '../infographic/HowStiviaWorksModal';
 
 interface PromptStudioPageProps {
   projects: InfographicDraft[];
@@ -62,12 +69,25 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
   const [rawVisualStyle, setRawVisualStyle] = useState<string>('Sains Modern (Navy Clean)');
   const [customStyleDesc, setCustomStyleDesc] = useState('');
 
-  // State Hasil Prompt
+  // State Hasil Prompt & Kerangka Berpikir STIVIA
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
+  const [thinkingResult, setThinkingResult] = useState<StiviaThinkingResult | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isHowWorksModalOpen, setIsHowWorksModalOpen] = useState(false);
 
   // Ambil data proyek yang dipilih
   const activeProject = projects.find((p) => p.id === selectedProjectId) || currentDraft;
+
+  // Helper untuk scroll mulus ke hasil setelah generate selesai
+  const scrollToResult = () => {
+    setTimeout(() => {
+      const resultEl = document.getElementById('prompt-result-section');
+      if (resultEl) {
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  };
 
   // Handler Generate Prompt Materi
   const handleGenerateMaterialPrompt = () => {
@@ -75,10 +95,31 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
       onSaveToast('Pilih proyek terlebih dahulu untuk membuat prompt materi.');
       return;
     }
-    const prompt = generateUniversalMaterialPrompt(activeProject);
-    setGeneratedPrompt(prompt);
+
+    setIsGenerating(true);
     setCopied(false);
-    onSaveToast('Universal Prompt Materi berhasil dibuat!');
+
+    setTimeout(() => {
+      try {
+        const { prompt, thinkingResult: result } = analyzeAndGenerateMaterialPrompt(activeProject);
+        setGeneratedPrompt(prompt);
+        setThinkingResult(result);
+        onSaveToast('Universal Prompt Materi & Kerangka Berpikir STIVIA berhasil dibuat!');
+        scrollToResult();
+      } catch (err) {
+        console.error('[Prompt Studio Material Error]', err);
+        try {
+          const fallback = generateUniversalMaterialPrompt(activeProject);
+          setGeneratedPrompt(fallback);
+          onSaveToast('Prompt Materi berhasil dibuat dengan mode pemulihan (fallback).');
+          scrollToResult();
+        } catch (fbErr) {
+          onSaveToast('Gagal memproses data proyek. Pastikan materi sudah memiliki judul dan cakupan.');
+        }
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 200);
   };
 
   // Handler Generate Prompt Infografis dari Proyek STIVIA
@@ -87,13 +128,27 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
       onSaveToast('Pilih proyek terlebih dahulu untuk membuat prompt infografis.');
       return;
     }
-    const prompt = generateUniversalInfographicFromProjectPrompt(activeProject, {
-      format: 'Vertikal',
-      visualStyleName: selectedVisualStyle,
-    });
-    setGeneratedPrompt(prompt);
+
+    setIsGenerating(true);
     setCopied(false);
-    onSaveToast('Universal Prompt Infografis Proyek berhasil dibuat!');
+
+    setTimeout(() => {
+      try {
+        const { prompt, thinkingResult: result } = analyzeAndGenerateProjectInfographicPrompt(activeProject, {
+          format: 'Vertikal',
+          visualStyleName: selectedVisualStyle,
+        });
+        setGeneratedPrompt(prompt);
+        setThinkingResult(result);
+        onSaveToast('Universal Prompt Infografis Proyek berhasil dibuat!');
+        scrollToResult();
+      } catch (err) {
+        console.error('[Prompt Studio Infographic Error]', err);
+        onSaveToast('Gagal menganalisis gaya visual. Silakan coba kembali.');
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 200);
   };
 
   // Handler Generate Prompt Infografis dari Materi Saya
@@ -102,16 +157,30 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
       onSaveToast('Silakan tempelkan isi materi pembelajaran Anda terlebih dahulu.');
       return;
     }
-    const prompt = generateUniversalInfographicFromRawMaterialPrompt({
-      title: rawTitle.trim() || 'Infografis Materi Pembelajaran',
-      rawMaterial: rawContent,
-      format: 'Vertikal',
-      visualStyle: rawVisualStyle,
-      customStyleDescription: customStyleDesc,
-    });
-    setGeneratedPrompt(prompt);
+
+    setIsGenerating(true);
     setCopied(false);
-    onSaveToast('Universal Prompt Infografis dari materi Anda berhasil dibuat!');
+
+    setTimeout(() => {
+      try {
+        const { prompt, thinkingResult: result } = analyzeAndGenerateRawInfographicPrompt({
+          title: rawTitle.trim() || 'Infografis Materi Pembelajaran',
+          rawMaterial: rawContent,
+          format: 'Vertikal',
+          visualStyle: rawVisualStyle,
+          customStyleDescription: customStyleDesc,
+        });
+        setGeneratedPrompt(prompt);
+        setThinkingResult(result);
+        onSaveToast('Universal Prompt Infografis dari materi Anda berhasil dibuat!');
+        scrollToResult();
+      } catch (err) {
+        console.error('[Prompt Studio Raw Error]', err);
+        onSaveToast('Gagal menganalisis naskah materi. Silakan periksa teks Anda.');
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 200);
   };
 
   // Handler Copy to Clipboard
@@ -131,7 +200,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 mb-2">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Universal AI Prompt Generator</span>
+              <span>Universal AI Prompt Generator • STIVIA v2.2</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               PROMPT STUDIO
@@ -140,6 +209,16 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
               Buat prompt siap pakai berdasarkan alur STIVIA atau materi Anda.
             </p>
           </div>
+
+          {/* Tombol Bagaimana STIVIA Bekerja di Header Utama */}
+          <button
+            type="button"
+            onClick={() => setIsHowWorksModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-amber-900 text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+          >
+            <Sparkles className="w-4 h-4 text-amber-600" />
+            <span>Bagaimana STIVIA Bekerja?</span>
+          </button>
         </div>
       ) : (
         /* Navigasi Internal di Kiri Atas Sub-halaman */
@@ -372,10 +451,24 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
               <button
                 id="btn-generate-material-prompt"
                 onClick={handleGenerateMaterialPrompt}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                disabled={isGenerating}
+                className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
+                  isGenerating 
+                    ? 'bg-indigo-400 text-white cursor-not-allowed opacity-80' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-indigo-600/20 cursor-pointer'
+                }`}
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Generate Prompt Materi Universal</span>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Menganalisis & Membuat Universal Prompt Materi...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Generate Prompt Materi Universal</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -538,10 +631,24 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                   <button
                     id="btn-generate-project-infographic-prompt"
                     onClick={handleGenerateProjectInfographicPrompt}
-                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={isGenerating}
+                    className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
+                      isGenerating
+                        ? 'bg-emerald-400 text-white cursor-not-allowed opacity-80'
+                        : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-emerald-600/20 cursor-pointer'
+                    }`}
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Generate Prompt Desain Infografis</span>
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Menganalisis Gaya & Merancang Prompt Infografis...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Generate Prompt Desain Infografis</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -654,10 +761,24 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                   <button
                     id="btn-generate-raw-infographic-prompt"
                     onClick={handleGenerateRawInfographicPrompt}
-                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={isGenerating}
+                    className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
+                      isGenerating
+                        ? 'bg-emerald-400 text-white cursor-not-allowed opacity-80'
+                        : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-emerald-600/20 cursor-pointer'
+                    }`}
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Generate Prompt Desain Infografis dari Materi Saya</span>
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Menganalisis Teks Materi & Merancang Prompt...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Generate Prompt Desain Infografis dari Materi Saya</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -666,15 +787,23 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
         </div>
       )}
 
+      {/* PANEL HASIL KERANGKA BERPIKIR STIVIA (7 TAHAP) */}
+      {thinkingResult && (
+        <StiviaThinkingPanel thinkingResult={thinkingResult} />
+      )}
+
       {/* HASIL PROMPT KELUARAN (READ-ONLY TEXTAREA & COPY BUTTON) */}
       {generatedPrompt && (
-        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <div 
+          id="prompt-result-section"
+          className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300 scroll-mt-6"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                 <h3 className="text-base font-bold text-white tracking-wide">
-                  Hasil Universal Prompt Siap Pakai
+                  Hasil Universal Prompt Siap Pakai (Tahap 7)
                 </h3>
               </div>
               <p className="text-xs text-slate-400">
@@ -720,6 +849,12 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* Pop-up Modal Bagaimana STIVIA Bekerja */}
+      <HowStiviaWorksModal
+        isOpen={isHowWorksModalOpen}
+        onClose={() => setIsHowWorksModalOpen(false)}
+      />
     </div>
   );
 };

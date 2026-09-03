@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ArrowLeft, 
   Download, 
@@ -66,7 +66,7 @@ import {
   unlockForEditing,
   getReadonlyInfographicFromLockedOutput
 } from '../../services/finalOutputLock';
-import { exportMaterialToDocx } from '../../services/docxExportService';
+import { exportInfographic, handleDirectPrint } from '../../services/infographicExportService';
 import { InfographicRenderer } from '../infographic/InfographicRenderer';
 
 interface HasilInfografisPageProps {
@@ -113,6 +113,12 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
   const [showDownloadModal, setShowDownloadModal] = useState<boolean>(false);
   const [showLockDetailsModal, setShowLockDetailsModal] = useState<boolean>(false);
   const [isFullscreenModal, setIsFullscreenModal] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportLoadingMsg, setExportLoadingMsg] = useState<string>('');
+
+  // Target element refs for high-fidelity canvas capture
+  const mainCanvasRef = useRef<HTMLDivElement>(null);
+  const fullscreenCanvasRef = useRef<HTMLDivElement>(null);
 
   // Style modal local form state
   const [modalSelectedStyle, setModalSelectedStyle] = useState<string>(draft.visualStyle || 'Modern Edukatif');
@@ -405,22 +411,51 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
     onSaveToast('🔒 Output Final Terkunci siap difinalisasi & diekspor!');
   };
 
-  const handleDownloadFile = async (formatType: string) => {
+  // Handler Cetak Sinkron Langsung (Preserves User Activation Gesture)
+  const handlePrint = () => {
     setShowDownloadModal(false);
-    if (formatType.includes('DOCX') || formatType.includes('Word')) {
-      onSaveToast('Menyiapkan file dokumen materi (.DOCX) dari Content Snapshot...');
-      const res = await exportMaterialToDocx(currentDraft);
+    handleDirectPrint((msg) => onSaveToast(msg));
+  };
+
+  const handleDownloadFile = async (formatType: string) => {
+    // Jika formatType adalah cetak/pdf, gunakan langsung handlePrint sinkron
+    const isPdf = formatType.toLowerCase().includes('pdf') || formatType.toLowerCase().includes('cetak') || formatType.toLowerCase().includes('print');
+    if (isPdf) {
+      handlePrint();
+      return;
+    }
+
+    setShowDownloadModal(false);
+    setIsExporting(true);
+
+    const isDocx = formatType.toLowerCase().includes('docx') || formatType.toLowerCase().includes('word');
+    const isJpg = formatType.toLowerCase().includes('jpg') || formatType.toLowerCase().includes('jpeg');
+
+    const loadingText = isDocx 
+      ? 'Menyiapkan berkas dokumen materi (.DOCX)...'
+      : isJpg
+        ? 'Menyiapkan berkas gambar infografis (JPG)...'
+        : 'Menyiapkan berkas gambar infografis (PNG high resolution)...';
+
+    setExportLoadingMsg(loadingText);
+    onSaveToast(loadingText);
+
+    try {
+      const targetElement = isFullscreenModal ? fullscreenCanvasRef.current : mainCanvasRef.current;
+      const res = await exportInfographic(formatType, currentDraft, targetElement);
       if (res.success) {
         onSaveToast(`✅ ${res.message}`);
       } else {
         onSaveToast(`⚠️ ${res.message}`);
       }
-      return;
+    } catch (err) {
+      console.error('[STIVIA Export Error]', err);
+      const detail = err instanceof Error ? err.message : String(err);
+      onSaveToast(`⚠️ Gagal mengekspor infografis: ${detail}`);
+    } finally {
+      setIsExporting(false);
+      setExportLoadingMsg('');
     }
-    if (formatType.includes('PDF') || formatType.includes('Cetak')) {
-      window.print();
-    }
-    onSaveToast(`Menyiapkan berkas infografis dari snapshot terkunci (${formatType})...`);
   };
 
   const activeStyleConfig = React.useMemo(() => {
@@ -788,6 +823,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
               style={zoomLevel !== 100 ? { transform: `scale(${zoomLevel / 100})` } : undefined}
             >
               <InfographicRenderer
+                canvasRef={mainCanvasRef}
                 draft={displayDraft}
                 activeSectionId={activeSectionId}
                 onSelectSection={(id) => setActiveSectionId(id)}
@@ -1295,16 +1331,32 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
 
               <button
                 onClick={() => handleDownloadFile('Gambar PNG (300 DPI)')}
-                className="w-full p-3 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-950 flex items-center justify-between text-left transition-colors cursor-pointer"
+                disabled={isExporting}
+                className="w-full p-3 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 border border-emerald-200 text-emerald-950 flex items-center justify-between text-left transition-colors cursor-pointer disabled:opacity-50"
               >
                 <div className="flex items-center gap-2.5">
                   <FileCheck className="w-4 h-4 text-emerald-600" />
                   <div>
                     <p className="text-xs font-bold">Ekspor Gambar PNG (300 DPI)</p>
-                    <p className="text-[10px] text-emerald-700">Untuk slide presentasi atau grup belajar</p>
+                    <p className="text-[10px] text-emerald-700">Resolusi tinggi untuk slide presentasi & media digital</p>
                   </div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-emerald-500" />
+              </button>
+
+              <button
+                onClick={() => handleDownloadFile('Gambar JPG')}
+                disabled={isExporting}
+                className="w-full p-3 rounded-2xl bg-amber-50/70 hover:bg-amber-100 border border-amber-200 text-amber-950 flex items-center justify-between text-left transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <div>
+                    <p className="text-xs font-bold">Ekspor Gambar JPG (Poster)</p>
+                    <p className="text-[10px] text-amber-700">Format gambar ringkas siap dibagikan ke siswa</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-amber-500" />
               </button>
 
               <button
@@ -1372,19 +1424,47 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              {isExporting && (
+                <span className="text-[11px] font-medium text-amber-300 animate-pulse hidden md:inline">
+                  {exportLoadingMsg}
+                </span>
+              )}
+
               <button
-                onClick={() => handleDownloadFile('Dokumen DOCX')}
-                className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
-                title="Ekspor materi DOCX"
+                onClick={() => handleDownloadFile('Gambar PNG (300 DPI)')}
+                disabled={isExporting}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                title="Unduh infografis sebagai gambar PNG (Resolusi Tinggi)"
               >
-                <FileText className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">DOCX</span>
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>PNG</span>
               </button>
 
               <button
-                onClick={() => window.print()}
-                className="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                title="Cetak Infografis"
+                onClick={() => handleDownloadFile('Gambar JPG')}
+                disabled={isExporting}
+                className="px-2.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                title="Unduh infografis sebagai gambar JPG"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>JPG</span>
+              </button>
+
+              <button
+                onClick={() => handleDownloadFile('Dokumen DOCX')}
+                disabled={isExporting}
+                className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                title="Ekspor materi DOCX (Word)"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">DOCX</span>
+              </button>
+
+              <button
+                onClick={handlePrint}
+                disabled={isExporting}
+                className="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                title="Cetak Infografis / Simpan PDF"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Cetak</span>
@@ -1402,6 +1482,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
 
           <div className="w-full max-w-4xl pb-12 flex justify-center">
             <InfographicRenderer
+              canvasRef={fullscreenCanvasRef}
               draft={displayDraft}
               activeSectionId={activeSectionId}
               onSelectSection={(id) => setActiveSectionId(id)}
@@ -1436,7 +1517,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
 
             <div className="space-y-3 my-5">
               <button
-                onClick={() => handleDownloadFile('PDF Siap Cetak (A4)')}
+                onClick={handlePrint}
                 className="w-full p-3.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 flex items-center justify-between text-left transition-all cursor-pointer"
               >
                 <div>
