@@ -153,6 +153,7 @@ export interface ContentSnapshot {
     subject: string;
     theme: string;
     topic: string;
+    pertemuan?: number | string;
     scope: string;
     learningObjective?: string;
   };
@@ -319,6 +320,100 @@ export interface StyleConfig {
   icons: IconTokens;
   decoration: DecorationTokens;
   composition: CompositionTokens;
+  styleProfile?: StyleProfile;
+}
+
+// ==========================================
+// STIVIA v2.2d: SISTEM STYLE PROFILE TERPUSAT
+// ==========================================
+
+export interface StyleColorProfile {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  surface: string;
+  textPrimary: string;
+  textSecondary: string;
+  paletteTag: string;
+  swatches: string[];
+}
+
+export interface StyleLayoutProfile {
+  archetype: string;
+  defaultLayout: 'hero' | 'grid' | 'central' | 'timeline' | 'process' | 'comparison' | 'editorial' | string;
+  columnStructure: string;
+  density: 'compact' | 'balanced' | 'spacious';
+  recommendedFor: string[];
+}
+
+export interface StyleCompositionProfile {
+  whitespace: 'compact' | 'balanced' | 'generous';
+  alignment: 'left' | 'center' | 'balanced';
+  visualEmphasis: 'text_first' | 'balanced' | 'visual_first';
+  gridGap: string;
+}
+
+export interface StyleHierarchyProfile {
+  titleScale: string;
+  subtitleScale: string;
+  bodyScale: string;
+  badgeStyle: string;
+  contrastRatio: string;
+}
+
+export interface StyleElementProfile {
+  cardBorderRadius: string;
+  innerBorderRadius: string;
+  borderTreatment: string;
+  shadowStyle: string;
+  depthLevel: string;
+}
+
+export interface StyleIconProfile {
+  style: 'outline' | 'filled' | 'tinted' | 'rounded-box' | 'geometric' | 'sketch' | 'pixel';
+  containerShape: string;
+  character: string;
+}
+
+export interface StyleIllustrationProfile {
+  style: string;
+  treatment: string;
+  character: string;
+}
+
+export interface StyleOrnamentProfile {
+  level: 'none' | 'minimal' | 'moderate' | 'expressive';
+  motifs: string[];
+  description: string;
+}
+
+export interface StyleBackgroundProfile {
+  treatment: string;
+  texturePattern: 'dots' | 'grid' | 'waves' | 'lines' | 'noise' | 'clean' | 'notebook' | 'none';
+  description: string;
+}
+
+export interface StyleProfile {
+  id: string;
+  name: string;
+  category: string;
+  categoryId: string;
+  description: string;
+  visualCharacteristics: string[];
+  titleFont: string;
+  subtitleFont: string;
+  bodyFont: string;
+  typographyProfile: TypographyProfile;
+  colorProfile: StyleColorProfile;
+  layoutProfile: StyleLayoutProfile;
+  compositionProfile: StyleCompositionProfile;
+  hierarchyProfile: StyleHierarchyProfile;
+  elementProfile: StyleElementProfile;
+  iconProfile: StyleIconProfile;
+  illustrationProfile: StyleIllustrationProfile;
+  ornamentProfile: StyleOrnamentProfile;
+  backgroundProfile: StyleBackgroundProfile;
 }
 
 export interface ActiveProjectContext {
@@ -327,6 +422,7 @@ export interface ActiveProjectContext {
   mataPelajaran: string;
   tema: string;
   materi: string;
+  pertemuan?: number | string;
   cakupanMateri: string;
   gayaVisual?: string;
   customVisualStyle?: string;
@@ -335,6 +431,10 @@ export interface ActiveProjectContext {
   konteksContoh?: ExampleContext;
   customExampleContext?: string;
   styleConfig?: StyleConfig;
+  styleProfile?: StyleProfile;
+  customTitleFont?: string;
+  customBodyFont?: string;
+  typographyMode?: 'otomatis' | 'kustom';
 }
 
 export interface ComparisonRow {
@@ -463,10 +563,15 @@ export interface InfographicDraft {
   subject: string;
   theme: string;
   rawTopic: string;
+  pertemuan?: number | string;
   scope: string;
   visualStyle: string;
   customVisualStyle?: string;
   styleConfig?: StyleConfig;
+  styleProfile?: StyleProfile;
+  customTitleFont?: string;
+  customBodyFont?: string;
+  typographyMode?: 'otomatis' | 'kustom';
   format: InfographicFormat;
   visualLevel: VisualLevel;
   exampleContext: ExampleContext;

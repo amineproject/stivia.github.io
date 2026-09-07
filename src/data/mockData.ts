@@ -92,6 +92,7 @@ const RAW_INITIAL_SAMPLE_DRAFT: InfographicDraft = {
   subject: 'Informatika',
   theme: 'Analisis dan Visualisasi Data',
   rawTopic: 'Graph, Data Terstruktur, dan Pemodelan Relasi',
+  pertemuan: 'Pertemuan 1',
   scope: '1. Pengantar dan definisi Graph sebagai struktur data non-linear.\n2. Komponen penyusun Graph (Node/Vertex dan Edge/Sisi).\n3. Variasi konsep Graph berbobot dan terarah.\n4. Penerapan nyata pada navigasi rute dan pertemanan media sosial.\n5. Langkah membaca struktur relasi.\n6. Studi kasus rute optimal.\n7. Ringkasan & Benang Merah Pembelajaran.',
   requiredTopics: [
     'Pengantar & Definisi Graph',

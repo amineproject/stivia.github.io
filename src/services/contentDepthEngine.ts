@@ -66,7 +66,7 @@ export function runContentDepthEngine(
     const orderNum = idx + 1;
     const letter = String.fromCharCode(65 + idx);
     const accent = colorPalette[idx % colorPalette.length];
-    const analyzed = analyzeScopeItem(item.rawText, idx, materi, mataPelajaran);
+    const analyzed = analyzeScopeItem(item.rawText, idx, materi, mataPelajaran, context.pertemuan);
 
     // 1. Tentukan kedalaman berdasarkan Bobot (Tahap 2B)
     let depth: ContentDepth = 'SEDANG';

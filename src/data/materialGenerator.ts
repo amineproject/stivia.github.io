@@ -21,6 +21,7 @@ import {
   LayoutConfig,
 } from '../types';
 import { getStyleConfig } from './styleSystem';
+import { getStyleProfile } from './styleProfilesData';
 import { determineLayoutArchetype } from './layoutEngine';
 import { runContentEnginePipeline } from '../services/contentEnginePipeline';
 
@@ -175,21 +176,51 @@ export function parseScopeToRequiredTopics(rawScope: string, topicName: string =
 /**
  * Intelligent analyzer that classifies each scope item into the pedagogical pipeline
  */
-export function analyzeScopeItem(itemText: string, index: number, topicName: string = '', subjectName: string = ''): AnalyzedScopeItem {
+export function analyzeScopeItem(
+  itemText: string, 
+  index: number, 
+  topicName: string = '', 
+  subjectName: string = '',
+  meetingContext?: string | number
+): AnalyzedScopeItem {
   const clean = itemText.replace(/^(\d+|[a-zA-Z])[\.\)\-\*•]\s*/, '').trim();
   const lower = clean.toLowerCase();
 
+  const meetingNum = typeof meetingContext === 'number'
+    ? meetingContext
+    : parseInt(String(meetingContext || '').replace(/\D/g, ''), 10) || 1;
+  const isLaterMeeting = meetingNum > 1;
+
   // 1. Pengertian / Definisi / Konsep Dasar
-  if (
+  // Khusus pertemuan > 1: Tidak boleh otomatis menjadikan item pertama sebagai pengertian kecuali ada kata eksplisit
+  const hasExplicitDefinitionTerm = 
     lower.includes('pengertian') || 
     lower.includes('definisi') || 
-    lower.includes('konsep') || 
     lower.includes('apa itu') || 
     lower.includes('hakikat') ||
-    lower.includes('pengantar') ||
     lower.includes('makna') ||
-    (index === 0 && !lower.includes('tujuan') && !lower.includes('fungsi') && !lower.includes('ciri') && !lower.includes('unsur') && !lower.includes('jenis'))
-  ) {
+    lower.includes('pengantar') ||
+    (lower.includes('konsep dasar') && !lower.includes('penerapan') && !lower.includes('struktur'));
+
+  const isExcludedFromDefinition = 
+    lower.includes('tujuan') || 
+    lower.includes('fungsi') || 
+    lower.includes('ciri') || 
+    lower.includes('unsur') || 
+    lower.includes('jenis') ||
+    lower.includes('struktur') ||
+    lower.includes('bagian') ||
+    lower.includes('kaidah') ||
+    lower.includes('kebahasaan') ||
+    lower.includes('langkah') ||
+    lower.includes('alur') ||
+    lower.includes('tahap') ||
+    lower.includes('cara') ||
+    lower.includes('peran') ||
+    lower.includes('contoh') ||
+    lower.includes('rumus');
+
+  if (hasExplicitDefinitionTerm || (!isLaterMeeting && index === 0 && !isExcludedFromDefinition)) {
     return {
       rawText: itemText,
       cleanTitle: clean,
@@ -1605,6 +1636,7 @@ export function createDraftFromContext(context: ActiveProjectContext): Infograph
     subject: mataPelajaran,
     theme: tema,
     rawTopic: materi,
+    pertemuan: context.pertemuan || 'Pertemuan 1',
     scope: cakupanMateri,
     requiredTopics,
     coverageChecklist,
@@ -1612,6 +1644,10 @@ export function createDraftFromContext(context: ActiveProjectContext): Infograph
     visualStyle: gayaVisual || 'Modern Edukatif',
     customVisualStyle: customExampleContext || '',
     styleConfig: getStyleConfig(gayaVisual || 'Modern Edukatif', customExampleContext),
+    styleProfile: context.styleProfile || getStyleProfile(gayaVisual || 'Modern Edukatif'),
+    customTitleFont: context.customTitleFont,
+    customBodyFont: context.customBodyFont,
+    typographyMode: context.typographyMode || 'otomatis',
     format: format || 'portrait',
     visualLevel: tingkatVisual || 'seimbang',
     exampleContext: konteksContoh || 'otomatis',
@@ -1668,6 +1704,7 @@ export function getContentSnapshotFromDraft(draft: InfographicDraft): import('..
       subject: draft.subject,
       theme: draft.theme,
       topic: draft.rawTopic || draft.title,
+      pertemuan: draft.pertemuan || 'Pertemuan 1',
       scope: draft.scope,
       learningObjective: draft.learningObjective,
     },
@@ -1730,6 +1767,7 @@ export function validateAndSanitizeDraft(draft: InfographicDraft): InfographicDr
       mataPelajaran: draft.subject || 'Bahasa Indonesia',
       tema: draft.theme || 'Pembelajaran Terpadu',
       materi: draft.rawTopic || 'Materi Pokok',
+      pertemuan: draft.pertemuan || 'Pertemuan 1',
       cakupanMateri: draft.scope || '1. Pengertian\n2. Tujuan\n3. Fungsi\n4. Ciri-ciri\n5. Peran dalam kehidupan',
       gayaVisual: draft.visualStyle,
       format: draft.format,
@@ -1929,6 +1967,7 @@ export function regenerateMaterialContent(currentDraft: InfographicDraft, variat
     tingkatVisual: currentDraft.visualLevel,
     konteksContoh: currentDraft.exampleContext,
     customExampleContext: currentDraft.customExampleContext,
+    pertemuan: currentDraft.pertemuan || 'Pertemuan 1',
     styleConfig: currentDraft.styleConfig
   };
 
@@ -1955,8 +1994,15 @@ export function regenerateMaterialContent(currentDraft: InfographicDraft, variat
  * TAHAP 4: Visual Style Switcher Engine
  * Updates design tokens, visual configuration, and layout archetype without altering material content facts
  */
-export function updateDraftStyle(currentDraft: InfographicDraft, newStyle: string, customStyleText?: string): InfographicDraft {
+export function updateDraftStyle(
+  currentDraft: InfographicDraft, 
+  newStyle: string, 
+  customStyleText?: string,
+  customTitleFont?: string,
+  customBodyFont?: string
+): InfographicDraft {
   const newStyleConfig = getStyleConfig(newStyle, customStyleText);
+  const newStyleProfile = getStyleProfile(newStyle);
   
   // Clone blocks to preserve 100% of material content while detaching previous references
   const preservedBlocks = (currentDraft.blocks || []).map((b) => ({ ...b }));
@@ -1977,6 +2023,9 @@ export function updateDraftStyle(currentDraft: InfographicDraft, newStyle: strin
     visualStyle: newStyle,
     customVisualStyle: customStyleText || '',
     styleConfig: newStyleConfig,
+    styleProfile: newStyleProfile,
+    customTitleFont: customTitleFont || currentDraft.customTitleFont,
+    customBodyFont: customBodyFont || currentDraft.customBodyFont,
     layoutTemplate: matchedLayout,
     layoutVariationCycle: 0,
     blocks: preservedBlocks,

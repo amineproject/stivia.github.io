@@ -60,13 +60,13 @@ export function buildFontFamilyCss(
 }
 
 // =========================================================================
-// DEFINISI 20 TYPOGRAPHY PROFILES
+// DEFINISI 20 TYPOGRAPHY PROFILES STIVIA v2.2d
 // =========================================================================
 
-/** 1. MINIMALISM */
+/** 1. MINIMALISM - Montserrat + Inter */
 export const TYPOGRAPHY_MINIMALISM: TypographyProfile = {
-  headingFont: 'Plus Jakarta Sans / Inter',
-  subheadingFont: 'Plus Jakarta Sans',
+  headingFont: 'Montserrat',
+  subheadingFont: 'Montserrat',
   bodyFont: 'Inter',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
@@ -74,125 +74,125 @@ export const TYPOGRAPHY_MINIMALISM: TypographyProfile = {
   headingCase: 'normal',
   letterSpacing: 'normal',
   lineHeight: 'relaxed',
-  typographyCharacter: 'Bersih, modern, dan sangat mudah dibaca.',
+  typographyCharacter: 'Bersih, sederhana, modern, dan sangat mudah dibaca.',
   readabilityRules: 'Gunakan kontras tinggi dan ruang kosong yang cukup.',
-  headingFontFamilyCss: buildFontFamilyCss('Plus Jakarta Sans, Inter', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Plus Jakarta Sans', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
-};
-
-/** 2. MAXIMALISM */
-export const TYPOGRAPHY_MAXIMALISM: TypographyProfile = {
-  headingFont: 'Syne / Montserrat',
-  subheadingFont: 'Montserrat',
-  bodyFont: 'Plus Jakarta Sans',
-  headingWeight: 'extra bold',
-  subheadingWeight: 'bold',
-  bodyWeight: 'medium',
-  headingCase: 'uppercase',
-  letterSpacing: 'wide',
-  lineHeight: 'normal',
-  typographyCharacter: 'Berani, ekspresif, dan kuat.',
-  readabilityRules: 'Hindari teks panjang yang terlalu rapat.',
-  headingFontFamilyCss: buildFontFamilyCss('Syne, Montserrat', 'sans'),
+  headingFontFamilyCss: buildFontFamilyCss('Montserrat, Inter', 'sans'),
   subheadingFontFamilyCss: buildFontFamilyCss('Montserrat', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Plus Jakarta Sans, Inter', 'sans'),
-};
-
-/** 3. FUTURISTIC */
-export const TYPOGRAPHY_FUTURISTIC: TypographyProfile = {
-  headingFont: 'Orbitron / Rajdhani',
-  subheadingFont: 'Space Grotesk',
-  bodyFont: 'Space Grotesk / Inter',
-  headingWeight: 'bold',
-  subheadingWeight: 'semi bold',
-  bodyWeight: 'regular',
-  headingCase: 'uppercase',
-  letterSpacing: 'wider',
-  lineHeight: 'normal',
-  typographyCharacter: 'Digital, modern, dan bernuansa teknologi.',
-  readabilityRules: 'Gunakan font futuristik HANYA pada judul dan label singkat.',
-  headingFontFamilyCss: buildFontFamilyCss('Orbitron, Rajdhani', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Space Grotesk', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Space Grotesk, Inter', 'sans'),
-};
-
-/** 4. VECTOR ART */
-export const TYPOGRAPHY_VECTOR_ART: TypographyProfile = {
-  headingFont: 'Poppins',
-  subheadingFont: 'Poppins',
-  bodyFont: 'Open Sans / Inter',
-  headingWeight: 'bold',
-  subheadingWeight: 'semi bold',
-  bodyWeight: 'regular',
-  headingCase: 'normal',
-  letterSpacing: 'normal',
-  lineHeight: 'normal',
-  typographyCharacter: 'Geometris, bersahabat, dan jelas.',
-  readabilityRules: 'Bentuk huruf tegas agar serasi dengan ilustrasi vektor.',
-  headingFontFamilyCss: buildFontFamilyCss('Poppins', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Poppins', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Open Sans, Inter', 'sans'),
-};
-
-/** 5. COLLAGE ART */
-export const TYPOGRAPHY_COLLAGE_ART: TypographyProfile = {
-  headingFont: 'Bebas Neue / Anton',
-  subheadingFont: 'Archivo',
-  bodyFont: 'Inter',
-  headingWeight: 'bold',
-  subheadingWeight: 'semi bold',
-  bodyWeight: 'regular',
-  headingCase: 'uppercase',
-  letterSpacing: 'wide',
-  lineHeight: 'tight',
-  typographyCharacter: 'Kontras tinggi seperti guntingan majalah.',
-  readabilityRules: 'Body text harus tetap bersih dan menggunakan font netral.',
-  headingFontFamilyCss: buildFontFamilyCss('Bebas Neue, Anton, Archivo Black', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Archivo', 'sans'),
   bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
 };
 
-/** 6. CYBERPUNK */
-export const TYPOGRAPHY_CYBERPUNK: TypographyProfile = {
-  headingFont: 'Teko / Orbitron',
-  subheadingFont: 'Share Tech Mono',
-  bodyFont: 'Chakra Petch / Inter',
-  headingWeight: 'bold',
-  subheadingWeight: 'medium',
-  bodyWeight: 'regular',
-  headingCase: 'uppercase',
-  letterSpacing: 'wider',
-  lineHeight: 'normal',
-  typographyCharacter: 'Neon, tajam, dan industrial.',
-  readabilityRules: 'Warna font harus memiliki kontras tinggi terhadap latar belakang gelap.',
-  headingFontFamilyCss: buildFontFamilyCss('Teko, Orbitron', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Share Tech Mono', 'mono'),
-  bodyFontFamilyCss: buildFontFamilyCss('Chakra Petch, Inter', 'sans'),
-};
-
-/** 7. POP ART */
-export const TYPOGRAPHY_POP_ART: TypographyProfile = {
-  headingFont: 'Bangers / Bungee',
+/** 2. MAXIMALISM - Archivo Black + Poppins */
+export const TYPOGRAPHY_MAXIMALISM: TypographyProfile = {
+  headingFont: 'Archivo Black',
   subheadingFont: 'Poppins',
-  bodyFont: 'Poppins / Inter',
+  bodyFont: 'Poppins',
   headingWeight: 'black',
   subheadingWeight: 'bold',
   bodyWeight: 'medium',
   headingCase: 'uppercase',
   letterSpacing: 'wide',
   lineHeight: 'normal',
-  typographyCharacter: 'Ceria, komikal, dan mencolok.',
-  readabilityRules: 'Gunakan font komik hanya pada judul utama.',
+  typographyCharacter: 'Berani, kuat, dinamis, dan ekspresif.',
+  readabilityRules: 'Hindari teks panjang yang terlalu rapat.',
+  headingFontFamilyCss: buildFontFamilyCss('Archivo Black, Montserrat', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Poppins', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Poppins, Inter', 'sans'),
+};
+
+/** 3. FUTURISTIC - Orbitron + Exo 2 */
+export const TYPOGRAPHY_FUTURISTIC: TypographyProfile = {
+  headingFont: 'Orbitron',
+  subheadingFont: 'Exo 2',
+  bodyFont: 'Exo 2',
+  headingWeight: 'bold',
+  subheadingWeight: 'semi bold',
+  bodyWeight: 'regular',
+  headingCase: 'uppercase',
+  letterSpacing: 'wider',
+  lineHeight: 'normal',
+  typographyCharacter: 'Teknologi dan futuristik dengan aksen geometris canggih.',
+  readabilityRules: 'Gunakan font futuristik pada judul dan label singkat, isi tetap terbaca prima.',
+  headingFontFamilyCss: buildFontFamilyCss('Orbitron, Chakra Petch', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Exo 2, Space Grotesk', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Exo 2, Inter', 'sans'),
+};
+
+/** 4. VECTOR ART - Poppins + Nunito Sans */
+export const TYPOGRAPHY_VECTOR_ART: TypographyProfile = {
+  headingFont: 'Poppins',
+  subheadingFont: 'Poppins',
+  bodyFont: 'Nunito Sans',
+  headingWeight: 'bold',
+  subheadingWeight: 'semi bold',
+  bodyWeight: 'regular',
+  headingCase: 'normal',
+  letterSpacing: 'normal',
+  lineHeight: 'normal',
+  typographyCharacter: 'Ilustratif, ramah, geometris, dan terstruktur jelas.',
+  readabilityRules: 'Bentuk huruf tegas dan seimbang dengan kontur ilustrasi vektor.',
+  headingFontFamilyCss: buildFontFamilyCss('Poppins', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Poppins', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Nunito Sans, Open Sans, Inter', 'sans'),
+};
+
+/** 5. COLLAGE ART - Bebas Neue + DM Sans */
+export const TYPOGRAPHY_COLLAGE_ART: TypographyProfile = {
+  headingFont: 'Bebas Neue',
+  subheadingFont: 'DM Sans',
+  bodyFont: 'DM Sans',
+  headingWeight: 'bold',
+  subheadingWeight: 'semi bold',
+  bodyWeight: 'regular',
+  headingCase: 'uppercase',
+  letterSpacing: 'wide',
+  lineHeight: 'tight',
+  typographyCharacter: 'Kreatif dan editorial dengan gaya guntingan artistik.',
+  readabilityRules: 'Body text harus tetap bersih dan menggunakan sans-serif netral.',
+  headingFontFamilyCss: buildFontFamilyCss('Bebas Neue, Archivo Black', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('DM Sans, Archivo', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('DM Sans, Inter', 'sans'),
+};
+
+/** 6. CYBERPUNK - Orbitron + Rajdhani */
+export const TYPOGRAPHY_CYBERPUNK: TypographyProfile = {
+  headingFont: 'Orbitron',
+  subheadingFont: 'Rajdhani',
+  bodyFont: 'Rajdhani',
+  headingWeight: 'bold',
+  subheadingWeight: 'bold',
+  bodyWeight: 'medium',
+  headingCase: 'uppercase',
+  letterSpacing: 'wider',
+  lineHeight: 'normal',
+  typographyCharacter: 'Digital, tajam, berenergi tinggi, dan bernuansa neon canggih.',
+  readabilityRules: 'Warna font harus memiliki kontras tinggi terhadap latar belakang gelap.',
+  headingFontFamilyCss: buildFontFamilyCss('Orbitron, Teko', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Rajdhani, Share Tech Mono', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Rajdhani, Chakra Petch, Inter', 'sans'),
+};
+
+/** 7. POP ART - Bangers + Poppins */
+export const TYPOGRAPHY_POP_ART: TypographyProfile = {
+  headingFont: 'Bangers',
+  subheadingFont: 'Poppins',
+  bodyFont: 'Poppins',
+  headingWeight: 'black',
+  subheadingWeight: 'bold',
+  bodyWeight: 'medium',
+  headingCase: 'uppercase',
+  letterSpacing: 'wide',
+  lineHeight: 'normal',
+  typographyCharacter: 'Ceria, berani, komikal, dan memikat perhatian seketika.',
+  readabilityRules: 'Gunakan font komik pada judul utama, isi tetap bersih dan berjarak lega.',
   headingFontFamilyCss: buildFontFamilyCss('Bangers, Bungee', 'sans'),
   subheadingFontFamilyCss: buildFontFamilyCss('Poppins', 'sans'),
   bodyFontFamilyCss: buildFontFamilyCss('Poppins, Inter', 'sans'),
 };
 
-/** 8. GLASSMORPHISM */
+/** 8. GLASSMORPHISM - Outfit + Inter */
 export const TYPOGRAPHY_GLASSMORPHISM: TypographyProfile = {
-  headingFont: 'Plus Jakarta Sans',
-  subheadingFont: 'Plus Jakarta Sans',
+  headingFont: 'Outfit',
+  subheadingFont: 'Outfit',
   bodyFont: 'Inter',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
@@ -200,89 +200,89 @@ export const TYPOGRAPHY_GLASSMORPHISM: TypographyProfile = {
   headingCase: 'normal',
   letterSpacing: 'normal',
   lineHeight: 'normal',
-  typographyCharacter: 'Elegan, modern, dan transparan.',
-  readabilityRules: 'Hindari teks tipis di atas latar belakang transparan.',
-  headingFontFamilyCss: buildFontFamilyCss('Plus Jakarta Sans', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Plus Jakarta Sans', 'sans'),
+  typographyCharacter: 'Modern, elegan, bersih, dan memancarkan kejernihan visual.',
+  readabilityRules: 'Hindari teks tipis di atas panel transparan blur.',
+  headingFontFamilyCss: buildFontFamilyCss('Outfit, Plus Jakarta Sans', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Outfit', 'sans'),
   bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
 };
 
-/** 9. CLAY STYLE */
+/** 9. CLAY STYLE - Fredoka + Nunito */
 export const TYPOGRAPHY_CLAY_STYLE: TypographyProfile = {
-  headingFont: 'Fredoka / Nunito',
+  headingFont: 'Fredoka',
   subheadingFont: 'Nunito',
-  bodyFont: 'Nunito / Inter',
+  bodyFont: 'Nunito',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
   bodyWeight: 'medium',
   headingCase: 'normal',
   letterSpacing: 'normal',
   lineHeight: 'relaxed',
-  typographyCharacter: 'Membulat, ramah, dan lembut.',
+  typographyCharacter: 'Ramah, edukatif, membulat, dan bersahabat.',
   readabilityRules: 'Gunakan font bulat yang tetap terbaca pada ukuran kecil.',
   headingFontFamilyCss: buildFontFamilyCss('Fredoka, Nunito', 'sans'),
   subheadingFontFamilyCss: buildFontFamilyCss('Nunito', 'sans'),
   bodyFontFamilyCss: buildFontFamilyCss('Nunito, Inter', 'sans'),
 };
 
-/** 10. PIXEL STYLE */
+/** 10. PIXEL STYLE - Press Start 2P + VT323 */
 export const TYPOGRAPHY_PIXEL_STYLE: TypographyProfile = {
-  headingFont: 'Press Start 2P / Silkscreen',
-  subheadingFont: 'Space Mono',
-  bodyFont: 'Inter',
+  headingFont: 'Press Start 2P',
+  subheadingFont: 'VT323',
+  bodyFont: 'VT323',
   headingWeight: 'normal',
-  subheadingWeight: 'medium',
+  subheadingWeight: 'normal',
   bodyWeight: 'regular',
   headingCase: 'uppercase',
   letterSpacing: 'wide',
   lineHeight: 'normal',
-  typographyCharacter: 'Nostalgia game retro 8-bit.',
-  readabilityRules: 'WAJIB menggunakan sans-serif bersih untuk paragraf materi.',
+  typographyCharacter: 'Retro dan digital bernuansa game arkade 8-bit klasik.',
+  readabilityRules: 'Ukuran font piksel disesuaikan agar tetap jelas dan tidak menyilaukan.',
   headingFontFamilyCss: buildFontFamilyCss('Press Start 2P, Silkscreen', 'mono'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Space Mono', 'mono'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('VT323, Space Mono', 'mono'),
+  bodyFontFamilyCss: buildFontFamilyCss('VT323, Inter', 'mono'),
 };
 
-/** 11. EDITORIAL */
+/** 11. EDITORIAL - Playfair Display + Lora */
 export const TYPOGRAPHY_EDITORIAL: TypographyProfile = {
-  headingFont: 'Playfair Display / Merriweather',
-  subheadingFont: 'Merriweather',
-  bodyFont: 'Source Sans Pro / Inter',
+  headingFont: 'Playfair Display',
+  subheadingFont: 'Playfair Display',
+  bodyFont: 'Lora',
   headingWeight: 'bold',
   subheadingWeight: 'medium',
   bodyWeight: 'regular',
   headingCase: 'normal',
   letterSpacing: 'normal',
   lineHeight: 'relaxed',
-  typographyCharacter: 'Klasik, ilmiah, dan elegan seperti jurnal.',
-  readabilityRules: 'Kombinasi serif untuk judul dan sans-serif untuk isi materi.',
+  typographyCharacter: 'Profesional, elegan, berwibawa, layaknya publikasi bergengsi.',
+  readabilityRules: 'Kombinasi serif anggun untuk judul dan serif berjarak nyaman untuk isi materi.',
   headingFontFamilyCss: buildFontFamilyCss('Playfair Display, Merriweather', 'serif'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Merriweather', 'serif'),
-  bodyFontFamilyCss: buildFontFamilyCss('Source Sans 3, Inter', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Playfair Display', 'serif'),
+  bodyFontFamilyCss: buildFontFamilyCss('Lora, Georgia', 'serif'),
 };
 
-/** 12. Y2K */
+/** 12. Y2K - Space Grotesk + DM Sans */
 export const TYPOGRAPHY_Y2K: TypographyProfile = {
-  headingFont: 'Syne / Space Grotesk',
+  headingFont: 'Space Grotesk',
   subheadingFont: 'Space Grotesk',
-  bodyFont: 'Inter',
+  bodyFont: 'DM Sans',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
   bodyWeight: 'regular',
   headingCase: 'uppercase',
   letterSpacing: 'wide',
   lineHeight: 'normal',
-  typographyCharacter: 'Retro-futuristik era 2000-an.',
-  readabilityRules: 'Jangan gunakan efek teks berlebihan yang mengganggu keterbacaan.',
-  headingFontFamilyCss: buildFontFamilyCss('Syne, Space Grotesk', 'sans'),
+  typographyCharacter: 'Modern dan retro digital estetika pergantian milenium era 2000-an.',
+  readabilityRules: 'Pertahankan tata letak modular yang mudah dibaca.',
+  headingFontFamilyCss: buildFontFamilyCss('Space Grotesk, Syne', 'sans'),
   subheadingFontFamilyCss: buildFontFamilyCss('Space Grotesk', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('DM Sans, Inter', 'sans'),
 };
 
-/** 13. SWISS DESIGN */
+/** 13. SWISS DESIGN - Inter + Inter */
 export const TYPOGRAPHY_SWISS_DESIGN: TypographyProfile = {
-  headingFont: 'Archivo / Inter',
-  subheadingFont: 'Archivo',
+  headingFont: 'Inter',
+  subheadingFont: 'Inter',
   bodyFont: 'Inter',
   headingWeight: 'black',
   subheadingWeight: 'bold',
@@ -290,137 +290,137 @@ export const TYPOGRAPHY_SWISS_DESIGN: TypographyProfile = {
   headingCase: 'uppercase',
   letterSpacing: 'tight',
   lineHeight: 'tight',
-  typographyCharacter: 'Struktur grid ketat, tipografi tegas.',
-  readabilityRules: 'Gunakan hierarki ukuran font yang sangat jelas.',
-  headingFontFamilyCss: buildFontFamilyCss('Archivo, Inter', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Archivo', 'sans'),
+  typographyCharacter: 'Bersih, terstruktur, rasional, dan presisi tinggi.',
+  readabilityRules: 'Gunakan hierarki ukuran font dan ketebalan bobot yang sangat tegas.',
+  headingFontFamilyCss: buildFontFamilyCss('Inter, Archivo', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
   bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
 };
 
-/** 14. SURREALISM */
+/** 14. SURREALISM - Cormorant Garamond + Lora */
 export const TYPOGRAPHY_SURREALISM: TypographyProfile = {
-  headingFont: 'Cinzel / Cormorant Garamond',
+  headingFont: 'Cormorant Garamond',
   subheadingFont: 'Cormorant Garamond',
-  bodyFont: 'Inter',
+  bodyFont: 'Lora',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
   bodyWeight: 'regular',
   headingCase: 'normal',
   letterSpacing: 'wide',
   lineHeight: 'relaxed',
-  typographyCharacter: 'Puitis, imajinatif, dan artistik.',
-  readabilityRules: 'Batasi elemen tipografi artistik agar materi tetap fokus.',
-  headingFontFamilyCss: buildFontFamilyCss('Cinzel, Cormorant Garamond', 'serif'),
+  typographyCharacter: 'Artistik, eksperimental, puitis, dan penuh daya imajinasi.',
+  readabilityRules: 'Pertahankan keterbacaan materi dengan tipografi buku klasik berkualitas.',
+  headingFontFamilyCss: buildFontFamilyCss('Cormorant Garamond, Cinzel', 'serif'),
   subheadingFontFamilyCss: buildFontFamilyCss('Cormorant Garamond', 'serif'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Lora, Georgia', 'serif'),
 };
 
-/** 15. BOHEMIAN */
+/** 15. BOHEMIAN - DM Serif Display + Nunito */
 export const TYPOGRAPHY_BOHEMIAN: TypographyProfile = {
-  headingFont: 'Cormorant Garamond / Lora',
-  subheadingFont: 'Lora',
-  bodyFont: 'Inter',
+  headingFont: 'DM Serif Display',
+  subheadingFont: 'DM Serif Display',
+  bodyFont: 'Nunito',
   headingWeight: 'bold',
   subheadingWeight: 'medium',
   bodyWeight: 'regular',
   headingCase: 'normal',
   letterSpacing: 'normal',
   lineHeight: 'relaxed',
-  typographyCharacter: 'Alami, hangat, dan bersahaja.',
-  readabilityRules: 'Pastikan keterbacaan tetap terjaga pada teks berwarna bumi.',
-  headingFontFamilyCss: buildFontFamilyCss('Cormorant Garamond, Lora', 'serif'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Lora', 'serif'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  typographyCharacter: 'Hangat, artistik, membumi, dan bernuansa organik alami.',
+  readabilityRules: 'Pastikan kontras teks terjaga pada palet warna tanah (earth tones).',
+  headingFontFamilyCss: buildFontFamilyCss('DM Serif Display, Cormorant Garamond', 'serif'),
+  subheadingFontFamilyCss: buildFontFamilyCss('DM Serif Display', 'serif'),
+  bodyFontFamilyCss: buildFontFamilyCss('Nunito, Inter', 'sans'),
 };
 
-/** 16. VICTORIAN */
+/** 16. VICTORIAN - Cinzel + Crimson Text */
 export const TYPOGRAPHY_VICTORIAN: TypographyProfile = {
-  headingFont: 'Playfair Display / Cinzel',
+  headingFont: 'Cinzel',
   subheadingFont: 'Cinzel',
-  bodyFont: 'Merriweather / Inter',
+  bodyFont: 'Crimson Text',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
   bodyWeight: 'regular',
   headingCase: 'titlecase',
   letterSpacing: 'wide',
   lineHeight: 'relaxed',
-  typographyCharacter: 'Formal, ornamen historis, dan berwibawa.',
-  readabilityRules: 'Gunakan serif klasik tanpa mengurangi kenyamanan membaca.',
-  headingFontFamilyCss: buildFontFamilyCss('Playfair Display, Cinzel', 'serif'),
+  typographyCharacter: 'Klasik, historis, berwibawa, dan sarat kemegahan akademis.',
+  readabilityRules: 'Gunakan serif klasik dengan spasi baris longgar untuk kenyamanan membaca.',
+  headingFontFamilyCss: buildFontFamilyCss('Cinzel, Playfair Display', 'serif'),
   subheadingFontFamilyCss: buildFontFamilyCss('Cinzel', 'serif'),
-  bodyFontFamilyCss: buildFontFamilyCss('Merriweather, Inter', 'serif'),
+  bodyFontFamilyCss: buildFontFamilyCss('Crimson Text, Merriweather, Georgia', 'serif'),
 };
 
-/** 17. GRAFFITI */
+/** 17. GRAFFITI - Permanent Marker + Roboto */
 export const TYPOGRAPHY_GRAFFITI: TypographyProfile = {
-  headingFont: 'Rubik Wet Paint / Permanent Marker',
-  subheadingFont: 'Archivo Black',
-  bodyFont: 'Inter',
+  headingFont: 'Permanent Marker',
+  subheadingFont: 'Permanent Marker',
+  bodyFont: 'Roboto',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
   bodyWeight: 'regular',
   headingCase: 'uppercase',
   letterSpacing: 'wide',
   lineHeight: 'normal',
-  typographyCharacter: 'Street art, ekspresif, dan bebas.',
-  readabilityRules: 'DILARANG menggunakan font graffiti pada teks materi.',
-  headingFontFamilyCss: buildFontFamilyCss('Rubik Wet Paint, Permanent Marker', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Archivo Black', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  typographyCharacter: 'Urban, ekspresif, berani, dan berjiwa bebas.',
+  readabilityRules: 'Gunakan font marker hanya pada judul, isi teks tetap memakai Roboto yang jernih.',
+  headingFontFamilyCss: buildFontFamilyCss('Permanent Marker, Rubik Wet Paint', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Permanent Marker', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Roboto, Inter', 'sans'),
 };
 
-/** 18. AURORA */
+/** 18. AURORA - Sora + Manrope */
 export const TYPOGRAPHY_AURORA: TypographyProfile = {
-  headingFont: 'Montserrat / Plus Jakarta Sans',
-  subheadingFont: 'Plus Jakarta Sans',
-  bodyFont: 'Inter',
+  headingFont: 'Sora',
+  subheadingFont: 'Sora',
+  bodyFont: 'Manrope',
   headingWeight: 'bold',
   subheadingWeight: 'semi bold',
   bodyWeight: 'regular',
   headingCase: 'normal',
   letterSpacing: 'normal',
   lineHeight: 'normal',
-  typographyCharacter: 'Lembut, bercahaya, dan modern.',
-  readabilityRules: 'Pertahankan kontras teks terhadap latar belakang gradasi.',
-  headingFontFamilyCss: buildFontFamilyCss('Montserrat, Plus Jakarta Sans', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Plus Jakarta Sans', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  typographyCharacter: 'Lembut, futuristik, bercahaya, dan memancarkan estetika modern.',
+  readabilityRules: 'Pertahankan kontras teks terhadap latar gradasi cahaya aurora.',
+  headingFontFamilyCss: buildFontFamilyCss('Sora, Montserrat', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Sora', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Manrope, Inter', 'sans'),
 };
 
-/** 19. HANDWRITTEN */
+/** 19. HANDWRITTEN - Caveat + Nunito */
 export const TYPOGRAPHY_HANDWRITTEN: TypographyProfile = {
-  headingFont: 'Caveat / Kalam',
-  subheadingFont: 'Patrick Hand',
-  bodyFont: 'Inter',
+  headingFont: 'Caveat',
+  subheadingFont: 'Caveat',
+  bodyFont: 'Nunito',
   headingWeight: 'bold',
-  subheadingWeight: 'medium',
+  subheadingWeight: 'bold',
   bodyWeight: 'regular',
   headingCase: 'normal',
   letterSpacing: 'normal',
   lineHeight: 'relaxed',
-  typographyCharacter: 'Catatan personal seperti tulisan guru di papan tulis.',
-  readabilityRules: 'Gunakan font tulisan tangan hanya untuk judul dan catatan kecil.',
+  typographyCharacter: 'Personal, alami, hangat, layaknya tulisan tangan catatan belajar.',
+  readabilityRules: 'Font tulisan tangan pada judul dan kutipan, materi tetap menggunakan sans-serif ramah.',
   headingFontFamilyCss: buildFontFamilyCss('Caveat, Kalam', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Patrick Hand', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Caveat', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Nunito, Inter', 'sans'),
 };
 
-/** 20. RETRO */
-export const TYPOGRAPHY_RETRO: TypographyProfile = {
-  headingFont: 'Righteous / Bungee',
-  subheadingFont: 'Poppins',
-  bodyFont: 'Inter',
+/** 20. HAND DRAWING - Kalam + Nunito (GAYA BARU STIVIA 2.2d) */
+export const TYPOGRAPHY_HAND_DRAWING: TypographyProfile = {
+  headingFont: 'Kalam',
+  subheadingFont: 'Kalam',
+  bodyFont: 'Nunito',
   headingWeight: 'bold',
-  subheadingWeight: 'semi bold',
+  subheadingWeight: 'bold',
   bodyWeight: 'regular',
-  headingCase: 'uppercase',
-  letterSpacing: 'wide',
-  lineHeight: 'normal',
-  typographyCharacter: 'Poster era 70-80an dengan kepribadian kuat.',
-  readabilityRules: 'Warna font harus kontras kuat dengan latar belakang retro.',
-  headingFontFamilyCss: buildFontFamilyCss('Righteous, Bungee', 'sans'),
-  subheadingFontFamilyCss: buildFontFamilyCss('Poppins', 'sans'),
-  bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
+  headingCase: 'normal',
+  letterSpacing: 'normal',
+  lineHeight: 'relaxed',
+  typographyCharacter: 'Ilustratif, organik, seperti gambar dan catatan yang dibuat secara manual.',
+  readabilityRules: 'Gaya sketsa tangan pada judul dipadu dengan isi materi yang terbaca nyaman.',
+  headingFontFamilyCss: buildFontFamilyCss('Kalam, Patrick Hand', 'sans'),
+  subheadingFontFamilyCss: buildFontFamilyCss('Kalam', 'sans'),
+  bodyFontFamilyCss: buildFontFamilyCss('Nunito, Inter', 'sans'),
 };
 
 /**
@@ -442,6 +442,9 @@ export const TYPOGRAPHY_MODERN_EDUKATIF: TypographyProfile = {
   subheadingFontFamilyCss: buildFontFamilyCss('Plus Jakarta Sans', 'sans'),
   bodyFontFamilyCss: buildFontFamilyCss('Inter', 'sans'),
 };
+
+/** Alias retro untuk kompatibilitas */
+export const TYPOGRAPHY_RETRO: TypographyProfile = TYPOGRAPHY_Y2K;
 
 // =========================================================================
 // MAPPER & RESOLVER
@@ -467,9 +470,79 @@ export const ALL_TYPOGRAPHY_PROFILES: Record<string, TypographyProfile> = {
   graffiti: TYPOGRAPHY_GRAFFITI,
   aurora: TYPOGRAPHY_AURORA,
   handwritten: TYPOGRAPHY_HANDWRITTEN,
+  hand_drawing: TYPOGRAPHY_HAND_DRAWING,
   retro: TYPOGRAPHY_RETRO,
   modern_edukatif: TYPOGRAPHY_MODERN_EDUKATIF,
 };
+
+/**
+ * Pilihan font judul terpopuler untuk opsi kustomisasi "Sesuaikan Font"
+ */
+export const AVAILABLE_TITLE_FONTS = [
+  'Montserrat',
+  'Archivo Black',
+  'Orbitron',
+  'Poppins',
+  'Bebas Neue',
+  'Bangers',
+  'Outfit',
+  'Fredoka',
+  'Press Start 2P',
+  'Playfair Display',
+  'Space Grotesk',
+  'Inter',
+  'Cormorant Garamond',
+  'DM Serif Display',
+  'Cinzel',
+  'Permanent Marker',
+  'Sora',
+  'Caveat',
+  'Kalam',
+  'Plus Jakarta Sans',
+];
+
+/**
+ * Pilihan font isi (body) terpopuler untuk opsi kustomisasi "Sesuaikan Font"
+ */
+export const AVAILABLE_BODY_FONTS = [
+  'Inter',
+  'Poppins',
+  'Exo 2',
+  'Nunito Sans',
+  'DM Sans',
+  'Rajdhani',
+  'Nunito',
+  'VT323',
+  'Lora',
+  'Crimson Text',
+  'Roboto',
+  'Manrope',
+  'Plus Jakarta Sans',
+];
+
+/**
+ * Helper untuk membangun TypographyProfile khusus ketika pengguna memilih "Sesuaikan Font"
+ */
+export function buildCustomTypographyProfile(
+  customTitleFont: string,
+  customBodyFont: string,
+  baseProfile?: TypographyProfile
+): TypographyProfile {
+  const base = baseProfile || TYPOGRAPHY_MODERN_EDUKATIF;
+  const title = customTitleFont.trim() || base.headingFont;
+  const body = customBodyFont.trim() || base.bodyFont;
+
+  return {
+    ...base,
+    headingFont: title,
+    subheadingFont: title,
+    bodyFont: body,
+    typographyCharacter: `Kustom: Judul ${title} & Isi ${body}`,
+    headingFontFamilyCss: buildFontFamilyCss(title, 'sans'),
+    subheadingFontFamilyCss: buildFontFamilyCss(title, 'sans'),
+    bodyFontFamilyCss: buildFontFamilyCss(body, 'sans'),
+  };
+}
 
 /**
  * Resolver Tipografi berdasarkan nama atau ID gaya
@@ -485,6 +558,7 @@ export function getTypographyProfile(styleNameOrId?: string): TypographyProfile 
   }
 
   // 2. Fuzzy match 20 gaya resmi
+  if (target.includes('drawing') || target.includes('hand drawing') || target.includes('sketsa')) return TYPOGRAPHY_HAND_DRAWING;
   if (target.includes('minimal')) return TYPOGRAPHY_MINIMALISM;
   if (target.includes('maxi') || target.includes('maksimal')) return TYPOGRAPHY_MAXIMALISM;
   if (target.includes('futur')) return TYPOGRAPHY_FUTURISTIC;
@@ -623,3 +697,62 @@ export function getBodyStyleObject(profile: TypographyProfile): React.CSSPropert
 
   return styles;
 }
+
+/**
+ * Pilihan Font Judul Resmi STIVIA (Google Fonts)
+ */
+export const TITLE_FONT_PRESETS = [
+  { name: 'Plus Jakarta Sans', category: 'Modern & Bersih', family: 'Plus Jakarta Sans, sans-serif' },
+  { name: 'Outfit', category: 'Geometris & Segar', family: 'Outfit, sans-serif' },
+  { name: 'Space Grotesk', category: 'Teknologi & Canggih', family: 'Space Grotesk, sans-serif' },
+  { name: 'Orbitron', category: 'Futuristik & Cyber', family: 'Orbitron, sans-serif' },
+  { name: 'Montserrat', category: 'Kokoh & Berbobot', family: 'Montserrat, sans-serif' },
+  { name: 'Playfair Display', category: 'Elegan & Editorial', family: 'Playfair Display, serif' },
+  { name: 'Cinzel', category: 'Historis & Arsitektural', family: 'Cinzel, serif' },
+  { name: 'Fredoka', category: 'Ramah & Membulat', family: 'Fredoka, sans-serif' },
+  { name: 'Patrick Hand', category: 'Catatan & Tulis Tangan', family: 'Patrick Hand, cursive' },
+  { name: 'Kalam', category: 'Artistik & Kasual', family: 'Kalam, cursive' },
+  { name: 'Bangers', category: 'Komik & Pop Art', family: 'Bangers, cursive' },
+  { name: 'Press Start 2P', category: 'Retro 8-Bit Pixel', family: '"Press Start 2P", monospace' },
+];
+
+/**
+ * Pilihan Font Isi / Body Resmi STIVIA (Google Fonts)
+ */
+export const BODY_FONT_PRESETS = [
+  { name: 'Inter', category: 'Keterbacaan Tertinggi', family: 'Inter, sans-serif' },
+  { name: 'Plus Jakarta Sans', category: 'Kontemporer & Halus', family: 'Plus Jakarta Sans, sans-serif' },
+  { name: 'Nunito', category: 'Hangat & Ramah Pembaca', family: 'Nunito, sans-serif' },
+  { name: 'Lora', category: 'Serif Nyaman & Sastra', family: 'Lora, serif' },
+  { name: 'Source Sans 3', category: 'Netral & Profesional', family: '"Source Sans 3", sans-serif' },
+  { name: 'Exo 2', category: 'Teknis & Futuristik', family: '"Exo 2", sans-serif' },
+  { name: 'Space Mono', category: 'Monospace Rapi', family: '"Space Mono", monospace' },
+  { name: 'VT323', category: 'Retro Terminal', family: 'VT323, monospace' },
+  { name: 'Caveat', category: 'Cursive Santai', family: 'Caveat, cursive' },
+];
+
+/**
+ * Helper untuk menerapkan kustomisasi font ke profil tipografi yang ada
+ */
+export function applyTypographyOverride(
+  baseProfile: TypographyProfile,
+  customTitleFont?: string,
+  customBodyFont?: string
+): TypographyProfile {
+  if (!customTitleFont && !customBodyFont) {
+    return baseProfile;
+  }
+
+  const headingFont = customTitleFont || baseProfile.headingFont;
+  const bodyFont = customBodyFont || baseProfile.bodyFont;
+
+  return {
+    ...baseProfile,
+    headingFont,
+    bodyFont,
+    headingFontFamilyCss: `"${headingFont}", ${baseProfile.headingFontFamilyCss || 'sans-serif'}`,
+    subheadingFontFamilyCss: `"${headingFont}", ${baseProfile.subheadingFontFamilyCss || 'sans-serif'}`,
+    bodyFontFamilyCss: `"${bodyFont}", ${baseProfile.bodyFontFamilyCss || 'sans-serif'}`,
+  };
+}
+

@@ -155,111 +155,174 @@ export const StiviaThinkingPanel: React.FC<StiviaThinkingPanelProps> = ({
 
       {/* Konten Rincian 6 Tahap Analisis (Tahap 7 adalah prompt teks di bawahnya) */}
       {isExpanded && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs animate-in fade-in duration-200">
-          {/* TAHAP 1: MEMAHAMI MATERI */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-            <div className="flex items-center gap-2 text-indigo-300 font-bold">
-              <BookOpen className="w-4 h-4 text-indigo-400" />
-              <span>Tahap 1: Memahami Materi</span>
-            </div>
-            <div className="space-y-1 text-slate-300">
-              <div className="font-semibold text-white truncate">{displayTopic}</div>
-              <div className="text-2xs text-slate-400">{displaySubject} • {displayLevel} {displayGrade}</div>
-              <p className="text-2xs text-slate-300 line-clamp-2 mt-1">
-                {displayCore}
-              </p>
-            </div>
-          </div>
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Bagian Khusus: Analisis Materi & Batas Pertemuan (7 Tahap Internal STIVIA) */}
+          {thinkingResult.materialAnalysis && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-indigo-950/70 border border-indigo-500/40 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-indigo-500/20">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                    <span>Batas Cakupan Materi & Pencegahan Pengulangan</span>
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-2xs font-semibold">
+                      {thinkingResult.materialAnalysis.tahap4_Pertemuan}
+                    </span>
+                  </h4>
+                </div>
+                <span className="text-2xs text-indigo-300">
+                  Cakupan Materi = Batas Wajib Pembahasan
+                </span>
+              </div>
 
-          {/* TAHAP 2: MENGENALI KARAKTER MATERI */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-            <div className="flex items-center gap-2 text-amber-300 font-bold">
-              <Compass className="w-4 h-4 text-amber-400" />
-              <span>Tahap 2: Karakter Materi</span>
-            </div>
-            <div className="space-y-1 text-slate-300">
-              <span className="inline-block text-2xs font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                {displayCharacter}
-              </span>
-              <p className="text-2xs text-slate-300 leading-relaxed line-clamp-2">
-                {displayCharacterDesc}
-              </p>
-              <div className="text-2xs text-slate-400">
-                Kata Kunci: <span className="text-slate-200">{displayKeywords}</span>
-              </div>
-            </div>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {/* Materi Boleh Dibahas */}
+                <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-1.5">
+                  <div className="text-2xs font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Materi yang Boleh Dibahas</span>
+                  </div>
+                  <ul className="space-y-1 text-2xs text-slate-200">
+                    {thinkingResult.materialAnalysis.tahap6_MateriBolehDibahas.map((item, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="text-emerald-400 font-bold">✓</span>
+                        <span className="leading-snug">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-          {/* TAHAP 3: MEMAHAMI GAYA YANG DIPILIH */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-            <div className="flex items-center gap-2 text-purple-300 font-bold">
-              <Palette className="w-4 h-4 text-purple-400" />
-              <span>Tahap 3: Gaya Pilihan</span>
-            </div>
-            <div className="space-y-1 text-slate-300">
-              <div className="font-bold text-white text-sm truncate">{displayStyleName}</div>
-              <div className="text-2xs text-purple-300 font-semibold">{displayStyleCat}</div>
-              <p className="text-2xs text-slate-300 line-clamp-2">
-                {displayStyleTone}
-              </p>
-            </div>
-          </div>
+                {/* Materi Tidak Perlu Diulang */}
+                <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/30 space-y-1.5">
+                  <div className="text-2xs font-bold text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-2xs">✕</span>
+                    <span>Materi yang Tidak Perlu Diulang</span>
+                  </div>
+                  <ul className="space-y-1 text-2xs text-slate-200">
+                    {thinkingResult.materialAnalysis.tahap7_MateriTidakPerluDiulang.map((item, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="text-rose-400 font-bold">✗</span>
+                        <span className="leading-snug">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
 
-          {/* TAHAP 4: MENENTUKAN VISUAL UTAMA */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-            <div className="flex items-center gap-2 text-emerald-300 font-bold">
-              <ImageIcon className="w-4 h-4 text-emerald-400" />
-              <span>Tahap 4: Visual Utama</span>
-            </div>
-            <div className="space-y-1 text-slate-300">
-              <div className="font-semibold text-white leading-tight line-clamp-1">
-                {displayHeroVisual}
-              </div>
-              <p className="text-2xs text-slate-300 line-clamp-2">
-                {displayHeroReason}
-              </p>
-              <div className="text-2xs text-emerald-400">
-                Fokus: {displayHeroPlacement}
+              {/* Aturan Internal Pembatas */}
+              <div className="pt-2 border-t border-indigo-500/20">
+                <div className="text-2xs text-indigo-300/90 leading-relaxed italic">
+                  💡 <span className="font-semibold text-indigo-200">Prinsip Rangkaian Pembelajaran:</span> Nomor pertemuan ({thinkingResult.materialAnalysis.tahap4_Pertemuan}) menentukan posisi materi. Materi utama digunakan sebagai konteks umum, bukan alasan mengulang materi dasar terdahulu.
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* TAHAP 5: MENENTUKAN VISUAL PENDUKUNG */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-            <div className="flex items-center gap-2 text-cyan-300 font-bold">
-              <Layers className="w-4 h-4 text-cyan-400" />
-              <span>Tahap 5: Visual Pendukung</span>
-            </div>
-            <div className="space-y-1.5 text-slate-300">
-              <div className="flex flex-wrap gap-1">
-                {supportingItems.slice(0, 3).map((el: string, i: number) => (
-                  <span key={i} className="text-2xs px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-200">
-                    {el}
-                  </span>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
+            {/* TAHAP 1: MEMAHAMI MATERI */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-indigo-300 font-bold">
+                <BookOpen className="w-4 h-4 text-indigo-400" />
+                <span>Tahap 1: Memahami Materi</span>
               </div>
-              <p className="text-2xs text-slate-300 line-clamp-2">
-                Ikon: {displayIcons}
-              </p>
+              <div className="space-y-1 text-slate-300">
+                <div className="font-semibold text-white truncate">{displayTopic}</div>
+                <div className="text-2xs text-slate-400">{displaySubject} • {displayLevel} {displayGrade}</div>
+                <p className="text-2xs text-slate-300 line-clamp-2 mt-1">
+                  {displayCore}
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* TAHAP 6: MENENTUKAN STRUKTUR & TATA LETAK */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-            <div className="flex items-center gap-2 text-rose-300 font-bold">
-              <Layout className="w-4 h-4 text-rose-400" />
-              <span>Tahap 6: Strategi Tata Letak</span>
+            {/* TAHAP 2: MENGENALI KARAKTER MATERI */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-amber-300 font-bold">
+                <Compass className="w-4 h-4 text-amber-400" />
+                <span>Tahap 2: Karakter Materi</span>
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <span className="inline-block text-2xs font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  {displayCharacter}
+                </span>
+                <p className="text-2xs text-slate-300 leading-relaxed line-clamp-2">
+                  {displayCharacterDesc}
+                </p>
+                <div className="text-2xs text-slate-400">
+                  Kata Kunci: <span className="text-slate-200">{displayKeywords}</span>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1 text-slate-300">
-              <div className="font-semibold text-white truncate">
-                {displayFlow}
+
+            {/* TAHAP 3: MEMAHAMI GAYA YANG DIPILIH */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-purple-300 font-bold">
+                <Palette className="w-4 h-4 text-purple-400" />
+                <span>Tahap 3: Gaya Pilihan</span>
               </div>
-              <div className="text-2xs text-slate-400">
-                Standar: Vertikal (Rasio 2:3)
+              <div className="space-y-1 text-slate-300">
+                <div className="font-bold text-white text-sm truncate">{displayStyleName}</div>
+                <div className="text-2xs text-purple-300 font-semibold">{displayStyleCat}</div>
+                <p className="text-2xs text-slate-300 line-clamp-2">
+                  {displayStyleTone}
+                </p>
               </div>
-              <p className="text-2xs text-slate-300 line-clamp-2">
-                {displaySpacing}
-              </p>
+            </div>
+
+            {/* TAHAP 4: MENENTUKAN VISUAL UTAMA */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                <ImageIcon className="w-4 h-4 text-emerald-400" />
+                <span>Tahap 4: Visual Utama</span>
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div className="font-semibold text-white leading-tight line-clamp-1">
+                  {displayHeroVisual}
+                </div>
+                <p className="text-2xs text-slate-300 line-clamp-2">
+                  {displayHeroReason}
+                </p>
+                <div className="text-2xs text-emerald-400">
+                  Fokus: {displayHeroPlacement}
+                </div>
+              </div>
+            </div>
+
+            {/* TAHAP 5: MENENTUKAN VISUAL PENDUKUNG */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                <span>Tahap 5: Visual Pendukung</span>
+              </div>
+              <div className="space-y-1.5 text-slate-300">
+                <div className="flex flex-wrap gap-1">
+                  {supportingItems.slice(0, 3).map((el: string, i: number) => (
+                    <span key={i} className="text-2xs px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-200">
+                      {el}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-2xs text-slate-300 line-clamp-2">
+                  Ikon: {displayIcons}
+                </p>
+              </div>
+            </div>
+
+            {/* TAHAP 6: MENENTUKAN STRUKTUR & TATA LETAK */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-rose-300 font-bold">
+                <Layout className="w-4 h-4 text-rose-400" />
+                <span>Tahap 6: Strategi Tata Letak</span>
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div className="font-semibold text-white truncate">
+                  {displayFlow}
+                </div>
+                <div className="text-2xs text-slate-400">
+                  Standar: Vertikal (Rasio 2:3)
+                </div>
+                <p className="text-2xs text-slate-300 line-clamp-2">
+                  {displaySpacing}
+                </p>
+              </div>
             </div>
           </div>
         </div>

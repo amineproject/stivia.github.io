@@ -19,7 +19,8 @@ import {
   Scale,
   Gauge,
   ShieldCheck,
-  CheckCheck
+  CheckCheck,
+  Calendar
 } from 'lucide-react';
 import { 
   InfographicDraft, 

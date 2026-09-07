@@ -153,51 +153,84 @@ export function determineLayoutArchetype(
   const hasProcessBlock = blocks.some(b => b.visualElementType === 'flowchart' || b.informationType === 'process' || (b.processSteps && b.processSteps.length > 0));
   const hasComparisonBlock = blocks.some(b => b.visualElementType === 'tabel_perbandingan' || b.informationType === 'comparison' || b.comparisonData);
   const hasNetworkOrMindmap = blocks.some(b => b.visualElementType === 'ilustrasi_jaringan' || b.visualElementType === 'mindmap' || b.informationType === 'relationship');
-  const isHistorySubject = normSubject.includes('sejarah') || normTopic.includes('sejarah') || normTopic.includes('kemerdekaan') || normScope.includes('kronologis');
-  const isTechSubject = normSubject.includes('informatika') || normTopic.includes('ai') || normTopic.includes('artificial intelligence') || normTopic.includes('jaringan') || normTopic.includes('algoritma');
+  const hasStructureBlock = blocks.some(b => b.visualElementType === 'komponen' || b.informationType === 'components' || b.componentsList || (b as any).components);
 
-  // Available candidate layouts tailored for this style and content
+  // Subject Domain Analysis (STIVIA 2.2d)
+  const isHistorySubject = normSubject.includes('sejarah') || normTopic.includes('sejarah') || normTopic.includes('kemerdekaan') || normScope.includes('kronologis');
+  const isTechSubject = normSubject.includes('informatika') || normTopic.includes('ai') || normTopic.includes('artificial intelligence') || normTopic.includes('jaringan') || normTopic.includes('algoritma') || normTopic.includes('komputer') || normSubject.includes('koding');
+  const isLanguageSubject = normSubject.includes('bahasa') || normSubject.includes('sastra') || normSubject.includes('indonesia') || normSubject.includes('inggris');
+  const isSocialSubject = normSubject.includes('ppkn') || normSubject.includes('pancasila') || normSubject.includes('sosiologi') || normSubject.includes('agama') || normSubject.includes('seni');
+  const isNonTechnicalSubject = isLanguageSubject || isSocialSubject || isHistorySubject;
+
+  // Dominant Information Type Priority
+  const isProcessDominant = hasProcessBlock || normScope.includes('langkah') || normScope.includes('tahapan') || normScope.includes('alur') || normScope.includes('proses') || normScope.includes('mekanisme');
+  const isComparisonDominant = hasComparisonBlock || normScope.includes('perbedaan') || normScope.includes('perbandingan') || normScope.includes('komparasi') || normScope.includes('kelebihan dan kekurangan');
+  const isStructureDominant = hasStructureBlock || normScope.includes('struktur') || normScope.includes('unsur') || normScope.includes('bagian') || normScope.includes('anatomi') || normScope.includes('komponen');
+
+  // Available candidate layouts tailored for this style, subject, and content
   let candidateLayouts: InfographicLayoutArchetype[] = [];
 
   // =========================================================================
-  // 1. STYLE-DOMINANT DIRECT OVERRIDES (When style has strong physical signature)
+  // 1. INFORMATION TYPE & SUBJECT DOMINANT ROUTING (STIVIA 2.2d)
+  // Tata letak materi Bahasa Indonesia tidak boleh sama dengan Informatika
+  // Materi teks/analisis tidak boleh dipaksa menggunakan layout teknis
   // =========================================================================
-  if (normStyle.includes('cyberpunk') || normStyle.includes('futuristic') || normStyle.includes('digital interface') || normStyle.includes('y2k')) {
-    candidateLayouts = ['cyber_hud', 'modular_bento', 'central_concept', 'glassmorphism_layers'];
-  } else if (normStyle.includes('swiss design')) {
-    candidateLayouts = ['swiss_modernist', 'modular_bento', 'comparison_split', 'editorial_magazine'];
-  } else if (normStyle.includes('clay style') || normStyle.includes('claymorphic')) {
-    candidateLayouts = ['clay_tactile', 'modular_bento', 'hero_visual', 'process_flow'];
-  } else if (normStyle.includes('pop art') || normStyle.includes('comic') || normStyle.includes('maximalism')) {
-    candidateLayouts = ['pop_comic', 'modular_bento', 'hero_visual', 'central_concept'];
-  } else if (normStyle.includes('handwritten') || normStyle.includes('doodle') || normStyle.includes('sketsa')) {
-    candidateLayouts = ['notebook_handwritten', 'modular_bento', 'timeline_flow', 'hero_visual'];
-  } else if (normStyle.includes('editorial') || normStyle.includes('majalah')) {
-    candidateLayouts = ['editorial_magazine', 'modular_bento', 'swiss_modernist', 'hero_visual'];
-  } else if (normStyle.includes('glassmorphism') || normStyle.includes('aurora')) {
-    candidateLayouts = ['glassmorphism_layers', 'modular_bento', 'hero_visual', 'central_concept'];
-  } else if (normStyle.includes('minimalis') || normStyle.includes('minimalism')) {
-    candidateLayouts = ['hero_visual', 'modular_bento', 'swiss_modernist', 'editorial_magazine'];
+  if (isProcessDominant) {
+    candidateLayouts = ['process_flow', 'timeline_flow', 'modular_bento', 'hero_visual'];
+  } else if (isHistorySubject || hasTimelineBlock) {
+    candidateLayouts = ['timeline_flow', 'editorial_magazine', 'modular_bento', 'hero_visual'];
+  } else if (isComparisonDominant) {
+    candidateLayouts = ['comparison_split', 'modular_bento', 'swiss_modernist', 'hero_visual'];
+  } else if (isLanguageSubject) {
+    // Bahasa & Sastra: Utamakan Editorial, Bento Grid, atau Swiss Modernist
+    if (isStructureDominant) {
+      candidateLayouts = ['modular_bento', 'editorial_magazine', 'swiss_modernist', 'hero_visual'];
+    } else {
+      candidateLayouts = ['editorial_magazine', 'modular_bento', 'hero_visual', 'swiss_modernist'];
+    }
+  } else if (isStructureDominant) {
+    candidateLayouts = ['modular_bento', 'central_concept', 'hero_visual', 'editorial_magazine'];
+  } else if (hasNetworkOrMindmap || normScope.includes('hubungan') || normScope.includes('jaringan') || normScope.includes('sistem')) {
+    candidateLayouts = ['central_concept', 'modular_bento', 'hero_visual', 'glassmorphism_layers'];
   }
 
   // =========================================================================
-  // 2. MATERIAL CONTENT-DOMINANT MAPPINGS (If style is generic or content is specialized)
+  // 2. STYLE-DOMINANT DIRECT OVERRIDES (If no strict information type constraint)
   // =========================================================================
   if (candidateLayouts.length === 0) {
-    if (isHistorySubject || hasTimelineBlock) {
-      candidateLayouts = ['timeline_flow', 'editorial_magazine', 'modular_bento', 'hero_visual'];
-    } else if (hasProcessBlock || normScope.includes('langkah') || normScope.includes('tahapan') || normScope.includes('alur')) {
-      candidateLayouts = ['process_flow', 'modular_bento', 'hero_visual', 'timeline_flow'];
-    } else if (hasComparisonBlock || normScope.includes('perbedaan') || normScope.includes('perbandingan') || normScope.includes('jenis')) {
-      candidateLayouts = ['comparison_split', 'modular_bento', 'swiss_modernist', 'hero_visual'];
-    } else if (hasNetworkOrMindmap || normScope.includes('hubungan') || normScope.includes('jaringan') || normScope.includes('sistem')) {
-      candidateLayouts = ['central_concept', 'modular_bento', 'hero_visual', 'glassmorphism_layers'];
+    if (normStyle.includes('cyberpunk') || normStyle.includes('futuristic') || normStyle.includes('digital interface') || normStyle.includes('y2k')) {
+      // Non-technical subjects must NOT receive cyber_hud
+      candidateLayouts = isNonTechnicalSubject 
+        ? ['editorial_magazine', 'modular_bento', 'swiss_modernist', 'hero_visual']
+        : ['cyber_hud', 'modular_bento', 'central_concept', 'glassmorphism_layers'];
+    } else if (normStyle.includes('swiss design')) {
+      candidateLayouts = ['swiss_modernist', 'modular_bento', 'comparison_split', 'editorial_magazine'];
+    } else if (normStyle.includes('clay style') || normStyle.includes('claymorphic')) {
+      candidateLayouts = ['clay_tactile', 'modular_bento', 'hero_visual', 'process_flow'];
+    } else if (normStyle.includes('pop art') || normStyle.includes('comic') || normStyle.includes('maximalism')) {
+      candidateLayouts = ['pop_comic', 'modular_bento', 'hero_visual', 'central_concept'];
+    } else if (normStyle.includes('handwritten') || normStyle.includes('doodle') || normStyle.includes('sketsa')) {
+      candidateLayouts = ['notebook_handwritten', 'modular_bento', 'timeline_flow', 'hero_visual'];
+    } else if (normStyle.includes('editorial') || normStyle.includes('majalah')) {
+      candidateLayouts = ['editorial_magazine', 'modular_bento', 'swiss_modernist', 'hero_visual'];
+    } else if (normStyle.includes('glassmorphism') || normStyle.includes('aurora')) {
+      candidateLayouts = ['glassmorphism_layers', 'modular_bento', 'hero_visual', 'central_concept'];
+    } else if (normStyle.includes('minimalis') || normStyle.includes('minimalism')) {
+      candidateLayouts = ['hero_visual', 'modular_bento', 'swiss_modernist', 'editorial_magazine'];
     } else if (isTechSubject) {
       candidateLayouts = ['cyber_hud', 'modular_bento', 'central_concept', 'hero_visual'];
     } else if (blocks.length >= 4) {
       candidateLayouts = ['modular_bento', 'hero_visual', 'central_concept', 'editorial_magazine'];
     } else {
       candidateLayouts = ['hero_visual', 'modular_bento', 'central_concept', 'editorial_magazine'];
+    }
+  }
+
+  // Safeguard: Filter out cyber_hud if subject is strictly non-technical
+  if (isNonTechnicalSubject) {
+    candidateLayouts = candidateLayouts.filter(l => l !== 'cyber_hud');
+    if (candidateLayouts.length === 0) {
+      candidateLayouts = ['editorial_magazine', 'modular_bento', 'hero_visual'];
     }
   }
 

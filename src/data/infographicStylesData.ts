@@ -1,5 +1,6 @@
-import { TypographyProfile } from '../types';
+import { TypographyProfile, StyleProfile } from '../types';
 import { getTypographyProfile } from './typographyProfiles';
+import { STYLE_PROFILES_V22D, getStyleProfile } from './styleProfilesData';
 
 export interface InfographicStyleItem {
   id: string;
@@ -16,11 +17,13 @@ export interface InfographicStyleItem {
   accentColor: string;
   tags: string[];
   typographyProfile?: TypographyProfile;
+  styleProfile?: StyleProfile;
 }
 
 export interface InfographicStyleCategory {
   id: string;
   name: string;
+  shortName: string;
   tagline: string;
   description: string;
   characteristicsSummary: string[];
@@ -30,898 +33,653 @@ export interface InfographicStyleCategory {
 }
 
 /**
- * SISTEM 5 KATEGORI GAYA UTAMA STIVIA VERSI 2.2
- * Mengelompokkan seluruh gaya infografis ke dalam 5 pilar estetika pembelajaran.
+ * SISTEM 5 KATEGORI GAYA UTAMA STIVIA VERSI 2.2d
+ * Mengelompokkan seluruh 20 gaya infografis ke dalam 5 pilar estetika pembelajaran resmi.
  */
 export const INFOGRAPHIC_STYLE_CATEGORIES: InfographicStyleCategory[] = [
   // =========================================================================
-  // 1. EDUKATIF & TERSTRUKTUR
+  // 1. MODERN & DIGITAL
   // =========================================================================
   {
-    id: 'edukatif_terstruktur',
-    name: 'EDUKATIF & TERSTRUKTUR',
-    tagline: 'Bersih, Terstruktur, Akademik & Mudah Dibaca',
-    description: 'Menonjolkan hierarki informasi yang jelas, tata letak yang teratur, dan keterbacaan tingkat tinggi. Sangat cocok untuk materi akademik dan teori formal.',
+    id: 'modern_digital',
+    name: 'MODERN & DIGITAL',
+    shortName: 'DIGITAL',
+    tagline: 'Futuristik, Teknologi, Inovasi & Antarmuka Canggih',
+    description: 'Gaya modern dengan nuansa teknologi, digital, inovasi, dan masa depan. Sangat ideal untuk sains modern, komputasi, dan materi canggih.',
     characteristicsSummary: [
-      'Bersih dan rapi tanpa elemen berlebih',
-      'Terstruktur dengan pembagian seksi yang jelas',
-      'Keterbacaan teks dan angka sangat tinggi',
-      'Hierarki informasi logis dari konsep inti ke rincian',
-      'Ideal untuk materi akademik formal'
-    ],
-    iconName: 'GraduationCap',
-    accent: 'indigo',
-    styles: [
-      {
-        id: 'minimalism',
-        name: 'Minimalism',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Sederhana, bersih, fokus pada informasi esensial, tanpa elemen dekorasi yang mengganggu.',
-        shortDescription: 'Tampilan sangat bersih dan fokus pada teks inti tanpa ornamen berlebih.',
-        visualCharacteristics: [
-          'Banyak ruang kosong (whitespace) yang lega',
-          'Tipografi sans-serif tegas dan mudah dibaca',
-          'Palet warna monokromatik netral dengan aksen tunggal',
-          'Tata letak rapi dengan pembatas halus'
-        ],
-        suitableFor: [
-          'Konsep Dasar & Definisi',
-          'Matematika & Rumus',
-          'Teori Akademik Formal',
-          'Prinsip Ilmiah Murni'
-        ],
-        characterExample: 'Minimalis, tenang, elegan, fokus langsung pada pesan pembelajaran.',
-        characteristics: 'Sederhana, bersih, fokus pada informasi esensial, tanpa elemen dekorasi yang mengganggu.',
-        promptInstruction: 'Gunakan gaya visual Minimalism dengan tata letak bersih, luasnya ruang bernapas (whitespace), tipografi sans-serif berbobot terukur, palet warna netral bersahaja, dan kartu informasi yang rapi tanpa bayangan atau ornamen berlebihan.',
-        accentColor: 'slate',
-        tags: ['Bersih', 'Ruang Lega', 'Fokus Inti'],
-      },
-      {
-        id: 'swiss_design',
-        name: 'Swiss Design',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Sistem grid matematis yang ketat, tipografi sans-serif kuat, dan kejelasan komunikasi mutlak.',
-        shortDescription: 'Desain presisi berbasis grid matematis dan tipografi internasional yang tegas.',
-        visualCharacteristics: [
-          'Struktur grid kolom yang sangat rapi dan presisi',
-          'Tipografi neo-grotesque tegas berbobot tinggi',
-          'Kontras warna kuat antara teks dan latar belakang',
-          'Penyajian fakta dan data yang sangat objektif'
-        ],
-        suitableFor: [
-          'Studi Kasus & Analisis',
-          'Data Statistik & Perbandingan',
-          'Struktur Organisasi & Klasifikasi',
-          'Materi Sains & Teknik'
-        ],
-        characterExample: 'Rasional, tegas, modern, teratur secara matematis.',
-        characteristics: 'Sistem grid matematis yang ketat, tipografi sans-serif kuat, dan kejelasan komunikasi mutlak.',
-        promptInstruction: 'Gunakan gaya visual Swiss Design (International Typographic Style) dengan struktur grid asimetris yang presisi, tipografi tebal kontemporer, kontras tinggi, penataan hierarki informasi yang sangat tegas, serta keterbacaan objektif.',
-        accentColor: 'red',
-        tags: ['Grid Ketat', 'Tipografi Kuat', 'Presisi'],
-      },
-      {
-        id: 'editorial',
-        name: 'Editorial',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Tata letak berkelas layaknya majalah sains atau publikasi ilmiah profesional.',
-        shortDescription: 'Format publikasi bergengsi dengan tipografi serif elegan dan kutipan sorotan.',
-        visualCharacteristics: [
-          'Judul berkarakter serif anggun dipadu teks isi yang bersih',
-          'Blok kutipan penting (pull quotes) yang menonjol',
-          'Kolom informasi tertata rapi ala majalah ilmiah',
-          'Garis pemisah elegan dengan nuansa akademis terpercaya'
-        ],
-        suitableFor: [
-          'Sastra & Bahasa',
-          'Artikel Ilmiah Populer',
-          'Biografi Tokoh & Esai',
-          'Kajian Teori & Wawasan Sejarah'
-        ],
-        characterExample: 'Akademis, berwibawa, elegan, mencerminkan literatur terpercaya.',
-        characteristics: 'Tata letak berkelas layaknya majalah sains atau publikasi ilmiah profesional.',
-        promptInstruction: 'Gunakan gaya visual Editorial dengan format tata letak jurnal/majalah sains bergengsi, tipografi tajam berwibawa, blok teks berkolom seimbang, kartu sorotan kutipan elegan, dan garis aksen klasik.',
-        accentColor: 'stone',
-        tags: ['Majalah Edukatif', 'Serif Elegan', 'Berwibawa'],
-      },
-      {
-        id: 'glassmorphism',
-        name: 'Glassmorphism',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Kartu transparan bertekstur kaca halus (frosted glass) dengan efek blur modern.',
-        shortDescription: 'Tampilan kaca transparan modern berlapis dengan batas tepi bercahaya lembut.',
-        visualCharacteristics: [
-          'Permukaan transparan bertekstur kaca kabut (frosted blur)',
-          'Garis tepi tipis semi-transparan yang memantulkan cahaya',
-          'Kedalaman visual berlapis (multi-layer z-depth)',
-          'Latar belakang gradien lembut di balik kartu data'
-        ],
-        suitableFor: [
-          'Konsep Multi-Dimensi',
-          'Lapisan Sistem & Teori Bertingkat',
-          'Informatika & Konsep Digital',
-          'Presentasi Modern & Premium'
-        ],
-        characterExample: 'Modern, futuristik halus, mewah, elegan tanpa melelahkan mata.',
-        characteristics: 'Kartu transparan bertekstur kaca halus (frosted glass) dengan efek blur modern.',
-        promptInstruction: 'Gunakan gaya visual Glassmorphism dengan kartu-kartu berpanel kaca transparan (backdrop-blur), garis batas tipis bercahaya lembut, bayangan halus bertingkat, dan latar gradasi modern yang menjaga keterbacaan teks tetap tajam.',
-        accentColor: 'sky',
-        tags: ['Kaca Transparan', 'Frosted Blur', 'Modern Halus'],
-      },
-      {
-        id: 'modern_edukatif',
-        name: 'Modern Edukatif',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Gaya standar STIVIA yang menggabungkan keterbacaan prima dan sentuhan modern ramah siswa.',
-        shortDescription: 'Standar resmi STIVIA: seimbang antara teks, ikon visual, dan warna ramah siswa.',
-        visualCharacteristics: [
-          'Sudut kartu melengkung lembut (rounded) yang bersahabat',
-          'Palet biru navy dan teal yang menenangkan dan fokus',
-          'Ikon edukatif terstruktur di setiap poin bahasan',
-          'Hierarki kartu bertingkat: Utama, Sekunder, dan Ringkas'
-        ],
-        suitableFor: [
-          'Semua Mata Pelajaran Kurikulum Merdeka',
-          'IPA, IPS, Bahasa, dan Matematika',
-          'Materi Pembelajaran Harian',
-          'Modul Ajar & Ringkasan Bab'
-        ],
-        characterExample: 'Harmonis, profesional, ramah peserta didik, mudah dipahami seketika.',
-        characteristics: 'Gaya standar STIVIA yang menggabungkan keterbacaan prima dan sentuhan modern ramah siswa.',
-        promptInstruction: 'Gunakan gaya visual Modern Edukatif dengan tata letak terstruktur, palet warna navy-indigo dan teal seimbang, sudut kartu melengkung proporsional, ikon topik yang jelas, serta hierarki visual yang membimbing fokus belajar peserta didik.',
-        accentColor: 'indigo',
-        tags: ['Standar STIVIA', 'Seimbang', 'Ramah Siswa'],
-      },
-      {
-        id: 'academic_clean',
-        name: 'Academic Clean',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Formal, sistematis, presisi tinggi, dan sangat cocok untuk materi akademik formal.',
-        shortDescription: 'Tampilan formal dan rapi untuk kurikulum akademik dan ujian sekolah.',
-        visualCharacteristics: [
-          'Penomoran sistematis bertingkat (A, B, C / 1, 2, 3)',
-          'Palet warna formal biru tua, abu-abu, dan putih bersih',
-          'Tabel dan bagan terkoordinasi dengan presisi',
-          'Fokus mutlak pada terminologi dan definisi resmi'
-        ],
-        suitableFor: [
-          'Fisika, Kimia, & Biologi SMA',
-          'Sosiologi & Ekonomi',
-          'PPKn & Tata Negara',
-          'Persiapan Ujian & Asesmen'
-        ],
-        characterExample: 'Formal, disiplin, berbobot ilmiah tinggi, mudah dipelajari.',
-        characteristics: 'Formal, sistematis, presisi tinggi, dan sangat cocok untuk materi akademik formal.',
-        promptInstruction: 'Gunakan gaya visual Academic Clean dengan pendekatan formal, penomoran terstruktur, pembagian materi yang sistematis, tipografi akademis yang presisi, dan skema warna institusional terpercaya.',
-        accentColor: 'blue',
-        tags: ['Formal', 'Sistematis', 'Akademis'],
-      },
-      {
-        id: 'flat_design',
-        name: 'Flat Design',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Ilustrasi 2D datar tanpa gradien berlebih, ikon informatif, dan warna tegas harmonis.',
-        shortDescription: 'Bentuk dua dimensi datar dengan warna solid yang lugas dan mudah dicerna.',
-        visualCharacteristics: [
-          'Elemen grafis 2 dimensi bersih tanpa efek 3D tebal',
-          'Warna-warna solid dengan kontras yang nyaman',
-          'Ikon flat informatif yang langsung dikenali',
-          'Struktur kartu rapi dengan jarak antar-elemen konsisten'
-        ],
-        suitableFor: [
-          'Pengenalan Konsep & Istilah',
-          'Petunjuk Langkah Demi Langkah',
-          'Materi SMP & SMA',
-          'Infografis Edukasi Publik'
-        ],
-        characterExample: 'Lugas, cerah, modern, tidak membingungkan mata.',
-        characteristics: 'Ilustrasi 2D datar tanpa gradien berlebih, ikon informatif, dan warna tegas harmonis.',
-        promptInstruction: 'Gunakan gaya visual Flat Design dengan ilustrasi 2 dimensi bersih, palet warna solid yang harmonis, ikon flat edukatif yang sederhana namun ekspresif, dan tata letak modular yang mudah dipindai.',
-        accentColor: 'teal',
-        tags: ['2D Datar', 'Solid', 'Lugas'],
-      },
-      {
-        id: 'data_visualization',
-        name: 'Data Visualization',
-        category: 'EDUKATIF & TERSTRUKTUR',
-        categoryId: 'edukatif_terstruktur',
-        description: 'Fokus pada angka, grafik informatif, diagram proporsi, dan visualisasi statistik.',
-        shortDescription: 'Dirancang khusus untuk materi berbasis angka, tren grafik, dan komparasi data.',
-        visualCharacteristics: [
-          'Grafik batang, donat, dan garis yang terintegrasi',
-          'Tipografi angka besar untuk sorotan metrik kunci',
-          'Keterangan legenda data yang teratur',
-          'Warna fungsional pembeda kategori data'
-        ],
-        suitableFor: [
-          'Statistika Matematika',
-          'Data Geografi & Kependudukan',
-          'Ekonomi & Inflasi / Anggaran',
-          'Hasil Riset Sains & Percobaan'
-        ],
-        characterExample: 'Faktual, presisi, analitis, menyederhanakan data kompleks.',
-        characteristics: 'Fokus pada angka, grafik informatif, diagram proporsi, dan visualisasi statistik.',
-        promptInstruction: 'Gunakan gaya visual Data Visualization dengan diagram batang/lingkaran informatif, penekanan angka statistik kunci berukuran besar, label keterangan yang jelas, serta tata letak analitis yang membuat angka mudah dipahami.',
-        accentColor: 'emerald',
-        tags: ['Grafik', 'Data Angka', 'Analitis'],
-      }
-    ]
-  },
-
-  // =========================================================================
-  // 2. ILUSTRATIF & VISUAL
-  // =========================================================================
-  {
-    id: 'ilustratif_visual',
-    name: 'ILUSTRATIF & VISUAL',
-    tagline: 'Visual Konseptual, Ilustrasi Berkarakter & Menjelaskan Proses',
-    description: 'Menggunakan kekuatan visual dan ilustrasi untuk memvisualisasikan konsep abstrak, objek nyata, atau proses siklus secara hidup dan menyenangkan.',
-    characteristicsSummary: [
-      'Didominasi visual dan ilustrasi tematik yang bermakna',
-      'Membantu menjelaskan konsep abstrak menjadi konkret',
-      'Sangat cocok untuk materi dengan objek biologis, proses fisis, atau visualisasi alam',
-      'Meningkatkan daya ingat visual peserta didik'
-    ],
-    iconName: 'Palette',
-    accent: 'emerald',
-    styles: [
-      {
-        id: 'vector_art',
-        name: 'Vector Art',
-        category: 'ILUSTRATIF & VISUAL',
-        categoryId: 'ilustratif_visual',
-        description: 'Ilustrasi vektor garis halus berkualitas tinggi, modern, detail proporsional, dan sangat rapi.',
-        shortDescription: 'Grafis vektor bersih dengan kontur tajam dan objek ilustratif yang menjelaskan materi.',
-        visualCharacteristics: [
-          'Ilustrasi vektor bersih dengan garis tepi tegas dan halus',
-          'Visualisasi objek nyata (tumbuhan, organ, mesin, dll) yang akurat',
-          'Gradasi halus atau pewarnaan flat modern',
-          'Perpaduan seimbang antara teks penjelas dan gambar tematik'
-        ],
-        suitableFor: [
-          'Biologi (Fotosintesis, Sel, Organ Tubuh)',
-          'Fisika & Geografi (Siklus Air, Tata Surya)',
-          'Teknik & Alat Mekanik',
-          'Proses Kimiawi & Lingkungan Hidup'
-        ],
-        characterExample: 'Visual tajam, edukatif, representatif, estetik dan profesional.',
-        characteristics: 'Ilustrasi vektor garis halus berkualitas tinggi, modern, detail proporsional, dan sangat rapi.',
-        promptInstruction: 'Gunakan gaya visual Vector Art dengan ilustrasi vektor berkualitas tinggi yang merepresentasikan objek materi secara akurat, garis tegas yang bersih, palet warna seimbang, dan penataan diagram proses yang mengalir secara alami.',
-        accentColor: 'emerald',
-        tags: ['Vektor Rapi', 'Objek Akurat', 'Edukatif'],
-      },
-      {
-        id: 'clay_style',
-        name: 'Clay Style',
-        category: 'ILUSTRATIF & VISUAL',
-        categoryId: 'ilustratif_visual',
-        description: 'Ilustrasi 3D lembut bergaya tanah liat plastisin yang hangat, ramah, dan menyenangkan.',
-        shortDescription: 'Visual 3D menyerupai plastisin tanah liat dengan tekstur lembut dan pencahayaan hangat.',
-        visualCharacteristics: [
-          'Efek visual 3 dimensi plastisin dengan lekukan membulat alami',
-          'Pencahayaan lembut (soft lighting) dan bayangan halus',
-          'Palet warna hangat, ramah, dan tidak menyilaukan',
-          'Objek-objek materi tampak seperti model fisik nyata'
-        ],
-        suitableFor: [
-          'Materi IPA Sekolah Dasar & Menengah',
-          'Siklus Kehidupan Hewan & Tumbuhan',
-          'Struktur Bumi & Gunung Berapi',
-          'Konsep Belajar Interaktif & Kreatif'
-        ],
-        characterExample: 'Hangat, bersahabat, menyenangkan, membangkitkan rasa ingin tahu.',
-        characteristics: 'Ilustrasi 3D lembut bergaya tanah liat plastisin yang hangat, ramah, dan menyenangkan.',
-        promptInstruction: 'Gunakan gaya visual Clay Style dengan ilustrasi 3D berefek tanah liat lembut (claymorphic/plasticine), sudut-sudut membulat organik, pencahayaan hangat bersahabat, dan elemen visual yang terasa seperti miniatur nyata.',
-        accentColor: 'orange',
-        tags: ['3D Clay', 'Lembut', 'Hangat'],
-      },
-      {
-        id: 'pixel_style',
-        name: 'Pixel Style',
-        category: 'ILUSTRATIF & VISUAL',
-        categoryId: 'ilustratif_visual',
-        description: 'Seni piksel retro 8-bit/16-bit yang terstruktur, kreatif, dan membangkitkan suasana game edukatif.',
-        shortDescription: 'Estetika pixel art retro yang menarik perhatian siswa melalui visual game klasik.',
-        visualCharacteristics: [
-          'Grid piksel berkarakter retro 8-bit atau 16-bit',
-          'Batas tepi bergaya kotak modular (isometric/orthographic)',
-          'Palet warna bernuansa arcade klasik yang cerah dan kontras',
-          'Ikon dan ornamen berbentuk balok piksel edukatif'
-        ],
-        suitableFor: [
-          'Logika Komputasi & Pemrograman Dasar',
-          'Matematika Geometri & Koordinat',
-          'Materi Gamifikasi Pembelajaran',
-          'Konsep Digital Dasar untuk Siswa'
-        ],
-        characterExample: 'Nostalgik, interaktif, seru seperti game edukasi, kreatif.',
-        characteristics: 'Seni piksel retro 8-bit/16-bit yang terstruktur, kreatif, dan membangkitkan suasana game edukatif.',
-        promptInstruction: 'Gunakan gaya visual Pixel Style dengan ilustrasi seni piksel 8-bit/16-bit yang rapi, kontur kotak-kotak berpiksel tajam, palet warna arcade edukatif, dan tata letak modular yang terinspirasi dari antarmuka game edukasi interaktif.',
-        accentColor: 'violet',
-        tags: ['Pixel 8-bit', 'Gamifikasi', 'Kreatif'],
-      },
-      {
-        id: 'collage_art',
-        name: 'Collage Art',
-        category: 'ILUSTRATIF & VISUAL',
-        categoryId: 'ilustratif_visual',
-        description: 'Perpaduan kolase artistik dari potongan visual, tekstur kertas, foto tematik, dan ilustrasi.',
-        shortDescription: 'Kombinasi artistik potongan gambar, tekstur kertas robek, dan tipografi kreatif.',
-        visualCharacteristics: [
-          'Tekstur kertas, tepi sobekan, dan elemen layer bertumpuk',
-          'Gabungan foto objek nyata dan ilustrasi grafis',
-          'Tipografi dinamis dengan aksen stempel atau label',
-          'Komposisi eksploratif yang kaya cerita'
-        ],
-        suitableFor: [
-          'Seni Rupa & Keterampilan',
-          'Sastra, Puisi, & Teater',
-          'Studi Budaya & Antropologi',
-          'Isu Lingkungan & Gerakan Sosial'
-        ],
-        characterExample: 'Eksploratif, ekspresif, bertekstur, sarat makna kultural.',
-        characteristics: 'Perpaduan kolase artistik dari potongan visual, tekstur kertas, foto tematik, dan ilustrasi.',
-        promptInstruction: 'Gunakan gaya visual Collage Art dengan gabungan potongan gambar tematik, tekstur kertas atau guntingan kreatif, aksen visual bertumpuk, dan tipografi artistik yang menyatu dalam kesatuan pesan edukatif.',
-        accentColor: 'rose',
-        tags: ['Kolase Kertas', 'Artistik', 'Tekstur'],
-      },
-      {
-        id: 'handwritten',
-        name: 'Handwritten',
-        category: 'ILUSTRATIF & VISUAL',
-        categoryId: 'ilustratif_visual',
-        description: 'Sentuhan tulisan tangan, catatan beranotasi, garis sketsa, dan suasana buku catatan belajar.',
-        shortDescription: 'Gaya jurnal belajar pribadi dengan aksen tulisan tangan dan sketsa panah penjelas.',
-        visualCharacteristics: [
-          'Tipografi aksen bergaya tulisan tangan (handwritten script)',
-          'Garis penunjuk, lingkaran sorotan, dan panah sketsa tangan',
-          'Latar kertas catatan bergaris halus atau kotak-kotak (grid notebook)',
-          'Stiker catatan kecil (sticky notes) untuk poin penting'
-        ],
-        suitableFor: [
-          'Tips Belajar & Strategi Menghafal',
-          'Eksperimen Laboratorium & Jurnal Praktikum',
-          'Tata Bahasa & Catatan Kosakata',
-          'Rangkuman Mandiri Siswa'
-        ],
-        characterExample: 'Personal, akrab, mudah didekati, seperti catatan siswa teladan.',
-        characteristics: 'Sentuhan tulisan tangan, catatan beranotasi, garis sketsa, dan suasana buku catatan belajar.',
-        promptInstruction: 'Gunakan gaya visual Handwritten dengan aksen tipografi tulisan tangan yang rapi, garis sketsa organik, panah penunjuk kasual, kartu bergaya sticky note, dan latar kertas bergaris tipis layaknya jurnal belajar premium.',
-        accentColor: 'amber',
-        tags: ['Tulisan Tangan', 'Jurnal Belajar', 'Sketsa'],
-      },
-      {
-        id: 'doodle_education',
-        name: 'Doodle Education',
-        category: 'ILUSTRATIF & VISUAL',
-        categoryId: 'ilustratif_visual',
-        description: 'Coretan edukatif kreatif yang menyederhanakan materi dengan cara yang bersahabat dan santai.',
-        shortDescription: 'Ilustrasi doodle coretan spidol yang santai, komunikatif, dan disukai siswa.',
-        visualCharacteristics: [
-          'Ikon coretan tangan (doodle) hitam-putih atau berwarna pastel',
-          'Panah lengkung dan garis putus-putus penunjuk alur',
-          'Karakter kecil lucu yang memandu materi',
-          'Komposisi bebas namun tetap terorganisir'
-        ],
-        suitableFor: [
-          'Materi Pengantar yang Santai',
-          'Pembelajaran IPA & IPS Terpadu',
-          'Pendidikan Lingkungan Hidup',
-          'Ice Breaking & Pemantik Diskusi'
-        ],
-        characterExample: 'Ceria, santai, kreatif, meruntuhkan kebosanan membaca materi panjang.',
-        characteristics: 'Coretan edukatif kreatif yang menyederhanakan materi dengan cara yang bersahabat dan santai.',
-        promptInstruction: 'Gunakan gaya visual Doodle Education dengan ilustrasi coretan edukatif tangan yang kreatif, ikon doodle kontekstual, panah dan garis penunjuk kasual, serta atmosfer belajar yang bersahabat.',
-        accentColor: 'purple',
-        tags: ['Doodle', 'Coretan Kreatif', 'Santai'],
-      },
-      {
-        id: 'cartoon_education',
-        name: 'Cartoon Education',
-        category: 'ILUSTRATIF & VISUAL',
-        categoryId: 'ilustratif_visual',
-        description: 'Karakter kartun edukatif yang ekspresif mendampingi penjelasan setiap bagian materi.',
-        shortDescription: 'Maskot kartun ceria yang mendampingi siswa memahami konsep demi konsep.',
-        visualCharacteristics: [
-          'Maskot atau karakter ilustrasi dengan ekspresi ramah',
-          'Balon petunjuk untuk tips atau rumus penting',
-          'Warna cerah ceria dengan kontras hangat',
-          'Bentuk-bentuk organik membulat yang aman dan ramah anak'
-        ],
-        suitableFor: [
-          'Siswa SD & SMP',
-          'Pendidikan Karakter & Budi Pekerti',
-          'Kesehatan & Kebersihan Diri',
-          'Pengenalan Sains Awal'
-        ],
-        characterExample: 'Ekspresif, menyenangkan, penuh semangat, memotivasi siswa.',
-        characteristics: 'Karakter kartun edukatif yang ekspresif mendampingi penjelasan setiap bagian materi.',
-        promptInstruction: 'Gunakan gaya visual Cartoon Education dengan karakter maskot ramah penjelas materi, warna ceria hangat, balon dialog informatif, dan bentuk kartu yang dinamis serta menarik bagi anak-anak.',
-        accentColor: 'yellow',
-        tags: ['Maskot Kartun', 'Ceria', 'Ramah Anak'],
-      }
-    ]
-  },
-
-  // =========================================================================
-  // 3. TEKNOLOGI & DIGITAL
-  // =========================================================================
-  {
-    id: 'teknologi_digital',
-    name: 'TEKNOLOGI & DIGITAL',
-    tagline: 'Modern, Digital, Futuristik, Siber & Inovatif',
-    description: 'Menghadirkan atmosfer teknologi mutakhir, kecerdasan buatan, visual data digital, dan estetika masa depan yang menginspirasi.',
-    characteristicsSummary: [
-      'Nuansa modern dan digital berkontras tinggi',
-      'Elemen teknologi: node, sirkuit, kisi siber, dan kilau cahaya',
-      'Tipografi futuristik dan monospaced yang presisi',
-      'Cocok untuk materi informatika, robotika, coding, AI, dan inovasi sains'
+      'Modern, digital, dinamis, dan inovatif',
+      'Aksen garis geometris presisi dan pendaran cahaya halus',
+      'Panel informasi semi-transparan berbobot kontemporer',
+      'Palet cyan elektrik, biru kobalt, dan spektrum aurora',
+      'Cocok untuk informatika, fisika modern, dan teknologi'
     ],
     iconName: 'Cpu',
-    accent: 'cyan',
+    accent: 'indigo',
     styles: [
       {
         id: 'futuristic',
         name: 'Futuristic',
-        category: 'TEKNOLOGI & DIGITAL',
-        categoryId: 'teknologi_digital',
-        description: 'Tampilan modern yang menggambarkan kemajuan teknologi, sains masa depan, dan inovasi canggih.',
-        shortDescription: 'Estetika masa depan dengan elemen digital, komposisi dinamis, dan visual teknologi.',
+        category: 'MODERN & DIGITAL',
+        categoryId: 'modern_digital',
+        description: 'Tampilan modern dan futuristik yang cocok untuk materi teknologi, inovasi, dan sains canggih.',
+        shortDescription: 'Estetika teknologi tinggi dengan aksen garis neon presisi dan antarmuka masa depan.',
         visualCharacteristics: [
-          'Elemen digital modern dan kisi geometris (grid mesh)',
-          'Glow halus bernuansa cyan neon dan deep dark blue',
-          'Komposisi dinamis dengan sudut miring beraksen teknologi',
-          'Visualisasi diagram sirkuit data dan arsitektur sistem'
+          'Garis aksen geometris bercahaya neon halus',
+          'Panel informasi cyber HUD dengan sudut chamfered',
+          'Font Orbitron + Exo 2 berkarakter teknologi tinggi',
+          'Palet biru cyan, kobalt, dan ungu kosmis'
         ],
         suitableFor: [
-          'Artificial Intelligence (Kecerdasan Buatan)',
-          'Robotika & Otomasi Industri',
-          'Coding & Algoritma Pemrograman',
-          'Eksplorasi Antariksa & Sains Modern'
+          'Informatika & Robotika',
+          'Kecerdasan Buatan (AI) & Koding',
+          'Fisika Kuantum & Astronomi',
+          'Inovasi Teknologi Terbarukan'
         ],
-        characterExample: 'Canggih, mutakhir, dinamis, berorientasi masa depan.',
-        characteristics: 'Tampilan modern yang menggambarkan kemajuan teknologi, sains masa depan, dan inovasi canggih.',
-        promptInstruction: 'Gunakan gaya visual Futuristic dengan elemen digital mutakhir, latar belakang teknologi gelap beraksen cahaya neon cyan/biru elektrik, kisi geometris presisi, tipografi modern berkarakter kuat, dan diagram alur berorientasi teknologi masa depan.',
-        accentColor: 'cyan',
-        tags: ['Futuristik', 'AI & Robotika', 'Canggih'],
+        characterExample: 'Modern, canggih, teratur, memancarkan atmosfer laboratorium masa depan.',
+        characteristics: 'Tampilan modern dan futuristik yang cocok untuk materi teknologi, inovasi, dan sains canggih.',
+        promptInstruction: 'Gunakan gaya Futuristic dengan estetika antarmuka teknologi tinggi, aksen garis neon cyan halus, panel modular berbingkai presisi, font Orbitron untuk judul dan Exo 2 untuk teks isi, serta tata letak HUD yang tertib.',
+        accentColor: 'blue',
+        tags: ['Teknologi', 'Cyber HUD', 'Futuristik'],
+        styleProfile: STYLE_PROFILES_V22D.futuristic,
       },
       {
         id: 'cyberpunk',
         name: 'Cyberpunk',
-        category: 'TEKNOLOGI & DIGITAL',
-        categoryId: 'teknologi_digital',
-        description: 'Suasana high-tech perkotaan digital dengan kontras warna neon cyan dan magenta yang berani.',
-        shortDescription: 'Kontras ekstrem neon digital (cyan-magenta) dengan atmosfer siber berenergi tinggi.',
+        category: 'MODERN & DIGITAL',
+        categoryId: 'modern_digital',
+        description: 'Estetika futuristik berani dengan nuansa neon, glitch digital, dan atmosfer perkotaan teknologi tinggi.',
+        shortDescription: 'Warna neon kontras tajam, aksen kode terminal, dan panel modular berenergi tinggi.',
         visualCharacteristics: [
-          'Palet kontras gelap bertenaga neon cyan dan fuchsia-magenta',
-          'Garis grid digital siber dan bingkai teknis asimetris',
-          'Aksen glitch halus dan barcode/tag data fungsional',
-          'Tipografi tajam berkarakter siber industrial'
+          'Kontras tajam dengan aksen neon kuning elektrik dan pink fuchsia',
+          'Stempel peringatan industri dan kode digital modular',
+          'Font Orbitron + Rajdhani berenergi dinamis',
+          'Panel data bertingkat ala antarmuka konsol canggih'
         ],
         suitableFor: [
-          'Keamanan Siber (Cybersecurity) & Kriptografi',
-          'Jaringan Komputer & Internet of Things (IoT)',
-          'Sistem Operasi & Arsitektur Komputer',
-          'Etika Digital & Dunia Maya'
+          'Keamanan Siber & Jaringan Komputer',
+          'Pemrograman Lanjut & Sistem Operasi',
+          'Dampak Sosial Teknologi Informasi',
+          'Kriptografi & Blockchain'
         ],
-        characterExample: 'Berani, intens, high-tech, sarat energi siber.',
-        characteristics: 'Suasana high-tech perkotaan digital dengan kontras warna neon cyan dan magenta yang berani.',
-        promptInstruction: 'Gunakan gaya visual Cyberpunk dengan palet kontras tinggi neon cyan dan neon magenta di atas latar gelap, bingkai kartu siber dengan sudut terpotong (chamfered), grid digital futuristik, dan tipografi bertema komputasi mutakhir.',
-        accentColor: 'fuchsia',
-        tags: ['Neon Siber', 'High-Tech', 'Intens'],
+        characterExample: 'Tajam, berani, dinamis, memikat perhatian dengan estetika neon digital.',
+        characteristics: 'Estetika futuristik berani dengan nuansa neon, glitch digital, dan atmosfer perkotaan teknologi tinggi.',
+        promptInstruction: 'Gunakan gaya Cyberpunk dengan palet gelap beraksen neon cyan dan fuchsia tajam, stempel kode modular, font Orbitron dan Rajdhani, serta bingkai data industrial berkarakter kuat.',
+        accentColor: 'cyan',
+        tags: ['Neon Tajam', 'Siber', 'Energetik'],
+        styleProfile: STYLE_PROFILES_V22D.cyberpunk,
       },
       {
-        id: 'y2k',
-        name: 'Y2K',
-        category: 'TEKNOLOGI & DIGITAL',
-        categoryId: 'teknologi_digital',
-        description: 'Estetika digital era milenium awal (2000-an) dengan elemen krom, kilau perak, dan grafis tekno retro.',
-        shortDescription: 'Gaya retro-futuristik era awal internet dengan kilau perak, gelembung cair, dan warna pastel futuristik.',
+        id: 'glassmorphism',
+        name: 'Glassmorphism',
+        category: 'MODERN & DIGITAL',
+        categoryId: 'modern_digital',
+        description: 'Desain modern elegan dengan kartu transparan bertekstur kaca halus dan pencahayaan lembut.',
+        shortDescription: 'Panel kaca frosted transparan modern dengan garis tepi bercahaya lembut.',
         visualCharacteristics: [
-          'Tekstur metalik kromatik dan pantulan cahaya perak',
-          'Bentuk gelembung bulat futuristik (blobitecture)',
-          'Gradasi warna perak, lilac, baby blue, dan aksen neon lembut',
-          'Ikon tekno era 2000-an seperti bintang empat sudut dan kaset digital'
+          'Permukaan transparan bertekstur kaca kabut (frosted blur)',
+          'Garis tepi tipis memantulkan cahaya putih lembut',
+          'Font Outfit + Inter yang modern dan jernih',
+          'Latar belakang gradasi aurora lembut di balik kartu data'
         ],
         suitableFor: [
-          'Sejarah Perkembangan Internet & Komputer',
-          'Multimedia & Desain Antarmuka Digital',
-          'Tren Budaya Populer & Teknologi Informasi',
-          'Konsep Web & Komunikasi Maya'
+          'Konsep Multi-Lapisan Teori Sains',
+          'Struktur Sel & Ekosistem Biologi',
+          'Informatika & Konsep Cloud Computing',
+          'Komunikasi Digital & Media Sosial'
         ],
-        characterExample: 'Retro-futuristik, berkilau, unik, bernostalgia dengan era awal internet.',
-        characteristics: 'Estetika digital era milenium awal (2000-an) dengan elemen krom, kilau perak, dan grafis tekno retro.',
-        promptInstruction: 'Gunakan gaya visual Y2K dengan estetika retro-futurisme era awal tahun 2000-an, aksen krom metalik mengilap, bentuk kontainer membulat aerodinamis, palet warna perak-lilac-cyan, dan ornamen tekno-digital klasik.',
-        accentColor: 'purple',
-        tags: ['Y2K Chrome', 'Milenium 2000', 'Tekno-Retro'],
+        characterExample: 'Modern, elegan, jernih, mewah tanpa melelahkan mata.',
+        characteristics: 'Desain modern elegan dengan kartu transparan bertekstur kaca halus dan pencahayaan lembut.',
+        promptInstruction: 'Gunakan gaya Glassmorphism dengan panel kaca semi-transparan bertekstur frosted blur halus, batas tepi putih tipis yang memantulkan cahaya lembut, font Outfit + Inter, dan kedalaman multi-lapisan yang rapi.',
+        accentColor: 'indigo',
+        tags: ['Frosted Glass', 'Elegan', 'Modern'],
+        styleProfile: STYLE_PROFILES_V22D.glassmorphism,
       },
       {
         id: 'aurora',
         name: 'Aurora',
-        category: 'TEKNOLOGI & DIGITAL',
-        categoryId: 'teknologi_digital',
-        description: 'Pancaran warna cahaya kutub yang halus dan dinamis, dipadu dengan estetika antarmuka modern.',
-        shortDescription: 'Gradasi cahaya aurora halus yang menenangkan, berkelas, dan futuristik.',
+        category: 'MODERN & DIGITAL',
+        categoryId: 'modern_digital',
+        description: 'Pendaran cahaya gradasi spektakuler dari hijau toska, ungu lembayung, dan biru langit yang menenangkan.',
+        shortDescription: 'Gradasi cahaya alami aurora yang lembut, harmonis, dan ramah konsentrasi.',
         visualCharacteristics: [
-          'Gradasi warna cahaya kutub yang mengalir lembut (teal, hijau giok, ungu)',
-          'Pencahayaan atmosferik bercahaya lembut (ambient glow)',
-          'Batas tepi kartu halus tanpa garis kasar',
-          'Tipografi kontemporer yang elegan dan sangat nyaman dibaca'
+          'Pendaran warna gradasi aurora lembut yang menyatu harmonis',
+          'Tipografi Sora + Manrope yang modern dan bernafas lega',
+          'Kartu materi dengan tepi aksen gradasi yang memikat',
+          'Suasana damai, futuristik, dan menenangkan konsentrasi'
         ],
         suitableFor: [
-          'Sains Atmosfer & Fenomena Alam Modern',
-          'Energi Terbarukan & Teknologi Hijau',
-          'Komputasi Awan (Cloud Computing)',
-          'Kesehatan Mental & Pembelajaran Menenangkan'
+          'Geografi & Fenomena Atmosfer Bumi',
+          'Biologi Molekuler & Genetika',
+          'Psikologi & Perkembangan Karakter',
+          'Astronomi & Tata Surya'
         ],
-        characterExample: 'Menenangkan, anggun, inovatif, memanjakan mata.',
-        characteristics: 'Pancaran warna cahaya kutub yang halus dan dinamis, dipadu dengan estetika antarmuka modern.',
-        promptInstruction: 'Gunakan gaya visual Aurora dengan perpaduan gradasi cahaya kutub dinamis yang mengalir lembut, pencahayaan ambient yang hangat dan sejuk, kartu data semi-transparan yang bersih, serta keterbacaan tipografi yang sangat nyaman.',
+        characterExample: 'Tenang, bercahaya, futuristik halus, menyejukkan pandangan belajar.',
+        characteristics: 'Pendaran cahaya gradasi spektakuler dari hijau toska, ungu lembayung, dan biru langit yang menenangkan.',
+        promptInstruction: 'Gunakan gaya Aurora dengan perpaduan gradasi cahaya lembut teal, indigo, dan lembayung, tipografi Sora + Manrope, kartu materi bertepi halus, serta pencahayaan atmosfer yang harmonis.',
         accentColor: 'teal',
-        tags: ['Gradasi Aurora', 'Glow Halus', 'Menenangkan'],
+        tags: ['Gradasi Cahaya', 'Aurora', 'Harmonis'],
+        styleProfile: STYLE_PROFILES_V22D.aurora,
       },
       {
-        id: 'digital_interface',
-        name: 'Digital Interface',
-        category: 'TEKNOLOGI & DIGITAL',
-        categoryId: 'teknologi_digital',
-        description: 'Terinspirasi oleh panel kendali dashboard modern, indikator status, dan metrik sistem presisi.',
-        shortDescription: 'Tata letak dashboard panel kendali digital dengan modul data berstruktur rapi.',
+        id: 'y2k',
+        name: 'Y2K',
+        category: 'MODERN & DIGITAL',
+        categoryId: 'modern_digital',
+        description: 'Estetika pergantian milenium era tahun 2000-an dengan elemen retro digital, kawat chrome, dan keceriaan tekno.',
+        shortDescription: 'Estetika retro-digital milenium dengan bintang 4 titik dan warna cyber pop ceria.',
         visualCharacteristics: [
-          'Modul kartu bergaya widget dashboard UI interaktif',
-          'Indikator status, bar kemajuan, dan chip tag teknis',
-          'Tipografi kode monospaced untuk istilah khusus',
-          'Grid modular yang memudahkan komparasi parameter'
+          'Bintang 4 titik (sparkles) kromatik khas era milenium',
+          'Bentuk kapsul pil dan sudut melengkung tebal',
+          'Font Space Grotesk + DM Sans yang berkarakter retro-futuristik',
+          'Warna ceria perak krom, biru langit, dan oranye menyala'
         ],
         suitableFor: [
-          'Dasar-dasar Jaringan & Server',
-          'Manajemen Basis Data (Database SQL)',
-          'Analisis Sistem & Rekayasa Perangkat Lunak',
-          'Pengukuran Fisika & Parameter Laboratorium'
+          'Sejarah Perkembangan Internet & Komputer',
+          'Media Massa & Budaya Populer Abad 21',
+          'Pengantar Desain Grafis & Multimedia',
+          'Komunikasi Antargenerasi'
         ],
-        characterExample: 'Presisi, modular, berorientasi operasional, mudah diinspeksi.',
-        characteristics: 'Terinspirasi oleh panel kendali dashboard modern, indikator status, dan metrik sistem presisi.',
-        promptInstruction: 'Gunakan gaya visual Digital Interface dengan tampilan menyerupai panel dashboard kontrol digital, kartu-kartu widget modular terstruktur, label status berkode warna, tipografi monospaced untuk poin kunci, dan hierarki operasional yang presisi.',
+        characterExample: 'Ceria, berjiwa muda, unik, memadukan nostalgia milenium dengan estetika modern.',
+        characteristics: 'Estetika pergantian milenium era tahun 2000-an dengan elemen retro digital, kawat chrome, dan keceriaan tekno.',
+        promptInstruction: 'Gunakan gaya Y2K dengan ornamen bintang 4 titik perak kromatik, bentuk kapsul bulat retro, font Space Grotesk dan DM Sans, warna biru cyber pop dan oranye, serta tata letak modular yang segar.',
         accentColor: 'blue',
-        tags: ['Dashboard UI', 'Widget Modular', 'Presisi Data'],
-      }
-    ]
+        tags: ['Retro Digital', 'Milenium', 'Kreatif'],
+        styleProfile: STYLE_PROFILES_V22D.y2k,
+      },
+    ],
   },
 
   // =========================================================================
-  // 4. EKSPRESIF & ENERGETIK
+  // 2. SEDERHANA & PROFESIONAL
   // =========================================================================
   {
-    id: 'ekspresif_energetik',
-    name: 'EKSPRESIF & ENERGETIK',
-    tagline: 'Berani, Enerjik, Kreatif & Menarik Perhatian Seketika',
-    description: 'Mengedepankan kekuatan ekspresi visual, warna berani, dan dinamika tinggi untuk menarik antusiasme dan fokus penuh peserta didik.',
+    id: 'sederhana_profesional',
+    name: 'SEDERHANA & PROFESIONAL',
+    shortName: 'PROFESIONAL',
+    tagline: 'Bersih, Terstruktur, Informatif & Presisi Tinggi',
+    description: 'Gaya yang bersih, terstruktur, mudah dibaca, dan berorientasi pada penyampaian informasi yang akurat dan jelas.',
     characteristicsSummary: [
-      'Berani dan dinamis dengan komposisi yang tidak monoton',
-      'Enerjik dan penuh semangat belajar',
-      'Sangat efektif merebut perhatian siswa pada materi yang menuntut motivasi tinggi',
-      'Kreatif dengan kombinasi bentuk dan tipografi yang mencolok'
+      'Bersih, terstruktur, informatif, profesional, dan efektif',
+      'Ruang bernafas (whitespace) yang lega dan nyaman di mata',
+      'Hierarki tipografi rasional tanpa ornamen yang mengganggu',
+      'Palet warna netral bersahaja dengan aksen fungsional',
+      'Sangat ideal untuk matematika, sains murni, hukum, dan ekonomi'
+    ],
+    iconName: 'Briefcase',
+    accent: 'slate',
+    styles: [
+      {
+        id: 'minimalism',
+        name: 'Minimalism',
+        category: 'SEDERHANA & PROFESIONAL',
+        categoryId: 'sederhana_profesional',
+        description: 'Sederhana, bersih, fokus pada informasi esensial, tanpa elemen dekorasi yang mengganggu.',
+        shortDescription: 'Tampilan sangat bersih dan fokus pada teks inti dengan keterbacaan mutlak.',
+        visualCharacteristics: [
+          'Banyak ruang kosong (whitespace) yang lega dan tenang',
+          'Tipografi sans-serif Montserrat + Inter yang sangat teratur',
+          'Palet warna monokromatik abu-abu netral dengan aksen tunggal',
+          'Garis pembatas halus dan kartu flat bersih'
+        ],
+        suitableFor: [
+          'Konsep Dasar & Definisi Ilmiah',
+          'Matematika, Rumus & Aljabar',
+          'Pedoman Resmi, Regulasi & Etika',
+          'Fisika Murni & Teori Dasar'
+        ],
+        characterExample: 'Minimalis, tenang, elegan, fokus langsung pada pesan pembelajaran.',
+        characteristics: 'Sederhana, bersih, fokus pada informasi esensial, tanpa elemen dekorasi yang mengganggu.',
+        promptInstruction: 'Gunakan gaya visual Minimalism dengan tata letak sangat bersih, ruang bernapas (whitespace) melimpah, tipografi Montserrat untuk judul dan Inter untuk teks isi, palet monokromatik abu-abu elegan, dan kartu flat tanpa bayangan berlebih.',
+        accentColor: 'slate',
+        tags: ['Bersih', 'Ruang Lega', 'Fokus Inti'],
+        styleProfile: STYLE_PROFILES_V22D.minimalism,
+      },
+      {
+        id: 'swiss_design',
+        name: 'Swiss Design',
+        category: 'SEDERHANA & PROFESIONAL',
+        categoryId: 'sederhana_profesional',
+        description: 'Sistem grid matematis yang ketat, tipografi neo-grotesque tegas, dan kejelasan komunikasi mutlak.',
+        shortDescription: 'Desain presisi berbasis grid matematis dan tipografi internasional yang tegas.',
+        visualCharacteristics: [
+          'Struktur grid kolom yang sangat rapi dan presisi matematis',
+          'Tipografi Inter berbobot tegas dengan hierarki objektif',
+          'Kontras warna kuat antara teks dan latar belakang',
+          'Penyajian fakta, data angka, dan komparasi yang disiplin'
+        ],
+        suitableFor: [
+          'Data Statistik & Perbandingan Angka',
+          'Studi Kasus & Analisis Terstruktur',
+          'Struktur Organisasi & Klasifikasi Taksonomi',
+          'Materi Sains, Fisika & Rekayasa Teknik'
+        ],
+        characterExample: 'Rasional, tegas, modern, teratur secara matematis.',
+        characteristics: 'Sistem grid matematis yang ketat, tipografi neo-grotesque tegas, dan kejelasan komunikasi mutlak.',
+        promptInstruction: 'Gunakan gaya Swiss Design dengan sistem grid asimetris presisi tinggi, tipografi Inter berbobot tegas hitam-putih dengan aksen merah internasional, garis pembatas 2px solid, serta penataan data yang sangat rasional.',
+        accentColor: 'red',
+        tags: ['Grid Ketat', 'Tipografi Kuat', 'Presisi'],
+        styleProfile: STYLE_PROFILES_V22D.swiss_design,
+      },
+      {
+        id: 'editorial',
+        name: 'Editorial',
+        category: 'SEDERHANA & PROFESIONAL',
+        categoryId: 'sederhana_profesional',
+        description: 'Format publikasi berwibawa layaknya majalah sains atau publikasi ilmiah profesional.',
+        shortDescription: 'Format publikasi bergengsi dengan tipografi serif elegan dan kutipan sorotan.',
+        visualCharacteristics: [
+          'Judul berkarakter serif anggun Playfair Display dipadu teks isi Lora',
+          'Blok kutipan penting (pull quotes) yang menonjol',
+          'Kolom informasi tertata rapi ala jurnal ilmiah prestisius',
+          'Garis pemisah elegan dengan nuansa akademis terpercaya'
+        ],
+        suitableFor: [
+          'Bahasa & Sastra Indonesia / Inggris',
+          'Biografi Tokoh Dunia & Nasional',
+          'Kajian Teori Filosofis & Sosial',
+          'Artikel Ilmiah Populer & Opini Berbobot'
+        ],
+        characterExample: 'Akademis, berwibawa, elegan, mencerminkan literatur terpercaya.',
+        characteristics: 'Format publikasi berwibawa layaknya majalah sains atau publikasi ilmiah profesional.',
+        promptInstruction: 'Gunakan gaya Editorial dengan format jurnal prestisius, tipografi Playfair Display pada judul dan Lora pada teks isi, blok kutipan penting (pull quotes) beraksen garis halus, dan latar warna krem hangat layaknya kertas buku berkualitas.',
+        accentColor: 'stone',
+        tags: ['Jurnal Ilmiah', 'Serif Elegan', 'Berwibawa'],
+        styleProfile: STYLE_PROFILES_V22D.editorial,
+      },
+      {
+        id: 'vector_art',
+        name: 'Vector Art',
+        category: 'SEDERHANA & PROFESIONAL',
+        categoryId: 'sederhana_profesional',
+        description: 'Ilustrasi vektor garis halus berkualitas tinggi, modern, rapi, dan menjelaskan objek materi secara presisi.',
+        shortDescription: 'Ilustrasi vektor terstandar yang jelas, proporsional, dan sangat edukatif.',
+        visualCharacteristics: [
+          'Garis tepi objek tajam, bersih, dan proporsional',
+          'Visualisasi objek nyata (organ, mesin, tumbuhan) yang akurat',
+          'Font Poppins + Nunito Sans yang ramah dan jernih',
+          'Perpaduan seimbang antara teks penjelas dan visual tematik'
+        ],
+        suitableFor: [
+          'Biologi (Anatomi Tubuh, Sel, Sistem Organ)',
+          'Siklus Alam & Ekosistem Lingkungan',
+          'Mekanika Sederhana & Alat Fisika',
+          'Geografi Fenomena Alam & Vulkanologi'
+        ],
+        characterExample: 'Rapi, proporsional, ramah siswa, menjelaskan konsep visual secara tuntas.',
+        characteristics: 'Ilustrasi vektor garis halus berkualitas tinggi, modern, rapi, dan menjelaskan objek materi secara presisi.',
+        promptInstruction: 'Gunakan gaya Vector Art dengan ilustrasi vektor datar 2D yang rapi, garis tepi tegas dan proporsional, font Poppins untuk judul dan Nunito Sans untuk isi, serta penunjuk arah alur proses materi yang jelas.',
+        accentColor: 'emerald',
+        tags: ['Vektor Rapi', 'Ilustratif Jelas', 'Edukatif'],
+        styleProfile: STYLE_PROFILES_V22D.vector_art,
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 3. KREATIF & EKSPRESIF
+  // =========================================================================
+  {
+    id: 'kreatif_ekspresif',
+    name: 'KREATIF & EKSPRESIF',
+    shortName: 'EKSPRESIF',
+    tagline: 'Berani, Dinamis, Artistik & Menarik Perhatian Seketika',
+    description: 'Gaya dengan karakter visual yang kuat, berani, kreatif, dinamis, dan ekspresif. Sangat ampuh menarik minat siswa pada tema-tema kontekstual.',
+    characteristicsSummary: [
+      'Berani, kreatif, ekspresif, dinamis, dan menarik perhatian',
+      'Tipografi bertenaga dengan kontras bobot yang memikat',
+      'Warna primer cerah dan tabrakan palet visual yang hidup',
+      'Struktur bento modular dan panel komik interaktif',
+      'Sangat cocok untuk seni, bahasa, olahraga, dan isu sosial'
     ],
     iconName: 'Sparkles',
-    accent: 'amber',
+    accent: 'rose',
     styles: [
       {
         id: 'maximalism',
         name: 'Maximalism',
-        category: 'EKSPRESIF & ENERGETIK',
-        categoryId: 'ekspresif_energetik',
-        description: 'Kaya akan detail, warna berani, ornamen berlapis, dan padat informasi visual yang memukau.',
-        shortDescription: 'Visual penuh energi dengan palet warna kaya, ornamen beragam, dan kehadiran visual yang kuat.',
+        category: 'KREATIF & EKSPRESIF',
+        categoryId: 'kreatif_ekspresif',
+        description: 'Gaya berani, padat, penuh energi visual, warna kontras tinggi, dan memicu antusiasme belajar peserta didik.',
+        shortDescription: 'Tipografi super tebal berani dengan palet dinamis yang menghidupkan suasana kelas.',
         visualCharacteristics: [
-          'Pemanfaatan ruang yang padat dengan dekorasi tematik bermakna',
-          'Kombinasi pola berani (pola garis, bintang, kisi, tekstur)',
-          'Tipografi berlapis dengan bayangan tegas dan kontras kaya',
-          'Banyak detail visual pendukung yang saling melengkapi'
+          'Tipografi tebal bertenaga Archivo Black + Poppins',
+          'Tabrakan warna dinamis (kuning, ungu, jingga, hitam)',
+          'Komposisi kaya elemen stiker dan kartu sorotan mencolok',
+          'Penyampaian poin dengan daya pikat tinggi'
         ],
         suitableFor: [
-          'Keragaman Budaya Nusantara & Geografi Dunia',
-          'Biodiversitas & Keanekaragaman Hayati Hutan Hujan',
-          'Sejarah Seni Rupa & Gerakan Kreatif',
-          'Pekan Pameran Karya Pembelajaran'
+          'Kampanye Kesadaran Sosial & Lingkungan',
+          'Isu Seni Kreatif & Desain Budaya',
+          'Debat Kritis & Perbandingan Pandangan',
+          'Motivasi Belajar & Pengembangan Diri'
         ],
-        characterExample: 'Meriah, berlimpah, percaya diri, kaya nuansa visual.',
-        characteristics: 'Kaya akan detail, warna berani, ornamen berlapis, dan padat informasi visual yang memukau.',
-        promptInstruction: 'Gunakan gaya visual Maximalism dengan kekayaan visual yang berani, perpaduan pola grafis yang dinamis, palet warna kaya berlapis, tipografi bermata tegas dengan bayangan kuat, dan ornamen pelengkap yang memperkaya makna materi tanpa mengaburkan teks.',
-        accentColor: 'amber',
-        tags: ['Kaya Detail', 'Warna Berani', 'Ekspresif'],
+        characterExample: 'Penuh energi, ekspresif, tidak konvensional, membangkitkan rasa ingin tahu.',
+        characteristics: 'Gaya berani, padat, penuh energi visual, warna kontras tinggi, dan memicu antusiasme belajar peserta didik.',
+        promptInstruction: 'Gunakan gaya Maximalism dengan tipografi ekstra tebal Archivo Black dipadu Poppins, tabrakan palet warna hidup (ungu, kuning, oranye), kartu sorotan asimetris, dan stiker penanda poin penting yang energetik.',
+        accentColor: 'violet',
+        tags: ['Penuh Energi', 'Tebal Berani', 'Ekspresif'],
+        styleProfile: STYLE_PROFILES_V22D.maximalism,
       },
       {
         id: 'pop_art',
         name: 'Pop Art',
-        category: 'EKSPRESIF & ENERGETIK',
-        categoryId: 'ekspresif_energetik',
-        description: 'Warna-warna primer kontras tinggi, pola halftone titik-titik, dan gaya komik komersial yang berani.',
-        shortDescription: 'Gaya seni pop legendaris dengan warna primer cerah, pola bintik halftone, dan garis tegas.',
+        category: 'KREATIF & EKSPRESIF',
+        categoryId: 'kreatif_ekspresif',
+        description: 'Estetika komik ceria dengan pola halftone ben-day dots, balon dialog, dan warna primer cerah yang disukai siswa.',
+        shortDescription: 'Gaya buku komik ceria dengan pola bintik halftone dan bingkai panel hitam tegas.',
         visualCharacteristics: [
-          'Warna primer cerah mencolok (kuning terang, merah bendera, biru elektrik)',
-          'Pola titik-titik halftone bergaya cetak komik klasik',
-          'Garis tepi hitam tebal yang membingkai setiap elemen visual',
-          'Balon kata dan efek suara onomatopoeia untuk sorotan ide'
+          'Judul komik komikal Bangers berpadu teks isi Poppins yang nyaman',
+          'Pola bintik halftone (Ben-Day dots) khas komik klasik',
+          'Garis tepi hitam tebal ala buku cerita bergambar',
+          'Warna primer ceria: kuning komik, biru cerah, dan merah cabai'
         ],
         suitableFor: [
-          'Media Komunikasi & Iklan Kreatif',
-          'Sosiologi Konsumsi & Budaya Massa',
-          'Kewirausahaan & Strategi Pemasaran',
-          'Penyuluhan & Kampanye Sosial Siswa'
+          'Materi Menyenangkan Tingkat SMP & SMA',
+          'Sastra & Cerita Rakyat Nusantara',
+          'Pendidikan Karakter & Nilai Moral',
+          'Kuis & Tantangan Pembelajaran'
         ],
-        characterExample: 'Ikonik, berenergi tinggi, langsung mencuri pandangan, penuh aksi.',
-        characteristics: 'Warna-warna primer kontras tinggi, pola halftone titik-titik, dan gaya komik komersial yang berani.',
-        promptInstruction: 'Gunakan gaya visual Pop Art dengan warna primer ekspresif kontras tinggi, pola titik halftone retro, garis kontur hitam tegas, balon penjelas komik, dan tipografi display yang menonjolkan fakta penting secara memikat.',
-        accentColor: 'yellow',
-        tags: ['Halftone Dots', 'Warna Kontras', 'Populer'],
+        characterExample: 'Humoris, ceria, dramatis layaknya panel komik petualangan superhero.',
+        characteristics: 'Estetika komik ceria dengan pola halftone ben-day dots, balon dialog, dan warna primer cerah yang disukai siswa.',
+        promptInstruction: 'Gunakan gaya Pop Art bernuansa buku komik klasik, judul font komik Bangers, teks isi Poppins, garis batas hitam tegas 2px dengan bayangan solid (hard shadow), pola raster titik Ben-Day dots, dan balon dialog penjelas.',
+        accentColor: 'rose',
+        tags: ['Komik Pop', 'Halftone Dots', 'Ceria'],
+        styleProfile: STYLE_PROFILES_V22D.pop_art,
+      },
+      {
+        id: 'collage_art',
+        name: 'Collage Art',
+        category: 'KREATIF & EKSPRESIF',
+        categoryId: 'kreatif_ekspresif',
+        description: 'Kombinasi artistik potongan gambar tematik, tekstur kertas robek, dan tipografi kreatif multi-lapisan.',
+        shortDescription: 'Gaya guntingan kertas artistik layaknya papan ide kreatif dan scrapbook seni.',
+        visualCharacteristics: [
+          'Efek tepi guntingan kertas dan layer bertumpuk',
+          'Tipografi tajam Bebas Neue berpadu DM Sans yang fleksibel',
+          'Tekstur kertas daur ulang dan aksen selotip washi transparan',
+          'Kesan organik, humanis, dan eksploratif'
+        ],
+        suitableFor: [
+          'Seni Rupa & Teori Budaya Nusantara',
+          'Antropologi & Sosiologi Masyarakat',
+          'Sejarah Gerakan Sosial & Tokoh Perubahan',
+          'Pendidikan Lingkungan & Daur Ulang'
+        ],
+        characterExample: 'Artistik, bercerita, taktil, memancarkan sentuhan kreativitas tangan manusia.',
+        characteristics: 'Kombinasi artistik potongan gambar tematik, tekstur kertas robek, dan tipografi kreatif multi-lapisan.',
+        promptInstruction: 'Gunakan gaya Collage Art dengan efek guntingan kertas artistik, selotip washi transparan di sudut kartu, tipografi Bebas Neue dan DM Sans, serta penataan modul layaknya papan scrapbook edukatif.',
+        accentColor: 'purple',
+        tags: ['Guntingan Kertas', 'Scrapbook', 'Artistik'],
+        styleProfile: STYLE_PROFILES_V22D.collage_art,
       },
       {
         id: 'graffiti',
         name: 'Graffiti',
-        category: 'EKSPRESIF & ENERGETIK',
-        categoryId: 'ekspresif_energetik',
-        description: 'Seni jalanan perkotaan (street art) yang dinamis dengan semprotan warna, garis bebas, dan tipografi urban.',
-        shortDescription: 'Energi seni mural jalanan dengan percikan cat dinamis dan tipografi ekspresif.',
+        category: 'KREATIF & EKSPRESIF',
+        categoryId: 'kreatif_ekspresif',
+        description: 'Sentuhan urban street-art dengan aksen spidol marker tebal, percikan cat dinamis, dan karakter yang berjiwa bebas.',
+        shortDescription: 'Estetika urban modern dengan spidol marker tebal penegas kata kunci materi.',
         visualCharacteristics: [
-          'Efek semprotan cat (spray paint stencil & splatters)',
-          'Garis bebas dinamis dan bentuk huruf bertumpuk berkarakter',
-          'Tekstur dinding perkotaan atau bata halus sebagai latar',
-          'Warna kontras berjiwa muda yang menggetarkan semangat'
+          'Judul ekspresif Permanent Marker dengan isi materi Roboto yang sangat jernih',
+          'Aksen percikan cat semprot (spray stencil) yang terkontrol',
+          'Garis bawah marker melengkung penegas kata kunci',
+          'Suasana muda, energik, dan menolak kebosanan'
         ],
         suitableFor: [
-          'Pendidikan Seni Urban & Mural',
-          'Kepemudaan, Olahraga & Gerakan Aktif',
-          'Isu Sosial Kontemporer & Suara Komunitas',
-          'Proyek Kreatif Kolaborasi Siswa'
+          'Pendidikan Jasmani, Olahraga & Kesehatan (PJOK)',
+          'Seni Musik Modern & Tari Kontemporer',
+          'Bahasa & Komunikasi Massa Remaja',
+          'Kewirausahaan Kreatif Generasi Muda'
         ],
-        characterExample: 'Bebas, berjiwa muda, autentik, penuh daya dobrak kreativitas.',
-        characteristics: 'Seni jalanan perkotaan (street art) yang dinamis dengan semprotan warna, garis bebas, dan tipografi urban.',
-        promptInstruction: 'Gunakan gaya visual Graffiti dengan aksen seni mural jalanan kontemporer, efek semprotan warna dinamis, tipografi ekspresif bergaya street-art yang tetap terbaca jelas, dan kartu konten dengan aksen stensil modern.',
-        accentColor: 'lime',
-        tags: ['Street Art', 'Mural Urban', 'Jiwa Muda'],
-      },
-      {
-        id: 'comic_style',
-        name: 'Comic Style',
-        category: 'EKSPRESIF & ENERGETIK',
-        categoryId: 'ekspresif_energetik',
-        description: 'Panel sekuensial bergaya komik cerita bergambar dengan alur aksi yang menarik minat baca.',
-        shortDescription: 'Struktur panel komik edukatif dengan narasi bergambar yang mengalir seru.',
-        visualCharacteristics: [
-          'Pembagian panel bergaris tepi hitam yang sekuensial',
-          'Balon dialog dan kotak narasi (caption boxes)',
-          'Garis aksi (action lines) yang mengarahkan pandangan pembaca',
-          'Penyajian materi seperti petualangan cerita bergambar'
-        ],
-        suitableFor: [
-          'Kronologi Peristiwa & Sejarah',
-          'Studi Kasus Moral & Etika',
-          'Panduan Prosedur Keselamatan Kerja',
-          'Eksperimen Petualangan Ilmiah Siswa'
-        ],
-        characterExample: 'Seru, memikat rasa penasaran, runut alurnya, sangat menghibur.',
-        characteristics: 'Panel sekuensial bergaya komik cerita bergambar dengan alur aksi yang menarik minat baca.',
-        promptInstruction: 'Gunakan gaya visual Comic Style dengan pembagian panel bergaya komik edukasi, balon dialog informatif, garis tepi tebal khas komik, teks penjelas sekuensial, dan ilustrasi berurutan yang membawa siswa bertualang memahami materi.',
-        accentColor: 'red',
-        tags: ['Panel Komik', 'Balon Kata', 'Petualangan'],
-      }
-    ]
-  },
-
-  // =========================================================================
-  // 5. TEMATIK, HISTORIS & ARTISTIK
-  // =========================================================================
-  {
-    id: 'tematik_historis_artistik',
-    name: 'TEMATIK, HISTORIS & ARTISTIK',
-    tagline: 'Suasana Autentik, Sejarah, Budaya, Seni & Narasi Klasik',
-    description: 'Menghidupkan kembali suasana masa lalu, kekayaan budaya, tradisi peradaban, dan nilai artistik tinggi untuk memperdalam penghayatan materi.',
-    characteristicsSummary: [
-      'Memiliki atmosfer tematik yang kuat dan autentik',
-      'Artistik dengan sentuhan ornamen budaya dan estetika klasik',
-      'Sangat cocok untuk materi sejarah perjuangan, kebudayaan, geografi kawasan, dan sastra klasik',
-      'Menanamkan penghayatan historis dan apresiasi seni yang mendalam'
-    ],
-    iconName: 'Landmark',
-    accent: 'stone',
-    styles: [
-      {
-        id: 'retro',
-        name: 'Retro',
-        category: 'TEMATIK, HISTORIS & ARTISTIK',
-        categoryId: 'tematik_historis_artistik',
-        description: 'Terinspirasi dari poster sains dan ensiklopedia pertengahan abad (mid-century) bernuansa nostalgia hangat.',
-        shortDescription: 'Estetika ensiklopedia sains klasik era 1950-70an dengan palet warna hangat dan arsir halus.',
-        visualCharacteristics: [
-          'Tekstur kertas cetak kuno dengan sentuhan bintik tinta halus',
-          'Palet warna hangat nostalgia (mustard, olive green, warm rust, cream)',
-          'Gaya ilustrasi berarsir halus khas ensiklopedia ilmu pengetahuan',
-          'Tipografi display bergaya mid-century modern'
-        ],
-        suitableFor: [
-          'Sejarah Penemuan Sains & Ilmuwan Besar',
-          'Revolusi Industri & Mesin Uap',
-          'Ekspedisi Geografis & Peta Navigasi',
-          'Biologi Taksonomi Klasik'
-        ],
-        characterExample: 'Nostalgik, terpercaya, bernilai dokumenter, penuh wibawa sejarah.',
-        characteristics: 'Terinspirasi dari poster sains dan ensiklopedia pertengahan abad (mid-century) bernuansa nostalgia hangat.',
-        promptInstruction: 'Gunakan gaya visual Retro dengan nuansa ensiklopedia sains mid-century, tekstur kertas cetak hangat, palet warna nostalgia (krem, terakota, sage green), ilustrasi berarsir presisi, dan tipografi penjelas yang klasik berwibawa.',
+        characterExample: 'Urban, energik, berani, berjiwa muda, sangat efektif untuk topik dinamis.',
+        characteristics: 'Sentuhan urban street-art dengan aksen spidol marker tebal, percikan cat dinamis, dan karakter yang berjiwa bebas.',
+        promptInstruction: 'Gunakan gaya Graffiti street-art dengan font judul Permanent Marker, teks materi Roboto yang bersih dan mudah dibaca, garis bawah marker penegas kata kunci, aksen stensil cat terkontrol, dan kontras urban yang kuat.',
         accentColor: 'amber',
-        tags: ['Mid-Century', 'Ensiklopedia', 'Nostalgia Hangat'],
+        tags: ['Urban Marker', 'Street Art', 'Jiwa Muda'],
+        styleProfile: STYLE_PROFILES_V22D.graffiti,
       },
       {
         id: 'surrealism',
         name: 'Surrealism',
-        category: 'TEMATIK, HISTORIS & ARTISTIK',
-        categoryId: 'tematik_historis_artistik',
-        description: 'Estetika surealisme artistik yang memadukan dunia mimpi, metafora visual mendalam, dan imajinasi filosofis.',
-        shortDescription: 'Karya seni surealis penuh metafora filosofis untuk memancing pemikiran kritis dan reflektif.',
+        category: 'KREATIF & EKSPRESIF',
+        categoryId: 'kreatif_ekspresif',
+        description: 'Estetika artistik eksperimental dengan perpaduan metafora visual tak terduga, puitis, dan membangkitkan imajinasi.',
+        shortDescription: 'Puitis dan penuh metafora visual mendalam yang merangsang pemikiran kritis siswa.',
         visualCharacteristics: [
-          'Metafora visual imajinatif (contoh: otak sebagai semesta ide, jam melengkung, pintu di langit)',
-          'Pencahayaan dramatis dengan bayangan panjang puitis',
-          'Perpaduan elemen tak terduga yang memicu perenungan konsep',
-          'Komposisi ruang artistik yang memicu pemikiran tingkat tinggi (HOTS)'
+          'Tipografi anggun Cormorant Garamond + Lora yang memikat',
+          'Metafora visual puitis yang menyederhanakan gagasan abstrak',
+          'Warna safir misterius, emas temaram, dan biru malam',
+          'Suasana reflektif, filosofis, dan merangsang pemikiran'
         ],
         suitableFor: [
-          'Filsafat & Teori Berpikir Kritis',
-          'Psikologi & Kesadaran Manusia',
-          'Apresiasi Puisi & Sastra Eksistensial',
-          'Etika Moral & Makna Kehidupan'
+          'Filsafat, Logika & Etika Berpikir',
+          'Karya Sastra Agung & Analisis Puisi',
+          'Evolusi Gagasan Sains & Teori Relativitas',
+          'Psikologi & Pemahaman Emosi Manusia'
         ],
-        characterExample: 'Filosofis, imajinatif, puitis, menggugah pemikiran mendalam.',
-        characteristics: 'Estetika surealisme artistik yang memadukan dunia mimpi, metafora visual mendalam, dan imajinasi filosofis.',
-        promptInstruction: 'Gunakan gaya visual Surrealism dengan metafora konseptual artistik yang menggabungkan elemen imajinatif bermakna, pencahayaan puitis berkarakter, tata letak ruang bernapas yang filosofis, dan penyampaian pesan esensial yang menggugah nalar kritis.',
+        characterExample: 'Mendalam, kontemplatif, metaforis, membuka ruang perenungan intelektual.',
+        characteristics: 'Estetika artistik eksperimental dengan perpaduan metafora visual tak terduga, puitis, dan membangkitkan imajinasi.',
+        promptInstruction: 'Gunakan gaya Surrealism dengan estetika puitis galeri seni, font anggun Cormorant Garamond dan Lora, metafora visual bermakna mendalam, palet safir dan emas temaram, serta tata letak kontemplatif yang luas.',
         accentColor: 'indigo',
-        tags: ['Surealis', 'Metafora Filosofis', 'Imajinatif'],
+        tags: ['Puitis', 'Metafora Mendalam', 'Filosofis'],
+        styleProfile: STYLE_PROFILES_V22D.surrealism,
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 4. ARTISTIK & TEMATIK
+  // =========================================================================
+  {
+    id: 'artistik_tematik',
+    name: 'ARTISTIK & TEMATIK',
+    shortName: 'TEMATIK',
+    tagline: 'Artistik, Personal, Tematik, Kreatif & Organik Alami',
+    description: 'Gaya yang memiliki karakter artistik, personal, kreatif, dan suasana visual yang khas. Menonjolkan kehangatan ekspresi personal dan catatan pembelajaran.',
+    characteristicsSummary: [
+      'Artistik, personal, tematik, kreatif, dan ekspresif',
+      'Sentuhan manual seperti tulisan tangan, sketsa pensil, dan arsiran buku kuno',
+      'Palet warna bumi (earth tones), perkamen klasik, dan kertas sketsa',
+      'Suasana akrab, hangat, dan membimbing siswa layaknya catatan guru teladan',
+      'Sangat cocok untuk sejarah, geografi, biologi lapangan, dan rangkuman belajar'
+    ],
+    iconName: 'Feather',
+    accent: 'amber',
+    styles: [
+      {
+        id: 'victorian',
+        name: 'Victorian',
+        category: 'ARTISTIK & TEMATIK',
+        categoryId: 'artistik_tematik',
+        description: 'Estetika klasik historis dengan ornamen bingkai megah, tipografi berwibawa, dan suasana arsip akademik bersejarah.',
+        shortDescription: 'Keagungan arsip sejarah dengan ornamen ukiran sudut dan tipografi monumental.',
+        visualCharacteristics: [
+          'Tipografi monumental Cinzel dipadu Crimson Text yang elok',
+          'Ornamen sudut bingkai klasik berukir halus',
+          'Warna merah marun, emas tua (antique gold), dan perkamen hangat',
+          'Mencerminkan keagungan literatur dan sejarah masa lampau'
+        ],
+        suitableFor: [
+          'Sejarah Nasional Indonesia & Dunia',
+          'Peristiwa Perjuangan Kemerdekaan',
+          'Arkeologi & Peradaban Klasik Dunia',
+          'Sejarah Perkembangan Bahasa & Sastra'
+        ],
+        characterExample: 'Khidmat, bersejarah, berwibawa, membangkitkan penghormatan pada peradaban.',
+        characteristics: 'Estetika klasik historis dengan ornamen bingkai megah, tipografi berwibawa, dan suasana arsip akademik bersejarah.',
+        promptInstruction: 'Gunakan gaya Victorian dengan ornamen sudut bingkai ukiran klasik, font monumental Cinzel untuk judul dan Crimson Text untuk teks isi, palet marun kerajaan dan emas antik, serta latar perkamen bersejarah yang berwibawa.',
+        accentColor: 'rose',
+        tags: ['Arsip Sejarah', 'Klasik Monumental', 'Berwibawa'],
+        styleProfile: STYLE_PROFILES_V22D.victorian,
       },
       {
         id: 'bohemian',
         name: 'Bohemian',
-        category: 'TEMATIK, HISTORIS & ARTISTIK',
-        categoryId: 'tematik_historis_artistik',
-        description: 'Estetika organik bernuansa bumi (earth tones) dengan motif dedaunan botani dan komposisi artistik alami.',
-        shortDescription: 'Nuansa bumi alami dengan motif botani dedaunan yang hangat, bersahaja, dan menenangkan.',
+        category: 'ARTISTIK & TEMATIK',
+        categoryId: 'artistik_tematik',
+        description: 'Gaya visual hangat, membumi, artistik, dan bernuansa alam organik dengan palet warna tanah yang menenangkan.',
+        shortDescription: 'Estetika organik membumi dengan lengkungan gerbang busur (arch) dan warna alam.',
         visualCharacteristics: [
-          'Palet warna alami tanah bumi (terracotta, sage green, warm sand, oker)',
-          'Siluet botani dedaunan, ranting, dan lengkungan matahari alami',
-          'Tekstur kertas serat linen alami',
-          'Tata letak bebas mengalir yang harmonis dengan alam'
+          'Tipografi elegan DM Serif Display berpadu Nunito yang bersahabat',
+          'Palet warna terakota, sage green, oker emas, dan pasir pantai',
+          'Bentuk lengkung kurva busur (arch) dan daun tumbuhan kering',
+          'Atmosfer rileks, penuh harmoni, dan menghargai alam'
         ],
         suitableFor: [
-          'Pelestarian Alam & Ekologi Lingkungan',
-          'Keanekaragaman Hayati Tumbuhan & Botani',
-          'Kearifan Lokal & Budaya Tradisional',
-          'Pemberdayaan Masyarakat Pedesaan'
+          'Pertanian, Perkebunan & Kehutanan',
+          'Ekologi Lingkungan Hidup & Konservasi',
+          'Seni Tradisional & Kerajinan Nusantara',
+          'Geografi Bentang Lahan & Keanekaragaman Hayati'
         ],
-        characterExample: 'Organik, bersahaja, damai, selaras dengan denyut alam.',
-        characteristics: 'Estetika organik bernuansa bumi (earth tones) dengan motif dedaunan botani dan komposisi artistik alami.',
-        promptInstruction: 'Gunakan gaya visual Bohemian dengan bentuk-bentuk organik bebas, palet warna bumi alami (terakota, sage, krem hangat), ornamen botani dedaunan yang lembut, dan suasana visual yang tenang serta selaras dengan lingkungan hidup.',
+        characterExample: 'Hangat, teduh, bersahabat dengan alam, menumbuhkan cinta lingkungan.',
+        characteristics: 'Gaya visual hangat, membumi, artistik, dan bernuansa alam organik dengan palet warna tanah yang menenangkan.',
+        promptInstruction: 'Gunakan gaya Bohemian dengan bentuk kartu melengkung (arch), palet warna tanah alami (terakota, sage green, oker), font DM Serif Display dan Nunito, siluet botani halus, serta suasana hangat yang menenangkan.',
         accentColor: 'orange',
-        tags: ['Bumi Alami', 'Botani Dedaunan', 'Organik'],
+        tags: ['Warna Tanah', 'Organik Alami', 'Teduh'],
+        styleProfile: STYLE_PROFILES_V22D.bohemian,
       },
       {
-        id: 'victorian',
-        name: 'Victorian',
-        category: 'TEMATIK, HISTORIS & ARTISTIK',
-        categoryId: 'tematik_historis_artistik',
-        description: 'Kemegahan ornamen klasik era Victoria dengan bingkai ukiran rumit, detail anggun, dan simetri formal.',
-        shortDescription: 'Kemewahan ornamen klasik dengan ukiran bingkai ukir berwibawa dan tipografi berhias.',
+        id: 'handwritten',
+        name: 'Handwritten',
+        category: 'ARTISTIK & TEMATIK',
+        categoryId: 'artistik_tematik',
+        description: 'Sentuhan tulisan tangan, garis penunjuk kasual, dan suasana akrab layaknya catatan belajar siswa teladan.',
+        shortDescription: 'Suasana buku catatan belajar siswa teladan dengan stabilo dan memo tempel.',
         visualCharacteristics: [
-          'Bingkai ukiran filigree berornamen klasik yang anggun',
-          'Garis batas dekoratif ganda beraksen emas tua atau tembaga',
-          'Tipografi display berhias (ornamental letterforms) yang megah',
-          'Komposisi seimbang simetris yang memancarkan keagungan era klasik'
+          'Tipografi judul tulisan tangan ekspresif Caveat dipadu Nunito yang jelas',
+          'Garis bawah melengkung dan lingkaran penanda kata kunci',
+          'Kartu bergaya memo tempel (sticky note) untuk poin krusial',
+          'Suasana belajar personal, ramah, dan memotivasi'
         ],
         suitableFor: [
-          'Sejarah Kerajaan Dunia & Monarki',
-          'Revolusi Ilmiah Era Renaisans & Victoria',
-          'Kesusastraan Klasik & Drama Teater Besar',
-          'Hukum, Konstitusi, & Piagam Bersejarah'
+          'Tips Belajar & Cara Menghafal Efektif',
+          'Ringkasan Rumus & Catatan Cepat Ujian',
+          'Rangkuman Inti Pembelajaran Harian',
+          'Panduan Belajar Mandiri di Rumah'
         ],
-        characterExample: 'Megah, formal, bernilai warisan peradaban, sarat nilai estetika tinggi.',
-        characteristics: 'Kemegahan ornamen klasik era Victoria dengan bingkai ukiran rumit, detail anggun, dan simetri formal.',
-        promptInstruction: 'Gunakan gaya visual Victorian dengan bingkai ukiran dekoratif klasik bernilai seni tinggi, detail ornamen elegan, tipografi berwibawa khas dokumen bersejarah, tata letak simetris megah, dan palet warna aristokratik yang berwibawa.',
-        accentColor: 'stone',
-        tags: ['Ornamen Ukir', 'Era Victoria', 'Megah'],
+        characterExample: 'Akrab, bersahabat, komunikatif layaknya catatan guru pembimbing yang peduli.',
+        characteristics: 'Sentuhan tulisan tangan, garis penunjuk kasual, dan suasana akrab layaknya catatan belajar siswa teladan.',
+        promptInstruction: 'Gunakan gaya Handwritten bernuansa buku catatan belajar, font judul tulisan tangan Caveat dipadu teks materi Nunito yang jelas, kartu memo tempel (sticky note) kuning untuk poin kunci, dan coretan stabilo penegas rumus.',
+        accentColor: 'blue',
+        tags: ['Buku Catatan', 'Tulisan Tangan', 'Ramah Siswa'],
+        styleProfile: STYLE_PROFILES_V22D.handwritten,
       },
       {
-        id: 'vintage',
-        name: 'Vintage',
-        category: 'TEMATIK, HISTORIS & ARTISTIK',
-        categoryId: 'tematik_historis_artistik',
-        description: 'Nuansa arsip masa lampau dengan tekstur kertas perkamen sepia dan ornamen bersejarah autentik.',
-        shortDescription: 'Pesona dokumen arsip kuno dengan kertas sepia hangat dan atmosfer sejarah autentik.',
+        id: 'hand_drawing',
+        name: 'Hand Drawing',
+        category: 'ARTISTIK & TEMATIK',
+        categoryId: 'artistik_tematik',
+        description: 'Gaya ilustratif dan organik, seperti gambar dan catatan sketsa yang dibuat secara manual dengan tangan.',
+        shortDescription: 'Sketsa gambar tangan organik yang hidup, menyenangkan, dan membebaskan imajinasi.',
         visualCharacteristics: [
-          'Latar belakang tekstur kertas kuno perkamen sepia kekuningan',
-          'Garis-garis batas halus bernuansa arsip museum',
-          'Ilustrasi sketsa berarsir tinta klasik',
-          'Stempel tanggal dan penanda arsip bersejarah'
+          'Tipografi judul berkarakter sketsa Kalam berpadu isi Nunito yang mudah dicerna',
+          'Garis kontur sketsa tangan yang luwes dan hidup',
+          'Ikon dan diagram berbentuk doodle tangan kontekstual',
+          'Kesan alami, menyenangkan, dan membebaskan imajinasi siswa'
         ],
         suitableFor: [
-          'Detik-Detik Proklamasi Kemerdekaan Indonesia',
-          'Perang Kemerdekaan & Tokoh Pahlawan Nasional',
-          'Peradaban Kuno & Arkeologi',
-          'Perkembangan Bahasa & Naskah Kuno'
+          'Eksperimen Praktikum Sains & Lembar Kerja Siswa',
+          'Peta Konsep & Siklus Alam Bertahap',
+          'Diagram Alur Langkah Demi Langkah',
+          'Rangkuman Belajar Interaktif Sekolah'
         ],
-        characterExample: 'Autentik, bersejarah, khidmat, membangkitkan rasa hormat pada masa lalu.',
-        characteristics: 'Nuansa arsip masa lampau dengan tekstur kertas perkamen sepia dan ornamen bersejarah autentik.',
-        promptInstruction: 'Gunakan gaya visual Vintage dengan tekstur perkamen arsip bersejarah bernuansa sepia hangat, ornamen garis klasik, sketsa arsir tinta autentik, dan tipografi bertema retro yang membangkitkan suasana khidmat sejarah.',
-        accentColor: 'amber',
-        tags: ['Arsip Sepia', 'Dokumen Kuno', 'Sejarah Autentik'],
+        characterExample: 'Ilustratif, organik, bersahaja, memadukan coretan sketsa dengan materi yang runtut.',
+        characteristics: 'Gaya ilustratif dan organik, seperti gambar dan catatan sketsa yang dibuat secara manual dengan tangan.',
+        promptInstruction: 'Gunakan gaya Hand Drawing dengan kontur sketsa tangan luwes, font judul Kalam dan teks isi Nunito, panah sketsa organik penunjuk alur, diagram bergaya coretan pensil warna, dan latar kertas gambar bersih bertekstur halus.',
+        accentColor: 'cyan',
+        tags: ['Sketsa Tangan', 'Ilustratif Organik', 'Doodle Edukatif'],
+        styleProfile: STYLE_PROFILES_V22D.hand_drawing,
+      },
+    ],
+  },
+
+  // =========================================================================
+  // 5. ILUSTRATIF & EDUKATIF
+  // =========================================================================
+  {
+    id: 'ilustratif_edukatif',
+    name: 'ILUSTRATIF & EDUKATIF',
+    shortName: 'EDUKATIF',
+    tagline: 'Visual, Ramah, Memikat & Sangat Mudah Dipahami Siswa',
+    description: 'Gaya yang mengutamakan ilustrasi dan visualisasi interaktif untuk membantu penyampaian materi pembelajaran secara ramah dan menyenangkan.',
+    characteristicsSummary: [
+      'Visual, ilustratif, edukatif, menarik, dan mudah dipahami',
+      'Bentuk visual fisik seperti tanah liat 3D dan piksel retro interaktif',
+      'Meningkatkan keterlibatan aktif siswa dalam memahami materi abstrak',
+      'Karakter ceria, bersahabat, dan tidak memicu kejenuhan belajar',
+      'Sangat cocok untuk sekolah dasar, IPA interaktif, dan koding dasar'
+    ],
+    iconName: 'BookOpen',
+    accent: 'emerald',
+    styles: [
+      {
+        id: 'clay_style',
+        name: 'Clay Style',
+        category: 'ILUSTRATIF & EDUKATIF',
+        categoryId: 'ilustratif_edukatif',
+        description: 'Visual 3D lembut bergaya tanah liat plastisin yang ramah, hangat, dan sangat disukai peserta didik.',
+        shortDescription: 'Bentuk 3D plastisin membulat empuk yang membuat materi terasa nyata dan ramah.',
+        visualCharacteristics: [
+          'Bentuk membulat 3D plastisin yang ramah dan bersahabat',
+          'Pencahayaan lembut dan bayangan halus bertekstur empuk',
+          'Tipografi Fredoka + Nunito yang membulat dan mudah dibaca',
+          'Materi terasa seperti model fisik nyata yang menyenangkan'
+        ],
+        suitableFor: [
+          'Materi IPA Sekolah Dasar & Menengah Pertama',
+          'Struktur Lapisan Bumi & Gunung Berapi',
+          'Siklus Hidup Hewan & Tumbuhan',
+          'Pendidikan Kesehatan & Gizi Seimbang'
+        ],
+        characterExample: 'Empuk, ramah, menyenangkan, mengubah materi rumit menjadi model fisik yang disukai anak.',
+        characteristics: 'Visual 3D lembut bergaya tanah liat plastisin yang ramah, hangat, dan sangat disukai peserta didik.',
+        promptInstruction: 'Gunakan gaya Clay Style dengan model 3D membulat empuk berbahan plastisin tanah liat warna-warni, pencahayaan studio hangat, font Fredoka untuk judul dan Nunito untuk teks isi, kartu bertepi membulat besar (rounded-3xl), dan suasana belajar yang sangat bersahabat.',
+        accentColor: 'orange',
+        tags: ['Clay 3D', 'Plastisin Ramah', 'Edukatif'],
+        styleProfile: STYLE_PROFILES_V22D.clay_style,
       },
       {
-        id: 'historical',
-        name: 'Historical',
-        category: 'TEMATIK, HISTORIS & ARTISTIK',
-        categoryId: 'tematik_historis_artistik',
-        description: 'Fokus pada alur waktu kronologis dan narasi peristiwa besar perjalanan peradaban manusia.',
-        shortDescription: 'Gaya visual khusus narasi sejarah dengan garis waktu runtut dan dokumen penjelas.',
+        id: 'pixel_style',
+        name: 'Pixel Style',
+        category: 'ILUSTRATIF & EDUKATIF',
+        categoryId: 'ilustratif_edukatif',
+        description: 'Seni piksel retro 8-bit/16-bit yang terstruktur, kreatif, dan membangkitkan suasana game edukasi interaktif.',
+        shortDescription: 'Petualangan game arkade 8-bit retro yang memicu antusiasme belajar lewat gamifikasi.',
         visualCharacteristics: [
-          'Garis waktu (timeline) vertikal tegas dengan penanda tonggak peristiwa',
-          'Pemberian tanggal, lokasi, dan tokoh kunci yang menonjol',
-          'Peta kuno atau dokumen arsip pendukung yang relevan',
-          'Palet warna netral bersahaja yang menjaga fokus pada kebenaran fakta'
+          'Judul retro arkade Press Start 2P berpadu teks isi VT323 yang jernih',
+          'Grid piksel berkarakter game retro klasik',
+          'Batas kartu bergaya kotak modular yang rapi',
+          'Meningkatkan antusiasme siswa lewat gamifikasi belajar'
         ],
         suitableFor: [
-          'Kronologi Sejarah Kemerdekaan Indonesia',
-          'Perang Dunia I & II',
-          'Perjalanan Tokoh Bangsa',
-          'Garis Waktu Perkembangan Teori Sains'
+          'Logika Komputasi & Pemrograman Dasar',
+          'Matematika Geometri & Sistem Koordinat',
+          'Kuis Interaktif & Tantangan Belajar Berjenjang',
+          'Sejarah Perkembangan Game & Komputer'
         ],
-        characterExample: 'Kronologis, objektif, mendalam, menghidupkan alur cerita sejarah.',
-        characteristics: 'Fokus pada alur waktu kronologis dan narasi peristiwa besar perjalanan peradaban manusia.',
-        promptInstruction: 'Gunakan gaya Historical dengan nuansa sejarah yang relevan, garis alur waktu vertikal dengan penanda tahun yang jelas, kartu peristiwa berurutan kronologis, dan elemen visual yang mendukung periode peristiwa yang dibahas.',
-        accentColor: 'stone',
-        tags: ['Garis Waktu', 'Kronologi Sejarah', 'Faktual'],
+        characterExample: 'Nostalgik, seru, interaktif layaknya misi petualangan game edukasi.',
+        characteristics: 'Seni piksel retro 8-bit/16-bit yang terstruktur, kreatif, dan membangkitkan suasana game edukasi interaktif.',
+        promptInstruction: 'Gunakan gaya Pixel Style dengan estetika game arkade retro 8-bit, font judul Press Start 2P dan teks isi VT323, bingkai kartu balok piksel tegas dengan bayangan berundak, ikon sprite game, dan nuansa gamifikasi petualangan materi belajar.',
+        accentColor: 'purple',
+        tags: ['Piksel 8-Bit', 'Gamifikasi', 'Arkade Retro'],
+        styleProfile: STYLE_PROFILES_V22D.pixel_style,
       },
-      {
-        id: 'storytelling',
-        name: 'Storytelling',
-        category: 'TEMATIK, HISTORIS & ARTISTIK',
-        categoryId: 'tematik_historis_artistik',
-        description: 'Menyampaikan materi melalui alur narasi yang mengalir memikat dari pengantar hingga kesimpulan.',
-        shortDescription: 'Alur kisah naratif yang membimbing pembaca menjelajahi materi langkah demi langkah.',
-        visualCharacteristics: [
-          'Jalur visual penuntun yang menghubungkan babak demi babak materi',
-          'Pemberian judul babak cerita yang menggugah imajinasi',
-          'Ilustrasi pembuka, klimaks materi, dan resolusi kesimpulan',
-          'Tipografi naratif yang nyaman dibaca berkesinambungan'
-        ],
-        suitableFor: [
-          'Cerita Rakyat & Dongeng Nusantara',
-          'Perjalanan Tokoh Penemu & Penjelajah',
-          'Alur Kisah Kehidupan Tokoh Inspiratif',
-          'Proses Metamorfosis & Perjalanan Ekologis'
-        ],
-        characterExample: 'Mengalir, memikat, bersambung, menumbuhkan empati pembaca.',
-        characteristics: 'Menyampaikan materi melalui alur narasi yang mengalir memikat dari pengantar hingga kesimpulan.',
-        promptInstruction: 'Gunakan gaya visual Storytelling dengan alur narasi visual bersambung dari pengantar, konflik/tantangan materi, pemecahan masalah, hingga rangkuman penutup, dengan ilustrasi tematik dan penunjuk transisi yang memikat rasa ingin tahu siswa.',
-        accentColor: 'amber',
-        tags: ['Alur Narasi', 'Babak Cerita', 'Mengalir'],
-      }
-    ]
-  }
+    ],
+  },
 ];
 
-// Flat list of all available styles with typographyProfile populated
+// Flat list of all available styles with typographyProfile and styleProfile populated
 export const ALL_INFOGRAPHIC_STYLES: InfographicStyleItem[] = INFOGRAPHIC_STYLE_CATEGORIES.flatMap(
   (c) =>
     c.styles.map((s) => ({
       ...s,
       typographyProfile: s.typographyProfile || getTypographyProfile(s.id || s.name),
+      styleProfile: s.styleProfile || getStyleProfile(s.id || s.name),
     }))
 );
 
 /**
- * Find style by name or ID (robust fuzzy resolution)
+ * Find style by name or ID (robust fuzzy resolution for all 20 STIVIA 2.2d styles + backward compatibility aliases)
  */
 export function findStyleByNameOrId(nameOrId?: string): InfographicStyleItem | undefined {
   if (!nameOrId) return undefined;
@@ -933,24 +691,33 @@ export function findStyleByNameOrId(nameOrId?: string): InfographicStyleItem | u
   );
   if (exact) return exact;
 
-  // 2. Alias resolution
-  if (target.includes('minimalis') || target === 'minimalism') {
+  // 2. STIVIA 2.2d specific matching
+  if (target.includes('drawing') || target.includes('hand drawing') || target.includes('sketsa')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'hand_drawing');
+  }
+  if (target.includes('minimal')) {
     return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'minimalism');
   }
-  if (target.includes('swiss')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'swiss_design');
+  if (target.includes('maxi') || target.includes('maksimal')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'maximalism');
   }
-  if (target.includes('editorial')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'editorial');
+  if (target.includes('futur')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'futuristic');
   }
-  if (target.includes('glassmorphism')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'glassmorphism');
-  }
-  if (target.includes('modern edukatif') || target.includes('modern education')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'modern_edukatif');
-  }
-  if (target.includes('vector art') || (target.includes('vektor') && !target.includes('education'))) {
+  if (target.includes('vector') || target.includes('vektor')) {
     return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'vector_art');
+  }
+  if (target.includes('collage') || target.includes('kolase')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'collage_art');
+  }
+  if (target.includes('cyber')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'cyberpunk');
+  }
+  if (target.includes('pop')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'pop_art');
+  }
+  if (target.includes('glass')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'glassmorphism');
   }
   if (target.includes('clay')) {
     return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'clay_style');
@@ -958,53 +725,58 @@ export function findStyleByNameOrId(nameOrId?: string): InfographicStyleItem | u
   if (target.includes('pixel')) {
     return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'pixel_style');
   }
-  if (target.includes('collage') || target.includes('kolase')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'collage_art');
-  }
-  if (target.includes('handwritten') || target.includes('tulisan tangan')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'handwritten');
-  }
-  if (target.includes('futuristic') || target.includes('futuristik')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'futuristic');
-  }
-  if (target.includes('cyberpunk')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'cyberpunk');
+  if (target.includes('editorial')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'editorial');
   }
   if (target.includes('y2k')) {
     return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'y2k');
   }
+  if (target.includes('swiss')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'swiss_design');
+  }
+  if (target.includes('surreal') || target.includes('surealis')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'surrealism');
+  }
+  if (target.includes('bohemian') || target.includes('boho')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'bohemian');
+  }
+  if (target.includes('victorian') || target.includes('viktorian')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'victorian');
+  }
+  if (target.includes('graffiti') || target.includes('street')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'graffiti');
+  }
   if (target.includes('aurora')) {
     return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'aurora');
   }
-  if (target.includes('pop art')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'pop_art');
-  }
-  if (target.includes('maximalism') || target.includes('maksimalis')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'maximalism');
-  }
-  if (target.includes('graffiti') || target.includes('grafiti')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'graffiti');
-  }
-  if (target.includes('retro')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'retro');
-  }
-  if (target.includes('surrealism') || target.includes('surealis')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'surrealism');
-  }
-  if (target.includes('bohemian')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'bohemian');
-  }
-  if (target.includes('victorian')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'victorian');
-  }
-  if (target.includes('vintage')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'vintage');
-  }
-  if (target.includes('sejarah') || target.includes('historical') || target.includes('timeline')) {
-    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'historical');
+  if (target.includes('handwritten') || target.includes('tangan')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'handwritten');
   }
 
-  // 3. Fallback partial search
+  // 3. Backward compatibility aliases for previous style names
+  if (target.includes('vintage') || target.includes('historical') || target.includes('sejarah')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'victorian');
+  }
+  if (target.includes('doodle')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'hand_drawing');
+  }
+  if (target.includes('cartoon')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'clay_style');
+  }
+  if (target.includes('retro')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'y2k');
+  }
+  if (target.includes('modern edukatif') || target.includes('modern education')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'vector_art');
+  }
+  if (target.includes('digital interface')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'futuristic');
+  }
+  if (target.includes('data visualization')) {
+    return ALL_INFOGRAPHIC_STYLES.find((s) => s.id === 'swiss_design');
+  }
+
+  // 4. Fallback partial search
   return ALL_INFOGRAPHIC_STYLES.find((s) => target.includes(s.name.toLowerCase()));
 }
 
@@ -1045,9 +817,9 @@ export function getAIStyleRecommendations(ctx: StyleContextInput): InfographicSt
     combinedText.includes('peradaban')
   ) {
     return [
-      findStyleByNameOrId('Historical')!,
-      findStyleByNameOrId('Vintage')!,
-      findStyleByNameOrId('Retro')!,
+      findStyleByNameOrId('victorian')!,
+      findStyleByNameOrId('editorial')!,
+      findStyleByNameOrId('handwritten')!,
     ].filter(Boolean);
   }
 
@@ -1067,9 +839,9 @@ export function getAIStyleRecommendations(ctx: StyleContextInput): InfographicSt
     combinedText.includes('internet')
   ) {
     return [
-      findStyleByNameOrId('Futuristic')!,
-      findStyleByNameOrId('Digital Interface')!,
-      findStyleByNameOrId('Glassmorphism')!,
+      findStyleByNameOrId('futuristic')!,
+      findStyleByNameOrId('cyberpunk')!,
+      findStyleByNameOrId('glassmorphism')!,
     ].filter(Boolean);
   }
 
@@ -1086,9 +858,9 @@ export function getAIStyleRecommendations(ctx: StyleContextInput): InfographicSt
     combinedText.includes('hewan')
   ) {
     return [
-      findStyleByNameOrId('Vector Art')!,
-      findStyleByNameOrId('Clay Style')!,
-      findStyleByNameOrId('Modern Edukatif')!,
+      findStyleByNameOrId('vector_art')!,
+      findStyleByNameOrId('clay_style')!,
+      findStyleByNameOrId('bohemian')!,
     ].filter(Boolean);
   }
 
@@ -1104,9 +876,9 @@ export function getAIStyleRecommendations(ctx: StyleContextInput): InfographicSt
     combinedText.includes('aljabar')
   ) {
     return [
-      findStyleByNameOrId('Data Visualization')!,
-      findStyleByNameOrId('Swiss Design')!,
-      findStyleByNameOrId('Minimalism')!,
+      findStyleByNameOrId('swiss_design')!,
+      findStyleByNameOrId('minimalism')!,
+      findStyleByNameOrId('pixel_style')!,
     ].filter(Boolean);
   }
 
@@ -1123,9 +895,9 @@ export function getAIStyleRecommendations(ctx: StyleContextInput): InfographicSt
     combinedText.includes('cerita')
   ) {
     return [
-      findStyleByNameOrId('Cartoon Education')!,
-      findStyleByNameOrId('Clay Style')!,
-      findStyleByNameOrId('Doodle Education')!,
+      findStyleByNameOrId('clay_style')!,
+      findStyleByNameOrId('hand_drawing')!,
+      findStyleByNameOrId('pop_art')!,
     ].filter(Boolean);
   }
 
@@ -1139,16 +911,16 @@ export function getAIStyleRecommendations(ctx: StyleContextInput): InfographicSt
     combinedText.includes('musik')
   ) {
     return [
-      findStyleByNameOrId('Collage Art')!,
-      findStyleByNameOrId('Pop Art')!,
-      findStyleByNameOrId('Handwritten')!,
+      findStyleByNameOrId('collage_art')!,
+      findStyleByNameOrId('pop_art')!,
+      findStyleByNameOrId('hand_drawing')!,
     ].filter(Boolean);
   }
 
   // Default Academic recommendations
   return [
-    findStyleByNameOrId('Modern Edukatif')!,
-    findStyleByNameOrId('Minimalism')!,
-    findStyleByNameOrId('Vector Art')!,
+    findStyleByNameOrId('vector_art')!,
+    findStyleByNameOrId('minimalism')!,
+    findStyleByNameOrId('futuristic')!,
   ].filter(Boolean);
 }

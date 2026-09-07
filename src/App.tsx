@@ -132,6 +132,7 @@ export default function App() {
     const subject = formData.subject || currentDraft.subject;
     const theme = formData.theme || currentDraft.theme;
     const rawTopic = formData.rawTopic || currentDraft.rawTopic;
+    const pertemuan = formData.pertemuan || currentDraft.pertemuan || 'Pertemuan 1';
     const scope = formData.scope || currentDraft.scope;
     const level = formData.educationLevel || currentDraft.educationLevel;
     const grade = formData.grade || currentDraft.grade;
@@ -148,12 +149,17 @@ export default function App() {
       mataPelajaran: subject,
       tema: theme,
       materi: rawTopic,
+      pertemuan,
       cakupanMateri: scope,
       gayaVisual: style,
       format,
       tingkatVisual: visualLevel,
       konteksContoh: context,
       customExampleContext: customContext,
+      styleProfile: formData.styleProfile,
+      customTitleFont: formData.customTitleFont,
+      customBodyFont: formData.customBodyFont,
+      typographyMode: formData.typographyMode,
     });
 
     const sanitizedDraft = validateAndSanitizeDraft(fullDraft);

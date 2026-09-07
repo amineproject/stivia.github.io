@@ -35,6 +35,7 @@ export interface StiviaThinkingInput {
   subject?: string;
   educationLevel?: string;
   grade?: string;
+  pertemuan?: string | number;
   scope?: string;
   rawContent?: string;
   learningObjectives?: string[];
@@ -44,15 +45,33 @@ export interface StiviaThinkingInput {
 }
 
 /**
+ * Hasil Analisis Materi & Batas Pertemuan (7 Tahap Wajib STIVIA 2.2d)
+ */
+export interface StiviaMaterialBoundaryAnalysis {
+  tahap1_MataPelajaran: string;
+  tahap2_Kelas: string;
+  tahap3_MateriUtama: string;
+  tahap4_Pertemuan: string;
+  tahap5_CakupanMateri: string[];
+  tahap6_MateriBolehDibahas: string[];
+  tahap7_MateriTidakPerluDiulang: string[];
+  boundaryRules: string[];
+}
+
+/**
  * Hasil 7 Tahap Kerangka Berpikir STIVIA
  */
 export interface StiviaThinkingResult {
+  // Analisis Materi & Batas Pertemuan
+  materialAnalysis: StiviaMaterialBoundaryAnalysis;
+
   // Tahap 1: Memahami Materi
   stage1_Understanding: {
     title: string;
     subject: string;
     educationLevel: string;
     grade: string;
+    pertemuan: string;
     learningObjective: string;
     scopeOverview: string;
     contentVolume: 'Ringkas' | 'Sedang' | 'Padat';
@@ -494,6 +513,102 @@ function determineLayoutStrategy(
 }
 
 /**
+ * FUNGSI ANALISIS MATERI & BATAS PERTEMUAN (7 TAHAP INTERNAL STIVIA)
+ * Sesuai prinsip: CAKUPAN MATERI = BATAS WAJIB PEMBAHASAN.
+ * Mencegah pengulangan materi dasar antarpertemuan.
+ */
+export function analyzeMaterialBoundaries(input: StiviaThinkingInput): StiviaMaterialBoundaryAnalysis {
+  const subject = input.subject || 'Umum';
+  const grade = input.grade ? `${input.grade} (${input.educationLevel || 'Jenjang'})` : (input.educationLevel || 'Semua Jenjang');
+  const mainTopic = input.topic || input.title || 'Materi Utama';
+  
+  // Format Pertemuan
+  let rawPertemuan = input.pertemuan ? String(input.pertemuan).trim() : 'Pertemuan 1';
+  let formattedPertemuan = rawPertemuan;
+  if (/^\d+$/.test(rawPertemuan)) {
+    formattedPertemuan = `Pertemuan ${rawPertemuan}`;
+  } else if (!rawPertemuan.toLowerCase().startsWith('pertemuan')) {
+    formattedPertemuan = `Pertemuan ${rawPertemuan}`;
+  }
+
+  // Parse Cakupan Materi into clean distinct topics
+  let rawScope = input.scope || '';
+  let scopePoints: string[] = [];
+  if (rawScope.trim()) {
+    scopePoints = rawScope
+      .split(/\n+/)
+      .map(line => line.replace(/^(\d+|[a-zA-Z])[\.\)\-\*•]\s*/, '').trim())
+      .filter(line => line.length > 2);
+  }
+  if (scopePoints.length === 0) {
+    scopePoints = [`Pembahasan terfokus cakupan materi ${formattedPertemuan}`];
+  }
+
+  // TAHAP 6: Tentukan MATERI YANG BOLEH DIBAHAS
+  // Cakupan materi adalah batas wajib pembahasan
+  const materiBolehDibahas: string[] = [];
+  scopePoints.forEach(sp => {
+    materiBolehDibahas.push(sp);
+    const spLower = sp.toLowerCase();
+    if (spLower.includes('struktur') || spLower.includes('bagian') || spLower.includes('anatomi')) {
+      materiBolehDibahas.push(`Bagian-bagian dan anatomi struktur dari ${mainTopic}`);
+    }
+    if (spLower.includes('unsur') || spLower.includes('komponen') || spLower.includes('elemen')) {
+      materiBolehDibahas.push(`Unsur-unsur pembangun dan peranan fungsional setiap elemen ${mainTopic}`);
+    }
+    if (spLower.includes('kaidah') || spLower.includes('ciri') || spLower.includes('kebahasaan')) {
+      materiBolehDibahas.push(`Kaidah dan ciri khas yang berkaitan langsung dengan cakupan`);
+    }
+    if (spLower.includes('fungsi') || spLower.includes('tujuan')) {
+      materiBolehDibahas.push(`Fungsi operasional dan target ketercapaian sesuai cakupan`);
+    }
+  });
+  materiBolehDibahas.push(`Konteks aplikasi dan studi kasus kontekstual pendukung cakupan ${formattedPertemuan}`);
+
+  // TAHAP 7: Tentukan MATERI YANG TIDAK PERLU DIULANG
+  const meetingNum = parseInt(formattedPertemuan.replace(/\D/g, ''), 10) || 1;
+  const isLaterMeeting = meetingNum > 1;
+  const scopeHasDefinition = scopePoints.some(sp => {
+    const l = sp.toLowerCase();
+    return l.includes('pengertian') || l.includes('definisi') || l.includes('apa itu') || l.includes('hakikat') || l.includes('pengantar');
+  });
+
+  const materiTidakPerluDiulang: string[] = [];
+  if (isLaterMeeting && !scopeHasDefinition) {
+    materiTidakPerluDiulang.push(`Pengertian dan definisi umum lengkap dari ${mainTopic} (sudah menjadi fokus pembahasan pertemuan sebelumnya)`);
+    materiTidakPerluDiulang.push(`Penjelasan dasar/pengantar umum yang tidak mendukung cakupan ${formattedPertemuan}`);
+    materiTidakPerluDiulang.push(`Materi yang telah menjadi fokus pembahasan pertemuan terdahulu`);
+    materiTidakPerluDiulang.push(`Informasi umum di luar batas cakupan ${formattedPertemuan}`);
+  } else if (!isLaterMeeting) {
+    materiTidakPerluDiulang.push(`Materi lanjutan atau detail teknis mendalam di luar batas cakupan ${formattedPertemuan}`);
+    materiTidakPerluDiulang.push(`Uraian kompleks yang belum diajarkan pada tahap awal`);
+  } else {
+    materiTidakPerluDiulang.push(`Informasi di luar batas cakupan materi yang telah ditentukan`);
+  }
+
+  // Aturan Pencegahan Pengulangan Materi
+  const boundaryRules = [
+    'Materi ini merupakan bagian dari rangkaian pembelajaran.',
+    'Fokuskan pembahasan hanya pada cakupan materi pertemuan saat ini.',
+    'Jangan secara otomatis mengulang pengertian, penjelasan dasar, atau pembahasan umum apabila tidak termasuk dalam cakupan materi.',
+    'Nomor pertemuan menunjukkan posisi materi dalam rangkaian pembelajaran.',
+    'Materi Utama hanya digunakan sebagai konteks umum, sedangkan Cakupan Materi menjadi batas utama pembahasan.',
+    'Jangan membuat setiap pertemuan terlihat seperti materi pertama.'
+  ];
+
+  return {
+    tahap1_MataPelajaran: subject,
+    tahap2_Kelas: grade,
+    tahap3_MateriUtama: mainTopic,
+    tahap4_Pertemuan: formattedPertemuan,
+    tahap5_CakupanMateri: scopePoints,
+    tahap6_MateriBolehDibahas: Array.from(new Set(materiBolehDibahas)),
+    tahap7_MateriTidakPerluDiulang: Array.from(new Set(materiTidakPerluDiulang)),
+    boundaryRules
+  };
+}
+
+/**
  * FUNGSI UTAMA: MENJALANKAN KERANGKA BERPIKIR STIVIA
  * Menganalisis materi secara komprehensif melalui 7 tahap sebelum membentuk prompt akhir.
  */
@@ -504,6 +619,7 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
     subject = 'Umum',
     educationLevel = 'SMA',
     grade = 'Kelas X',
+    pertemuan = 'Pertemuan 1',
     scope = '',
     rawContent = '',
     learningObjectives = [],
@@ -511,6 +627,9 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
     visualStyleName,
     customStyleDescription = '',
   } = input;
+
+  // Analisis Materi & Batas Cakupan Pertemuan
+  const materialAnalysis = analyzeMaterialBoundaries(input);
 
   // 1. Resolve Style Item
   const resolvedStyle = findStyleByNameOrId(visualStyleName) || {
@@ -544,8 +663,9 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
     subject,
     educationLevel,
     grade,
+    pertemuan: materialAnalysis.tahap4_Pertemuan,
     learningObjective: defaultObjective,
-    scopeOverview: scope || 'Pembahasan menyeluruh dari konsep dasar, karakteristik, mekanisme, hingga manfaat dalam kehidupan nyata.',
+    scopeOverview: scope || `Pembahasan terfokus pada cakupan ${materialAnalysis.tahap4_Pertemuan}.`,
     contentVolume
   };
 
@@ -638,16 +758,24 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
 - Judul Infografis: ${stage1_Understanding.title}
 - Mata Pelajaran: ${stage1_Understanding.subject}
 - Jenjang Pendidikan & Kelas: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
-- Cakupan Materi: ${stage1_Understanding.scopeOverview}
+- Pertemuan: ${materialAnalysis.tahap4_Pertemuan}
+- Materi Utama: ${materialAnalysis.tahap3_MateriUtama} (digunakan sebagai konteks umum)
+- Cakupan Materi (Batas Wajib Pembahasan):
+${materialAnalysis.tahap5_CakupanMateri.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}
 
 2. TUJUAN PEMBELAJARAN:
 - ${stage1_Understanding.learningObjective}
 - Menjadikan materi kompleks mudah dipahami, diingat, dan dianalisis oleh peserta didik melalui visualisasi yang tepat.
 
-3. INFORMASI YANG HARUS DIPERTAHANKAN (KEASLIAN MATERI):
-- Materi sumber adalah Single Source of Truth yang TIDAK BOLEH diubah makna, fakta, atau definisinya.
-- Informasi penting yang wajib ada:
-${stage2_ImportantInfo.essentialInformation.map(item => `  • ${item}`).join('\n')}
+3. INFORMASI YANG HARUS DIPERTAHANKAN & BATAS CAKUPAN MATERI:
+- PRINSIP BATAS MATERI: Cakupan Materi adalah Batas Wajib Pembahasan. Materi Utama adalah konteks umum, dan Nomor Pertemuan (${materialAnalysis.tahap4_Pertemuan}) menunjukkan posisi materi dalam rangkaian pembelajaran.
+- MATERI YANG BOLEH DIBAHAS:
+${materialAnalysis.tahap6_MateriBolehDibahas.map(m => `  ✓ ${m}`).join('\n')}
+- MATERI YANG TIDAK PERLU DIULANG:
+${materialAnalysis.tahap7_MateriTidakPerluDiulang.map(m => `  ✗ ${m}`).join('\n')}
+- ATURAN PENCEGAHAN PENGULANGAN MATERI (WAJIB DIPATUHI AI):
+${materialAnalysis.boundaryRules.map(r => `  • "${r}"`).join('\n')}
+- Single Source of Truth: Data materi sumber tidak boleh diubah fakta atau rumus ilmiahnya.
 - Kata Kunci Wajib: ${stage2_ImportantInfo.keywords.join(', ')}.
 
 4. KONSEP UTAMA:
@@ -706,6 +834,7 @@ Prioritaskan output visual berupa poster pembelajaran yang siap digunakan oleh g
 LANGSUNG HASILKAN DESAIN POSTER INFOGRAFIS VERTIKALNYA.`;
 
   return {
+    materialAnalysis,
     stage1_Understanding,
     stage2_ImportantInfo,
     stage3_MaterialCharacters,

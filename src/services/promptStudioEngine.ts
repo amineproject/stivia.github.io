@@ -17,19 +17,39 @@ function createFallbackThinkingResult(params: {
   subject: string;
   educationLevel: string;
   grade: string;
+  pertemuan?: string | number;
   scope: string;
   styleName?: string;
 }): StiviaThinkingResult {
-  const { title, topic, subject, educationLevel, grade, scope, styleName } = params;
+  const { title, topic, subject, educationLevel, grade, pertemuan = 'Pertemuan 1', scope, styleName } = params;
   const resolvedTopic = topic || title || 'Materi Pembelajaran';
   const resolvedStyle = styleName || 'Sains Modern (Navy Clean)';
+  const formattedPertemuan = typeof pertemuan === 'number' ? `Pertemuan ${pertemuan}` : (String(pertemuan).startsWith('Pertemuan') ? String(pertemuan) : `Pertemuan ${pertemuan}`);
 
   return {
+    materialAnalysis: {
+      tahap1_MataPelajaran: subject || 'Mata Pelajaran',
+      tahap2_Kelas: grade || 'Semua Jenjang',
+      tahap3_MateriUtama: resolvedTopic,
+      tahap4_Pertemuan: formattedPertemuan,
+      tahap5_CakupanMateri: [scope || 'Cakupan materi esensial'],
+      tahap6_MateriBolehDibahas: [scope || 'Pembahasan terfokus sesuai cakupan'],
+      tahap7_MateriTidakPerluDiulang: ['Pengertian dasar lengkap di luar cakupan'],
+      boundaryRules: [
+        'Materi ini merupakan bagian dari rangkaian pembelajaran.',
+        'Fokuskan pembahasan hanya pada cakupan materi pertemuan saat ini.',
+        'Jangan secara otomatis mengulang pengertian, penjelasan dasar, atau pembahasan umum apabila tidak termasuk dalam cakupan materi.',
+        'Nomor pertemuan menunjukkan posisi materi dalam rangkaian pembelajaran.',
+        'Materi Utama hanya digunakan sebagai konteks umum, sedangkan Cakupan Materi menjadi batas utama pembahasan.',
+        'Jangan membuat setiap pertemuan terlihat seperti materi pertama.'
+      ]
+    },
     stage1_Understanding: {
       title: resolvedTopic,
       subject: subject || 'Mata Pelajaran',
       educationLevel: educationLevel || 'Semua Jenjang',
       grade: grade || 'Lengkap',
+      pertemuan: formattedPertemuan,
       learningObjective: `Peserta didik memahami konsep ${resolvedTopic} secara terstruktur dan mendalam.`,
       scopeOverview: scope || 'Pembahasan materi esensial sesuai kurikulum.',
       contentVolume: 'Sedang'
@@ -83,12 +103,14 @@ export function generateUniversalMaterialPrompt(project: InfographicDraft): stri
       subject: project.subject || 'Umum',
       educationLevel: project.educationLevel || 'Semua Jenjang',
       grade: project.grade || 'Lengkap',
+      pertemuan: project.pertemuan || 'Pertemuan 1',
       theme: project.theme || 'Umum',
       topic: project.rawTopic || project.title || 'Materi Pembelajaran',
       scope: project.scope || '',
       learningObjective: project.learningObjective || ''
     };
     const title = snapshot.title || project.title || identity.topic;
+    const pertemuan = project.pertemuan || identity.pertemuan || 'Pertemuan 1';
     const overview = snapshot.overview || project.overview || '';
     const sections = Array.isArray(snapshot.sections) && snapshot.sections.length > 0
       ? snapshot.sections
@@ -149,14 +171,22 @@ INFORMASI DASAR PEMBELAJARAN (IDENTITAS):
 - Judul Materi: ${title}
 - Mata Pelajaran: ${identity.subject || 'Umum'}
 - Jenjang / Target: ${identity.educationLevel} - Kelas ${identity.grade || '-'}
+- Pertemuan: ${pertemuan}
 - Tema Pembelajaran: ${identity.theme || 'Umum'}
+- Materi Utama: ${identity.topic} (sebagai konteks umum)
 - Tujuan Pembelajaran: ${identity.learningObjective || `Peserta didik memahami konsep ${identity.topic} secara terstruktur dan aplikatif.`}
 
 GAMBARAN UMUM / PENGANTAR:
-${overview || `Materi ini dirancang untuk memberikan pemahaman menyeluruh mengenai ${identity.topic}.`}
+${overview || `Materi ini dirancang untuk memberikan pemahaman terfokus pada cakupan ${pertemuan}.`}
 
 CAKUPAN MATERI YANG WAJIB DIBAHAS (BATAS UTAMA):
 ${scopeListStr}
+
+PRINSIP BATAS MATERI & ATURAN PENCEGAHAN PENGULANGAN:
+1. Cakupan Materi adalah Batas Wajib Pembahasan: Jangan secara otomatis mengulang pengertian, penjelasan dasar, atau pembahasan umum apabila tidak termasuk dalam cakupan materi.
+2. Posisi Pertemuan: Nomor pertemuan (${pertemuan}) menunjukkan posisi materi dalam rangkaian pembelajaran.
+3. Konteks Umum vs Batas Pembahasan: Materi Utama hanya digunakan sebagai konteks umum, sedangkan Cakupan Materi menjadi batas utama pembahasan.
+4. Jangan membuat setiap pertemuan terlihat seperti materi pertama. Fokuskan langsung pada cakupan materi pertemuan saat ini.
 
 STRUKTUR DAN KONTEN SUMBER (CONTENT SNAPSHOT STIVIA):
 ${sectionsList}
@@ -187,11 +217,12 @@ FORMAT KELUARAN YANG DIHARAPKAN:
 Topik: ${project.rawTopic || project.title || 'Materi Pembelajaran'}
 Mata Pelajaran: ${project.subject || 'Umum'}
 Jenjang: ${project.educationLevel || 'Umum'} - Kelas ${project.grade || '-'}
+Pertemuan: ${project.pertemuan || 'Pertemuan 1'}
 Cakupan Materi:
 ${project.scope || '- Pembahasan materi esensial'}
 
 TUGAS AI:
-Susunlah naskah materi pembelajaran yang komprehensif, terstruktur, dan mudah dipahami oleh peserta didik berdasarkan data di atas.`;
+Susunlah naskah materi pembelajaran yang komprehensif, terstruktur, dan mudah dipahami oleh peserta didik berdasarkan data di atas tanpa mengulang materi pertemuan lain di luar cakupan.`;
   }
 }
 
@@ -206,6 +237,7 @@ export function analyzeAndGenerateMaterialPrompt(
       subject: project.subject || 'Umum',
       educationLevel: project.educationLevel || 'Umum',
       grade: project.grade || 'Lengkap',
+      pertemuan: project.pertemuan || 'Pertemuan 1',
       theme: project.theme || 'Umum',
       topic: project.rawTopic || project.title || 'Materi Pembelajaran',
       scope: project.scope || '',
@@ -224,6 +256,7 @@ export function analyzeAndGenerateMaterialPrompt(
         subject: identity.subject || project.subject || 'Umum',
         educationLevel: identity.educationLevel || project.educationLevel || 'Umum',
         grade: identity.grade || project.grade || 'Lengkap',
+        pertemuan: project.pertemuan || identity.pertemuan || 'Pertemuan 1',
         scope: identity.scope || project.scope || '',
         rawContent: rawSectionsText || identity.scope || identity.topic,
         learningObjectives: [identity.learningObjective || project.learningObjective || `Peserta didik memahami konsep ${identity.topic} secara terstruktur.`],
@@ -238,6 +271,7 @@ export function analyzeAndGenerateMaterialPrompt(
         subject: identity.subject || project.subject || 'Umum',
         educationLevel: identity.educationLevel || project.educationLevel || 'Umum',
         grade: identity.grade || project.grade || 'Lengkap',
+        pertemuan: project.pertemuan || identity.pertemuan || 'Pertemuan 1',
         scope: identity.scope || project.scope || '',
         styleName: 'Pedagogis Terstruktur'
       });
@@ -256,6 +290,7 @@ export function analyzeAndGenerateMaterialPrompt(
       subject: project.subject || 'Umum',
       educationLevel: project.educationLevel || 'Umum',
       grade: project.grade || 'Lengkap',
+      pertemuan: project.pertemuan || 'Pertemuan 1',
       scope: project.scope || ''
     });
 
@@ -302,6 +337,7 @@ export function analyzeAndGenerateProjectInfographicPrompt(
         subject: identity.subject || project.subject || 'Umum',
         educationLevel: identity.educationLevel || project.educationLevel || 'SMA',
         grade: identity.grade || project.grade || 'Kelas X',
+        pertemuan: project.pertemuan || identity.pertemuan || 'Pertemuan 1',
         scope: project.scope || overview || '',
         rawContent: rawSectionsText || project.scope || project.rawTopic || title,
         learningObjectives,
@@ -322,6 +358,7 @@ export function analyzeAndGenerateProjectInfographicPrompt(
         subject: identity.subject || project.subject || 'Umum',
         educationLevel: identity.educationLevel || project.educationLevel || 'SMA',
         grade: identity.grade || project.grade || 'Kelas X',
+        pertemuan: project.pertemuan || identity.pertemuan || 'Pertemuan 1',
         scope: project.scope || overview || '',
         styleName: options.visualStyleName
       });
@@ -339,6 +376,7 @@ export function analyzeAndGenerateProjectInfographicPrompt(
       subject: project.subject || 'Umum',
       educationLevel: project.educationLevel || 'SMA',
       grade: project.grade || 'Kelas X',
+      pertemuan: project.pertemuan || 'Pertemuan 1',
       scope: project.scope || '',
       styleName: options.visualStyleName
     });
@@ -362,6 +400,7 @@ export function generateUniversalInfographicFromProjectPrompt(
 export interface RawMaterialPromptInput {
   title: string;
   rawMaterial: string;
+  pertemuan?: string | number;
   format?: 'Vertikal';
   visualStyle: string;
   customStyleDescription?: string;
@@ -370,7 +409,7 @@ export interface RawMaterialPromptInput {
 export function analyzeAndGenerateRawInfographicPrompt(
   input: RawMaterialPromptInput
 ): { prompt: string; thinkingResult: StiviaThinkingResult } {
-  const { title, rawMaterial, visualStyle, customStyleDescription } = input;
+  const { title, rawMaterial, pertemuan = 'Pertemuan 1', visualStyle, customStyleDescription } = input;
   const resolvedTitle = title.trim() || 'Infografis Pembelajaran';
 
   try {
@@ -381,6 +420,7 @@ export function analyzeAndGenerateRawInfographicPrompt(
       subject: 'Materi Pembelajaran',
       educationLevel: 'Umum',
       grade: 'Lengkap',
+      pertemuan,
       scope: 'Analisis berbasis teks materi asli pengguna',
       rawContent: rawMaterial,
       learningObjectives: [`Peserta didik menguasai intisari pembelajaran dari ${resolvedTitle}.`],
@@ -401,6 +441,7 @@ export function analyzeAndGenerateRawInfographicPrompt(
       subject: 'Materi Pembelajaran',
       educationLevel: 'Umum',
       grade: 'Lengkap',
+      pertemuan,
       scope: rawMaterial.slice(0, 300),
       styleName: visualStyle
     });

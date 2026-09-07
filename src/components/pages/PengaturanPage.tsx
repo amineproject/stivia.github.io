@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserSettings, EducationLevel, InfographicFormat, VisualLevel, ResponsiveViewMode } from '../../types';
+import { APP_CURRENT_VERSION, APP_UPDATE_NAME, STIVIA_VERSION_HISTORY } from '../../data/versionHistoryData';
 
 interface PengaturanPageProps {
   settings?: UserSettings;
@@ -54,6 +55,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
 }) => {
   // Modal state: null = no modal, or 'akun' | 'preferensi' | 'tentang'
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [selectedVersionTab, setSelectedVersionTab] = useState<string>('2.2d');
 
   // Profile state from localStorage or default
   const [profile, setProfile] = useState<EducatorProfile>(() => {
@@ -429,14 +431,14 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                   Tentang STIVIA
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
-                  Informasi platform AI, identitas rilis, dan fitur tambahan versi 2.2c.
+                  Informasi platform AI, identitas rilis, dan pembaruan sistem desain infografis v2.2d.
                 </p>
               </div>
             </div>
 
             <div className="pt-6 flex items-center justify-between text-xs font-bold text-[#3b49df] group-hover:text-indigo-800">
               <span className="text-slate-400 group-hover:text-[#3b49df] transition-colors">
-                Versi 2.2c • Rilis Terbaru
+                Versi 2.2d • Rilis Terbaru
               </span>
               <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] flex items-center justify-center transition-all group-hover:translate-x-1">
                 <ChevronRight className="w-4 h-4" />
@@ -817,7 +819,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
 
                     <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#3b49df] text-white text-xs font-bold tracking-wide shadow-xs shrink-0">
                       <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Versi 2.2c • Rilis Terbaru</span>
+                      <span>Versi {APP_CURRENT_VERSION} • Rilis Terbaru</span>
                     </div>
                   </div>
 
@@ -841,40 +843,131 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Fitur Tambahan & Pembaruan di Versi 2.2c */}
-                  <div className="space-y-3.5">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#3b49df]" />
-                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
-                        Fitur Tambahan di Versi 2.2c
-                      </h3>
+                  {/* Tab Pemilihan Versi Rilis */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-[#3b49df]" />
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
+                          Riwayat Versi & Pembaruan
+                        </h3>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        Pilih versi untuk melihat catatan rilis
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3">
-                      {version22cHighlights.map((item, idx) => (
-                        <div 
-                          key={idx}
-                          className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2 hover:border-indigo-200 transition-colors"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-6 h-6 rounded-lg bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0">
-                                <CheckCircle2 className="w-4 h-4 text-[#3b49df]" />
-                              </div>
-                              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                                {item.title}
-                              </h4>
-                            </div>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#3b49df] border border-indigo-100 shrink-0">
-                              {item.tag}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-600 leading-relaxed font-normal pl-8">
-                            {item.desc}
-                          </p>
-                        </div>
-                      ))}
+                    {/* Version Selector Tabs */}
+                    <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/70">
+                      {STIVIA_VERSION_HISTORY.map((ver) => {
+                        const isSelected = selectedVersionTab === ver.version;
+                        return (
+                          <button
+                            key={ver.version}
+                            type="button"
+                            onClick={() => setSelectedVersionTab(ver.version)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-white text-[#3b49df] shadow-xs border border-indigo-100'
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                            }`}
+                          >
+                            <span>v{ver.version}</span>
+                            {ver.status === 'Rilis Terbaru' && (
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
+
+                    {/* Active Version Content */}
+                    {(() => {
+                      const currentVer =
+                        STIVIA_VERSION_HISTORY.find((v) => v.version === selectedVersionTab) ||
+                        STIVIA_VERSION_HISTORY[0];
+
+                      return (
+                        <div className="space-y-4 pt-1">
+                          <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100/90 space-y-1.5">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <span className="text-xs font-extrabold text-[#3b49df] uppercase tracking-wider">
+                                {currentVer.updateName}
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-indigo-700 border border-indigo-200">
+                                {currentVer.releaseDate}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                              {currentVer.description}
+                            </p>
+                          </div>
+
+                          {/* Fitur Baru */}
+                          {currentVer.newFeatures && currentVer.newFeatures.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                                <span>Fitur Baru</span>
+                              </h4>
+                              <div className="grid grid-cols-1 gap-2">
+                                {currentVer.newFeatures.map((feat, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-start gap-2.5 text-xs text-slate-700"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                    <span className="leading-relaxed font-medium">{feat}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Peningkatan Sistem */}
+                          {currentVer.improvements && currentVer.improvements.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                <span>Peningkatan Sistem</span>
+                              </h4>
+                              <div className="grid grid-cols-1 gap-2">
+                                {currentVer.improvements.map((imp, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-start gap-2.5 text-xs text-slate-700"
+                                  >
+                                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                                    <span className="leading-relaxed font-medium">{imp}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Perbaikan Bug */}
+                          {currentVer.bugFixes && currentVer.bugFixes.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <span>Perbaikan & Stabilitas</span>
+                              </h4>
+                              <div className="grid grid-cols-1 gap-2">
+                                {currentVer.bugFixes.map((fix, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="p-3 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-start gap-2.5 text-xs text-slate-700"
+                                  >
+                                    <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                                    <span className="leading-relaxed font-medium">{fix}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
