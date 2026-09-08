@@ -56,8 +56,8 @@ export const StiviaThinkingPanel: React.FC<StiviaThinkingPanelProps> = ({
   };
 
   const stage4 = (thinkingResult as any).stage4_StyleUnderstanding || (thinkingResult as any).stage3_StyleUnderstanding || {
-    selectedStyle: { name: 'Sains Modern (Navy Clean)', category: 'Sains & Edukasi' },
-    styleName: 'Sains Modern (Navy Clean)',
+    selectedStyle: { name: 'Modern Edukatif', category: 'Sains & Edukasi' },
+    styleName: 'Modern Edukatif',
     category: 'Sains & Edukasi',
     visualTone: 'Edukatif, rapi, dan modern',
     visualAtmosphere: 'Penyajian visual edukatif yang selaras',

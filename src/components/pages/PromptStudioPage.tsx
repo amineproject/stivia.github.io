@@ -60,13 +60,13 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
 
   // State Konfigurasi Gaya Visual Infografis dari Proyek
   const [selectedVisualStyle, setSelectedVisualStyle] = useState<string>(() => {
-    return currentDraft?.styleConfig?.name || 'Sains Modern (Navy Clean)';
+    return currentDraft?.styleConfig?.name || 'Modern Edukatif';
   });
 
   // State Konfigurasi Prompt Infografis dari Materi Saya
   const [rawTitle, setRawTitle] = useState('');
   const [rawContent, setRawContent] = useState('');
-  const [rawVisualStyle, setRawVisualStyle] = useState<string>('Sains Modern (Navy Clean)');
+  const [rawVisualStyle, setRawVisualStyle] = useState<string>('Modern Edukatif');
   const [customStyleDesc, setCustomStyleDesc] = useState('');
 
   // State Hasil Prompt & Kerangka Berpikir STIVIA
@@ -200,7 +200,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 mb-2">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Universal AI Prompt Generator • STIVIA v2.2c</span>
+              <span>Universal AI Prompt Generator • STIVIA v2.2d</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               PROMPT STUDIO

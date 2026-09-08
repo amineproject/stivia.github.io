@@ -23,7 +23,7 @@ function createFallbackThinkingResult(params: {
 }): StiviaThinkingResult {
   const { title, topic, subject, educationLevel, grade, pertemuan = 'Pertemuan 1', scope, styleName } = params;
   const resolvedTopic = topic || title || 'Materi Pembelajaran';
-  const resolvedStyle = styleName || 'Sains Modern (Navy Clean)';
+  const resolvedStyle = styleName || 'Modern Edukatif';
   const formattedPertemuan = typeof pertemuan === 'number' ? `Pertemuan ${pertemuan}` : (String(pertemuan).startsWith('Pertemuan') ? String(pertemuan) : `Pertemuan ${pertemuan}`);
 
   return {
