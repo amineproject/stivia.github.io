@@ -1,6 +1,6 @@
 {
   "name": "STIVIA",
-  "description": "Platform pendidikan STIVIA v2.2d untuk menyusun materi pembelajaran menjadi rancangan infografis edukatif dengan Pengembangan Sistem Desain Infografis 5 Kategori.",
+  "description": "Platform pendidikan STIVIA v3.0 untuk menyusun materi pembelajaran menjadi rancangan infografis edukatif dengan Sistem Autentikasi Supabase & Pengembangan Sistem Desain Infografis 5 Kategori.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -17,6 +17,7 @@ import {
 } from 'docx';
 import { InfographicDraft, ContentSnapshot } from '../types';
 import { getContentSnapshotFromDraft } from '../data/materialGenerator';
+import { APP_CURRENT_VERSION } from '../data/versionHistoryData';
 
 interface EducatorProfile {
   name: string;
@@ -68,7 +69,7 @@ export async function exportMaterialToDocx(
     .trim()
     .replace(/\s+/g, '_')
     .substring(0, 50);
-  const filename = `STIVIA_${cleanTitle}_v2.2c.docx`;
+  const filename = `STIVIA_${cleanTitle}_v${APP_CURRENT_VERSION}.docx`;
 
   try {
     // 3. Build docx elements
@@ -448,7 +449,7 @@ export async function exportMaterialToDocx(
         ],
       }),
       new Paragraph({
-        text: 'Versi 2.2c',
+        text: `Versi ${APP_CURRENT_VERSION}`,
         alignment: AlignmentType.CENTER,
         spacing: { before: 0, after: 100 },
         run: {

@@ -10,15 +10,69 @@ export interface VersionItem {
   bugFixes: string[];
 }
 
-export const APP_CURRENT_VERSION = '2.2d';
-export const APP_UPDATE_NAME = 'PENGEMBANGAN SISTEM DESAIN INFOGRAFIS';
+export const APP_CURRENT_VERSION = '3.0';
+export const APP_VERSION_LABEL = `v${APP_CURRENT_VERSION}`;
+export const APP_FULL_VERSION_LABEL = `STIVIA Versi ${APP_CURRENT_VERSION}`;
+export const APP_UPDATE_NAME = 'SISTEM AKUN SUPABASE & ARSITEKTUR VERSI TERPUSAT';
 export const APP_TAGLINE = 'Belajar Lebih Visual, Mengajar Lebih Mudah';
 
 export const STIVIA_VERSION_HISTORY: VersionItem[] = [
   {
+    version: '3.0',
+    updateName: 'SISTEM AKUN SUPABASE & ARSITEKTUR VERSI TERPUSAT',
+    status: 'Rilis Terbaru',
+    tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
+    releaseDate: 'September 2026',
+    description: 'Pembaruan akbar STIVIA 3.0 menghadirkan integrasi sistem autentikasi pendidik berbasis Supabase Auth (Login, Register, Session Management, Logout, Lupa Password), proteksi aplikasi terpusat, serta arsitektur Single Source of Truth untuk konsistensi nomor versi di seluruh aplikasi.',
+    newFeatures: [
+      'Sistem Login terintegrasi menggunakan email dan kata sandi dengan Supabase Auth.',
+      'Sistem Daftar Akun Pendidik (Nama Lengkap, Email, Kata Sandi, dan Konfirmasi Kata Sandi) dengan penyimpanan metadata profil full_name otomatis ke database.',
+      'Sistem pemulihan kata sandi (Lupa Password) via email resmi dengan validasi lengkap.',
+      'Session Management terproteksi (Protected Application): akses aplikasi terkunci untuk pengguna belum login dan auto-resume saat refresh halaman.',
+      'Sistem Keluar (Logout) aman via supabase.auth.signOut() pada navigasi Sidebar dan Pengaturan.',
+      'Sistem Versi Terpusat (Single Source of Truth): nomor versi aktif dikonsolidasikan dari satu konstanta terpusat untuk Sidebar, Pengaturan, Prompt Studio, Kerangka Berpikir, dan seluruh antarmuka aplikasi.',
+      'Integrasi identitas nama pendidik aktif secara real-time pada navigasi Sidebar dan Pengaturan Profil.'
+    ],
+    improvements: [
+      'Peningkatan keamanan aplikasi dan isolasi data akun pendidik.',
+      'Penyelarasan otomatis seluruh label versi aktif tanpa celah ketidaksinkronan antarhalaman.',
+      'Pelestarian 100% fitur pembuatan infografis edukatif, 20 gaya visual, 5 kategori, dan arketipe tata letak.'
+    ],
+    bugFixes: [
+      'Pencegahan ketidaksinkronan versi lama di halaman Pengaturan melalui Single Source of Truth.',
+      'Penanganan kondisi error autentikasi dan koneksi jaringan dengan pesan berbahasa Indonesia yang jelas.'
+    ]
+  },
+  {
+    version: '2.2e',
+    updateName: 'SISTEM AUTENTIKASI SUPABASE & AKUN PENDIDIK',
+    status: 'Versi Sebelumnya',
+    tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
+    releaseDate: 'September 2026',
+    description: 'Pembaruan keamanan dan integrasi akun pendidik STIVIA dengan penambahan sistem Login, Register, Lupa Password, Session Management terproteksi berbasis Supabase Auth, serta integrasi profil pendidik terpusat.',
+    newFeatures: [
+      'Menambahkan sistem Login terintegrasi menggunakan email dan kata sandi dengan Supabase Auth.',
+      'Menambahkan halaman Daftar Akun Pendidik (Nama Lengkap, Email, Kata Sandi, dan Konfirmasi Kata Sandi) dengan validasi lengkap.',
+      'Integrasi otomatis metadata profil nama pendidik ke relasi tabel public.profiles melalui trigger handle_new_user().',
+      'Menambahkan fitur pemulihan kata sandi (Lupa Password) dengan pengiriman tautan reset ke email terdaftar.',
+      'Sistem proteksi sesi aplikasi (Protected Application): akses langsung bagi user dengan sesi aktif dan pengalihan ke autentikasi bagi user baru.',
+      'Penambahan fungsi Keluar (Logout) aman menggunakan supabase.auth.signOut() dengan pembersihan sesi seketika.',
+      'Penerjemahan pesan error autentikasi lengkap ke Bahasa Indonesia yang ramah bagi guru.'
+    ],
+    improvements: [
+      'Sinkronisasi profil pengguna aktif pada navigasi sidebar dan pengaturan akun.',
+      'Manajemen persistensi sesi otomatis (persistSession dan autoRefreshToken) sehingga sesi tetap terjaga saat halaman disegarkan.',
+      'Peningkatan proteksi data dan pemisahan akses tanpa mengubah alur pembuatan infografis yang sudah berjalan.'
+    ],
+    bugFixes: [
+      'Penanganan kondisi error autentikasi dan konektivitas secara responsif.',
+      'Pencegahan inkonsistensi sesi pengguna melalui listener supabase.auth.onAuthStateChange().'
+    ]
+  },
+  {
     version: '2.2d',
     updateName: 'PENGEMBANGAN SISTEM DESAIN INFOGRAFIS',
-    status: 'Rilis Terbaru',
+    status: 'Versi Sebelumnya',
     tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
     releaseDate: 'September 2026',
     description: 'Pembaruan sistem visual, tipografi, dan kendali kurikulum STIVIA dengan penambahan field Pertemuan, penguatan batas cakupan materi, pencegahan pengulangan materi antarpertemuan, 5 kategori gaya infografis, tipografi otomatis, dan arsitektur Style Profile terpusat.',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { InfographicDraft, MaterialBlock, StyleConfig } from '../../../types';
+import { APP_CURRENT_VERSION } from '../../../data/versionHistoryData';
 import { 
   Terminal, 
   Cpu, 
@@ -43,7 +44,7 @@ export const CyberHudLayout: React.FC<LayoutProps> = ({
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/40">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>SYS.ONLINE // v2.2c</span>
+              <span>SYS.ONLINE // v{APP_CURRENT_VERSION}</span>
             </span>
             <span className="text-slate-400 hidden sm:inline">
               MOD: {draft.subject.toUpperCase()}

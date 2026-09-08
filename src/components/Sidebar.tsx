@@ -6,9 +6,11 @@ import {
   FolderKanban, 
   Settings, 
   User,
+  LogOut,
   X
 } from 'lucide-react';
 import { NavigationTab } from '../types';
+import { APP_CURRENT_VERSION } from '../data/versionHistoryData';
 
 interface SidebarProps {
   activeTab: NavigationTab;
@@ -16,6 +18,9 @@ interface SidebarProps {
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   effectiveMode?: 'mobile' | 'desktop';
+  userName?: string;
+  userRole?: string;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -24,6 +29,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
   effectiveMode = 'desktop',
+  userName = 'Pengguna STIVIA',
+  userRole = 'Pendidik & Kreator',
+  onLogout,
 }) => {
   // Helper to determine if a sub-flow tab belongs to active section
   const isTabActive = (tabId: NavigationTab) => {
@@ -100,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   STIVIA
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e0e7ff] text-[#3b49df] tracking-wide">
-                  V2.2d
+                  V{APP_CURRENT_VERSION}
                 </span>
               </div>
               <p className="text-[11px] leading-tight text-slate-500 font-normal mt-1.5 max-w-[200px]">
@@ -158,13 +166,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-slate-900 truncate">
-                Pengguna STIVIA
+                {userName}
               </p>
               <p className="text-[10px] font-semibold text-[#3b49df] truncate">
-                Pendidik & Kreator
+                {userRole}
               </p>
             </div>
           </button>
+
+          {onLogout && (
+            <button
+              id="btn-sidebar-logout"
+              onClick={onLogout}
+              title="Keluar dari akun STIVIA"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Keluar</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

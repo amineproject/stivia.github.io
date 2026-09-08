@@ -19,7 +19,7 @@ const supabaseUrl = isSupabaseConfigured ? rawUrl : 'https://placeholder.supabas
 const supabaseAnonKey = isSupabaseConfigured ? rawAnonKey : 'placeholder-anon-key';
 
 /**
- * Client Supabase terpusat untuk STIVIA 2.2D
+ * Client Supabase terpusat untuk STIVIA 3.0
  * Menyediakan fondasi untuk Supabase Auth dan operasi database tanpa menduplikasi instans client.
  */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

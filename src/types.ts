@@ -627,6 +627,16 @@ export interface UserSettings {
   authorContact: string;
 }
 
+export interface SupabaseUserProfile {
+  id: string;
+  full_name: string | null;
+  title: string | null;
+  school_name: string | null;
+  avatar_url: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // ==========================================
 // TAHAP 4: STATE MANAGEMENT PREVIEW & PENYEMPURNAAN
 // ==========================================

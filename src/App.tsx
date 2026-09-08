@@ -12,11 +12,16 @@ import { InfografisSayaPage } from './components/pages/InfografisSayaPage';
 import { PanduanPage } from './components/pages/PanduanPage';
 import { PengaturanPage } from './components/pages/PengaturanPage';
 import { NotificationToast } from './components/NotificationToast';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { Session } from '@supabase/supabase-js';
+import { AuthPage } from './components/auth/AuthPage';
+import { getUserProfile, signOutUser } from './services/authService';
 import { 
   InfographicDraft, 
   NavigationTab, 
   UserSettings,
-  ResponsiveViewMode 
+  ResponsiveViewMode,
+  SupabaseUserProfile 
 } from './types';
 import { 
   INITIAL_SAMPLE_DRAFT, 
@@ -26,9 +31,113 @@ import {
 import { createDraftFromContext, validateAndSanitizeDraft } from './data/materialGenerator';
 
 export default function App() {
+  // Authentication & Session State
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  const [userProfile, setUserProfile] = useState<SupabaseUserProfile | null>(null);
+
   // Navigation active tab (default to dashboard)
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Inisialisasi dan listener session Supabase Auth
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserProfile = async (userId: string, metadataName?: string) => {
+      try {
+        const profile = await getUserProfile(userId);
+        if (!isMounted) return;
+        if (profile) {
+          setUserProfile(profile);
+        } else {
+          setUserProfile({
+            id: userId,
+            full_name: metadataName || 'Pendidik STIVIA',
+          });
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        setUserProfile({
+          id: userId,
+          full_name: metadataName || 'Pendidik STIVIA',
+        });
+      }
+    };
+
+    const initAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        setSession(data.session);
+        if (data.session?.user) {
+          await fetchUserProfile(
+            data.session.user.id,
+            data.session.user.user_metadata?.full_name
+          );
+        }
+      } catch (err) {
+        console.warn('Gagal memuat sesi Supabase:', err);
+      } finally {
+        if (isMounted) {
+          setIsAuthChecking(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      if (!isMounted) return;
+      setSession(newSession);
+      if (newSession?.user) {
+        await fetchUserProfile(
+          newSession.user.id,
+          newSession.user.user_metadata?.full_name
+        );
+      } else {
+        setUserProfile(null);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Handler Keluar (Logout)
+  const handleLogout = async () => {
+    try {
+      await signOutUser();
+    } catch (err) {
+      console.warn('Gagal memproses signOut:', err);
+    } finally {
+      setSession(null);
+      setUserProfile(null);
+      showToast('Berhasil keluar dari akun STIVIA.');
+    }
+  };
+
+  // Handler Mode Demo (Fallback jika environment Supabase belum diisi)
+  const handleDemoLogin = () => {
+    const mockSession = {
+      user: {
+        id: 'demo-pendidik-001',
+        email: 'pendidik@stivia.id',
+        user_metadata: { full_name: 'Guru Penggerak STIVIA' },
+      },
+    } as unknown as Session;
+
+    setSession(mockSession);
+    setUserProfile({
+      id: 'demo-pendidik-001',
+      full_name: 'Guru Penggerak STIVIA',
+      title: 'Pendidik Kreatif & Inovator',
+      school_name: 'Sekolah Penggerak STIVIA',
+    });
+    showToast('Masuk dalam Mode Demo STIVIA.');
+  };
 
   // Responsive View Mode ('auto' | 'mobile' | 'desktop')
   const [viewMode, setViewMode] = useState<ResponsiveViewMode>(() => {
@@ -225,6 +334,46 @@ export default function App() {
     setUserSettings(newSettings);
   };
 
+  // Informasi Pengguna Terautentikasi
+  const currentUserName = 
+    userProfile?.full_name || 
+    session?.user?.user_metadata?.full_name || 
+    (session?.user?.email ? session.user.email.split('@')[0] : 'Pendidik STIVIA');
+  const currentUserRole = userProfile?.title || 'Pendidik & Inovator';
+  const currentUserEmail = session?.user?.email || '';
+
+  // Layar Loading Pengecekan Sesi
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#f8faff] flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#3b49df] text-white flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-600/30 animate-pulse">
+            S
+          </div>
+          <span className="text-sm font-bold text-slate-700">Memeriksa Sesi STIVIA...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Layar Autentikasi (Jika belum memiliki session aktif)
+  if (!session) {
+    return (
+      <>
+        <AuthPage
+          onAuthSuccess={() => {
+            showToast('Selamat datang di STIVIA!');
+          }}
+          onDemoLogin={!isSupabaseConfigured ? handleDemoLogin : undefined}
+        />
+        <NotificationToast
+          message={toastMessage}
+          onClose={() => setToastMessage(null)}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f8faff] text-slate-800 flex">
       {/* Fixed/Responsive Left Sidebar */}
@@ -237,6 +386,9 @@ export default function App() {
         isOpenMobile={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
         effectiveMode={effectiveMode}
+        userName={currentUserName}
+        userRole={currentUserRole}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -377,6 +529,10 @@ export default function App() {
               viewMode={viewMode}
               onSetViewMode={setViewMode}
               effectiveMode={effectiveMode}
+              userEmail={currentUserEmail}
+              onLogout={handleLogout}
+              profileName={currentUserName}
+              profileSchool={userProfile?.school_name}
             />
           )}
         </main>

@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Sparkle,
   LayoutGrid,
-  Code2
+  Code2,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserSettings, EducationLevel, InfographicFormat, VisualLevel, ResponsiveViewMode } from '../../types';
@@ -29,6 +30,10 @@ interface PengaturanPageProps {
   viewMode?: ResponsiveViewMode;
   onSetViewMode?: (mode: ResponsiveViewMode) => void;
   effectiveMode?: 'mobile' | 'desktop';
+  userEmail?: string;
+  onLogout?: () => void;
+  profileName?: string;
+  profileSchool?: string;
 }
 
 interface EducatorProfile {
@@ -52,10 +57,14 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
   settings,
   onUpdateSettings,
   onSaveToast,
+  userEmail,
+  onLogout,
+  profileName,
+  profileSchool,
 }) => {
   // Modal state: null = no modal, or 'akun' | 'preferensi' | 'tentang'
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [selectedVersionTab, setSelectedVersionTab] = useState<string>('2.2d');
+  const [selectedVersionTab, setSelectedVersionTab] = useState<string>(APP_CURRENT_VERSION);
 
   // Profile state from localStorage or default
   const [profile, setProfile] = useState<EducatorProfile>(() => {
@@ -65,9 +74,9 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
         const parsed = JSON.parse(saved);
         if (parsed.name && parsed.school) {
           return {
-            name: parsed.name,
+            name: profileName || parsed.name,
             role: parsed.role || DEFAULT_PROFILE.role,
-            school: parsed.school,
+            school: profileSchool || parsed.school,
             avatarUrl: parsed.avatarUrl || '',
           };
         }
@@ -75,8 +84,23 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
     } catch {
       // fallback
     }
-    return DEFAULT_PROFILE;
+    return {
+      ...DEFAULT_PROFILE,
+      name: profileName || DEFAULT_PROFILE.name,
+      school: profileSchool || DEFAULT_PROFILE.school,
+    };
   });
+
+  // Sync profile when profileName or profileSchool props change
+  useEffect(() => {
+    if (profileName) {
+      setProfile((prev) => ({
+        ...prev,
+        name: profileName,
+        school: profileSchool || prev.school,
+      }));
+    }
+  }, [profileName, profileSchool]);
 
   // Local draft state for editing in modals
   const [formProfile, setFormProfile] = useState<EducatorProfile>(profile);
@@ -264,7 +288,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
         {/* Status Badge Ringkas */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-slate-200/80 shadow-2xs self-start sm:self-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-xs font-bold text-slate-700">STIVIA Versi 2.2c</span>
+          <span className="text-xs font-bold text-slate-700">STIVIA Versi {APP_CURRENT_VERSION}</span>
         </div>
       </div>
 
@@ -431,14 +455,14 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                   Tentang STIVIA
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
-                  Informasi platform AI, identitas rilis, dan pembaruan sistem desain infografis v2.2d.
+                  Informasi platform AI, identitas rilis, dan pembaruan sistem autentikasi & desain infografis v{APP_CURRENT_VERSION}.
                 </p>
               </div>
             </div>
 
             <div className="pt-6 flex items-center justify-between text-xs font-bold text-[#3b49df] group-hover:text-indigo-800">
               <span className="text-slate-400 group-hover:text-[#3b49df] transition-colors">
-                Versi 2.2d • Rilis Terbaru
+                Versi {APP_CURRENT_VERSION} • Rilis Terbaru
               </span>
               <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] flex items-center justify-center transition-all group-hover:translate-x-1">
                 <ChevronRight className="w-4 h-4" />
@@ -550,6 +574,33 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                       </button>
                     </div>
                   </div>
+
+                  {/* Supabase Account Status */}
+                  {userEmail && (
+                    <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100/80 flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold text-[#3b49df] uppercase tracking-wider block">
+                          Akun Supabase Aktif
+                        </span>
+                        <span className="font-semibold text-slate-800 truncate block">
+                          {userEmail}
+                        </span>
+                      </div>
+                      {onLogout && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleCloseModal();
+                            onLogout();
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-rose-600 font-bold transition-colors cursor-pointer shrink-0 text-xs shadow-2xs"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Keluar</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Field 1: Nama Lengkap */}
                   <div className="space-y-1.5">

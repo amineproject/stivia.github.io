@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { InfographicDraft, NavigationTab } from '../../types';
 import { VISUAL_STYLE_OPTIONS } from '../../data/mockData';
+import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
 import { 
   generateUniversalMaterialPrompt, 
   generateUniversalInfographicFromProjectPrompt, 
@@ -200,7 +201,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 mb-2">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Universal AI Prompt Generator • STIVIA v2.2d</span>
+              <span>Universal AI Prompt Generator • STIVIA v{APP_CURRENT_VERSION}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               PROMPT STUDIO
