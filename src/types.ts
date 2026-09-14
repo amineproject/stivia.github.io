@@ -609,7 +609,8 @@ export type NavigationTab =
   | 'proyek_saya'
   | 'infografis_saya'
   | 'panduan'
-  | 'pengaturan';
+  | 'pengaturan'
+  | 'profil_saya';
 
 export type ResponsiveViewMode = 'auto' | 'mobile' | 'desktop';
 

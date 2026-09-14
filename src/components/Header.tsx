@@ -92,6 +92,11 @@ export const Header: React.FC<HeaderProps> = ({
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
           { label: 'Pengaturan', tab: 'pengaturan' as NavigationTab },
         ];
+      case 'profil_saya':
+        return [
+          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+          { label: 'Profil Saya', tab: 'profil_saya' as NavigationTab },
+        ];
       default:
         return [
           { label: 'STIVIA', tab: 'dashboard' as NavigationTab },

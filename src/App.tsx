@@ -11,6 +11,7 @@ import { PreviewInfografisPage } from './components/pages/PreviewInfografisPage'
 import { InfografisSayaPage } from './components/pages/InfografisSayaPage';
 import { PanduanPage } from './components/pages/PanduanPage';
 import { PengaturanPage } from './components/pages/PengaturanPage';
+import { ProfilSayaPage } from './components/pages/ProfilSayaPage';
 import { NotificationToast } from './components/NotificationToast';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -335,12 +336,30 @@ export default function App() {
   };
 
   // Informasi Pengguna Terautentikasi
-  const currentUserName = 
+  const rawUserName = 
     userProfile?.full_name || 
     session?.user?.user_metadata?.full_name || 
     (session?.user?.email ? session.user.email.split('@')[0] : 'Pendidik STIVIA');
+  const currentUserName = userProfile?.title 
+    ? `${rawUserName}, ${userProfile.title}` 
+    : rawUserName;
   const currentUserRole = userProfile?.title || 'Pendidik & Inovator';
+  const currentUserSchool = userProfile?.school_name || 'Instansi belum diatur';
   const currentUserEmail = session?.user?.email || '';
+
+  // Handler pembaruan profil yang sinkron ke seluruh aplikasi
+  const handleProfileUpdated = (updatedProfile: SupabaseUserProfile) => {
+    setUserProfile(updatedProfile);
+    if (updatedProfile.full_name) {
+      setUserSettings((prev) => ({
+        ...prev,
+        authorName: updatedProfile.title 
+          ? `${updatedProfile.full_name}, ${updatedProfile.title}` 
+          : updatedProfile.full_name,
+        authorRole: updatedProfile.title || prev.authorRole,
+      }));
+    }
+  };
 
   // Layar Loading Pengecekan Sesi
   if (isAuthChecking) {
@@ -388,6 +407,8 @@ export default function App() {
         effectiveMode={effectiveMode}
         userName={currentUserName}
         userRole={currentUserRole}
+        userSchool={currentUserSchool}
+        userAvatar={userProfile?.avatar_url}
         onLogout={handleLogout}
       />
 
@@ -521,6 +542,20 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'profil_saya' && (
+            <ProfilSayaPage
+              userProfile={userProfile}
+              session={session}
+              onProfileUpdated={handleProfileUpdated}
+              onNavigateTab={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              showToast={showToast}
+              effectiveMode={effectiveMode}
+            />
+          )}
+
           {activeTab === 'pengaturan' && (
             <PengaturanPage
               settings={userSettings}
@@ -533,6 +568,13 @@ export default function App() {
               onLogout={handleLogout}
               profileName={currentUserName}
               profileSchool={userProfile?.school_name}
+              userProfile={userProfile}
+              userId={session?.user?.id}
+              onProfileUpdated={handleProfileUpdated}
+              onNavigateTab={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
           )}
         </main>

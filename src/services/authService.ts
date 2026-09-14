@@ -12,6 +12,25 @@ export interface SignUpCredentials {
   password: string;
 }
 
+export interface SupabaseDetailedError {
+  operation: 'SELECT' | 'UPDATE' | 'INSERT' | 'AUTH_GET_USER' | 'AUTH_UPDATE_USER';
+  code: string;
+  message: string;
+  details: string | null;
+  hint: string | null;
+}
+
+export class ProfileSaveError extends Error {
+  supabaseError: SupabaseDetailedError;
+
+  constructor(message: string, supabaseError: SupabaseDetailedError) {
+    super(message);
+    this.name = 'ProfileSaveError';
+    this.supabaseError = supabaseError;
+    Object.setPrototypeOf(this, ProfileSaveError.prototype);
+  }
+}
+
 /**
  * Menerjemahkan pesan error teknis Supabase Auth ke Bahasa Indonesia yang ramah dan mudah dipahami guru.
  */
@@ -140,23 +159,330 @@ export async function signOutUser() {
  * Mengambil data profil dari public.profiles berdasarkan user ID (auth.users.id)
  */
 export async function getUserProfile(userId: string): Promise<SupabaseUserProfile | null> {
-  if (!userId || !isSupabaseConfigured) return null;
+  if (!userId) return null;
+
+  // Baca cache lokal terlebih dahulu untuk sinkronisasi instan
+  let cachedProfile: SupabaseUserProfile | null = null;
+  try {
+    const saved = localStorage.getItem(`stivia_profile_${userId}`);
+    if (saved) {
+      cachedProfile = JSON.parse(saved) as SupabaseUserProfile;
+    }
+  } catch {
+    // ignore
+  }
+
+  // Fallback jika mode demo tanpa Supabase
+  if (!isSupabaseConfigured) {
+    return cachedProfile;
+  }
 
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      // Jika profile belum siap atau query RLS mengembalikan empty, log sebagai info
-      return null;
+      console.warn('[STIVIA Profil] Catatan saat mengambil profil dari public.profiles:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      return cachedProfile;
     }
 
-    return data as SupabaseUserProfile;
+    if (!data) {
+      return cachedProfile;
+    }
+
+    // Gabungkan data Supabase dengan cache lokal jika ada field lokal
+    const mergedProfile: SupabaseUserProfile = {
+      id: data.id || userId,
+      full_name: data.full_name ?? cachedProfile?.full_name ?? null,
+      title: data.title ?? cachedProfile?.title ?? null,
+      school_name: data.school_name ?? cachedProfile?.school_name ?? null,
+      avatar_url: data.avatar_url ?? cachedProfile?.avatar_url ?? null,
+      created_at: data.created_at ?? cachedProfile?.created_at,
+      updated_at: data.updated_at ?? cachedProfile?.updated_at,
+    };
+
+    try {
+      localStorage.setItem(`stivia_profile_${userId}`, JSON.stringify(mergedProfile));
+    } catch {
+      // ignore
+    }
+
+    return mergedProfile;
   } catch (err) {
-    console.warn('Gagal memuat profil pengguna dari public.profiles:', err);
-    return null;
+    console.warn('[STIVIA Profil] Exception saat getUserProfile:', err);
+    return cachedProfile;
   }
+}
+
+/**
+ * Memperbarui data profil di tabel public.profiles untuk pengguna yang sedang login.
+ * Mengikuti prinsip:
+ * 1. Verifikasi user yang login via supabase.auth.getUser() (LANGKAH 2).
+ * 2. Gunakan auth.uid() / user.id sebagai identifier profil yang sah.
+ * 3. Periksa keberadaan record profiles (LANGKAH 3).
+ * 4. Pola ownership murni: UPDATE public.profiles WHERE id = authenticated_user_id (LANGKAH 4).
+ *    Hanya memperbarui: full_name, title, school_name, avatar_url, updated_at.
+ *    TIDAK memperbarui id atau created_at.
+ * 5. Log detail teknis Supabase (code, message, details, hint) untuk developer (LANGKAH 1 & 7).
+ */
+export async function updateUserProfile(
+  userId: string,
+  updates: {
+    full_name?: string | null;
+    title?: string | null;
+    school_name?: string | null;
+    avatar_url?: string | null;
+  }
+): Promise<SupabaseUserProfile> {
+  if (!userId) {
+    throw new Error('Profil gagal disimpan. Silakan coba lagi.');
+  }
+
+  // Fallback untuk mode Demo jika Supabase belum dikonfigurasi
+  if (!isSupabaseConfigured) {
+    const mockProfile: SupabaseUserProfile = {
+      id: userId,
+      full_name: updates.full_name !== undefined ? updates.full_name : null,
+      title: updates.title !== undefined ? updates.title : null,
+      school_name: updates.school_name !== undefined ? updates.school_name : null,
+      avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : null,
+      updated_at: new Date().toISOString(),
+    };
+    try {
+      localStorage.setItem(`stivia_profile_${userId}`, JSON.stringify(mockProfile));
+    } catch {
+      // ignore
+    }
+    return mockProfile;
+  }
+
+  // LANGKAH 2: Verifikasi user yang sedang login dengan supabase.auth.getUser()
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  let authenticatedUser = authData?.user;
+
+  // Fallback ke getSession jika getUser() mengalami kegagalan transient
+  if (!authenticatedUser) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    authenticatedUser = sessionData?.session?.user;
+  }
+
+  if (!authenticatedUser || !authenticatedUser.id) {
+    const detailError: SupabaseDetailedError = {
+      operation: 'AUTH_GET_USER',
+      code: authError?.status?.toString() || 'AUTH_NO_SESSION',
+      message: authError?.message || 'Tidak ada sesi login aktif saat menyimpan profil.',
+      details: null,
+      hint: 'Silakan login kembali ke akun STIVIA Anda.',
+    };
+    console.error('[STIVIA Profil] Operasi autentikasi gagal:', detailError);
+    throw new ProfileSaveError('Sesi autentikasi telah berakhir. Silakan login kembali.', detailError);
+  }
+
+  const authenticatedUserId = authenticatedUser.id;
+
+  // Validasi kepemilikan: hanya bisa mengedit profil miliknya sendiri (auth.uid() = id)
+  if (authenticatedUserId !== userId) {
+    const detailError: SupabaseDetailedError = {
+      operation: 'UPDATE',
+      code: 'FORBIDDEN_USER_MISMATCH',
+      message: `ID akun aktif (${authenticatedUserId}) tidak cocok dengan ID target profil (${userId}).`,
+      details: null,
+      hint: 'Pengguna hanya diizinkan memperbarui data profil akun miliknya sendiri sesuai kebijakan auth.uid() = id.',
+    };
+    console.error('[STIVIA Profil] Akses ditolak:', detailError);
+    throw new ProfileSaveError('Akses ditolak: Anda hanya dapat mengubah profil akun Anda sendiri.', detailError);
+  }
+
+  // LANGKAH 4: Bentuk payload pembaruan (hanya field yang ada di public.profiles)
+  const baseUpdatePayload: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (updates.full_name !== undefined) {
+    baseUpdatePayload.full_name = updates.full_name ? updates.full_name.trim() : null;
+  }
+  if (updates.title !== undefined) {
+    baseUpdatePayload.title = updates.title ? updates.title.trim() : null;
+  }
+  if (updates.school_name !== undefined) {
+    baseUpdatePayload.school_name = updates.school_name ? updates.school_name.trim() : null;
+  }
+  if (updates.avatar_url !== undefined) {
+    baseUpdatePayload.avatar_url = updates.avatar_url ? updates.avatar_url.trim() : null;
+  }
+
+  // LANGKAH 3: Periksa apakah record sudah ada di public.profiles untuk profiles.id = auth.uid()
+  let recordExists = false;
+  try {
+    const { data: checkData, error: checkError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', authenticatedUserId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.warn('[STIVIA Profil] Pemeriksaan profil (SELECT) menghasilkan catatan:', {
+        operasi: 'SELECT',
+        code: checkError.code,
+        message: checkError.message,
+        details: checkError.details,
+        hint: checkError.hint,
+      });
+    }
+
+    if (checkData && checkData.id) {
+      recordExists = true;
+    }
+  } catch (checkErr) {
+    console.warn('[STIVIA Profil] Gagal memeriksa profil yang ada via SELECT:', checkErr);
+  }
+
+  let savedData: SupabaseUserProfile | null = null;
+
+  if (recordExists) {
+    // =========================================================================
+    // SKENARIO 1: RECORD SUDAH ADA -> EKSEKUSI MURNI UPDATE
+    // Menggunakan WHERE id = authenticated_user_id (sesuai policy auth.uid() = id)
+    // JANGAN melakukan fallback ke INSERT jika UPDATE gagal.
+    // =========================================================================
+    const { data: updateData, error: updateError } = await supabase
+      .from('profiles')
+      .update(baseUpdatePayload)
+      .eq('id', authenticatedUserId)
+      .select();
+
+    if (updateError) {
+      const detailError: SupabaseDetailedError = {
+        operation: 'UPDATE',
+        code: updateError.code || 'UNKNOWN_UPDATE_ERROR',
+        message: updateError.message || 'Gagal mengeksekusi UPDATE pada public.profiles.',
+        details: updateError.details || null,
+        hint: updateError.hint || null,
+      };
+
+      console.error('[STIVIA Profil] Operasi UPDATE public.profiles GAGAL:', {
+        operasi: detailError.operation,
+        code: detailError.code,
+        message: detailError.message,
+        details: detailError.details,
+        hint: detailError.hint,
+      });
+
+      // Jangan menyembunyikan error teknis Supabase
+      throw new ProfileSaveError(
+        `Gagal memperbarui profil: [${detailError.code}] ${detailError.message}${detailError.hint ? ` (${detailError.hint})` : ''}`,
+        detailError
+      );
+    }
+
+    if (updateData && updateData.length === 0) {
+      const detailError: SupabaseDetailedError = {
+        operation: 'UPDATE',
+        code: 'PGRST_ZERO_ROWS',
+        message: '0 baris diperbarui. PostgREST tidak mengubah baris pada public.profiles.',
+        details: `User ID: ${authenticatedUserId}`,
+        hint: 'Periksa kebijakan RLS FOR UPDATE: pastikan kebijakan FOR UPDATE USING (auth.uid() = id) aktif di Supabase.',
+      };
+
+      console.error('[STIVIA Profil] Operasi UPDATE menghasilkan 0 baris:', {
+        operasi: detailError.operation,
+        code: detailError.code,
+        message: detailError.message,
+        details: detailError.details,
+        hint: detailError.hint,
+      });
+
+      throw new ProfileSaveError(
+        `Gagal memperbarui profil: [${detailError.code}] ${detailError.message}`,
+        detailError
+      );
+    }
+
+    if (updateData && updateData.length > 0) {
+      savedData = updateData[0] as SupabaseUserProfile;
+    }
+  } else {
+    // =========================================================================
+    // SKENARIO 2: RECORD BELUM ADA -> EKSEKUSI INISIALISASI INSERT
+    // id = authenticated_user_id (sesuai policy auth.uid() = id)
+    // =========================================================================
+    const insertPayload: Record<string, any> = {
+      id: authenticatedUserId,
+      ...baseUpdatePayload,
+      created_at: new Date().toISOString(),
+    };
+
+    const { data: insertData, error: insertError } = await supabase
+      .from('profiles')
+      .insert(insertPayload)
+      .select();
+
+    if (insertError) {
+      const detailError: SupabaseDetailedError = {
+        operation: 'INSERT',
+        code: insertError.code || 'UNKNOWN_INSERT_ERROR',
+        message: insertError.message || 'Gagal mengeksekusi INSERT pada public.profiles.',
+        details: insertError.details || null,
+        hint: insertError.hint || null,
+      };
+
+      console.error('[STIVIA Profil] Operasi INSERT public.profiles GAGAL:', {
+        operasi: detailError.operation,
+        code: detailError.code,
+        message: detailError.message,
+        details: detailError.details,
+        hint: detailError.hint,
+      });
+
+      throw new ProfileSaveError(
+        `Gagal membuat profil baru: [${detailError.code}] ${detailError.message}${detailError.hint ? ` (${detailError.hint})` : ''}`,
+        detailError
+      );
+    }
+
+    if (insertData && insertData.length > 0) {
+      savedData = insertData[0] as SupabaseUserProfile;
+    }
+  }
+
+  // Sinkronisasi metadata pengguna di Supabase Auth jika full_name diperbarui
+  if (updates.full_name) {
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          full_name: updates.full_name.trim(),
+        },
+      });
+    } catch (authUpdateErr) {
+      console.warn('[STIVIA Profil] Catatan pembaruan user_metadata Auth:', authUpdateErr);
+    }
+  }
+
+  // Bentuk objek SupabaseUserProfile lengkap
+  const finalProfile: SupabaseUserProfile = {
+    id: authenticatedUserId,
+    full_name: updates.full_name !== undefined ? updates.full_name : (savedData?.full_name || null),
+    title: updates.title !== undefined ? updates.title : (savedData?.title || null),
+    school_name: updates.school_name !== undefined ? updates.school_name : (savedData?.school_name || null),
+    avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : (savedData?.avatar_url || null),
+    created_at: savedData?.created_at,
+    updated_at: savedData?.updated_at || new Date().toISOString(),
+  };
+
+  // Simpan ke localStorage sebagai cache yang persisten
+  try {
+    localStorage.setItem(`stivia_profile_${authenticatedUserId}`, JSON.stringify(finalProfile));
+  } catch {
+    // ignore
+  }
+
+  return finalProfile;
 }

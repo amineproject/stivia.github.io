@@ -20,8 +20,9 @@ import {
   LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserSettings, EducationLevel, InfographicFormat, VisualLevel, ResponsiveViewMode } from '../../types';
+import { UserSettings, EducationLevel, InfographicFormat, VisualLevel, ResponsiveViewMode, NavigationTab, SupabaseUserProfile } from '../../types';
 import { APP_CURRENT_VERSION, APP_UPDATE_NAME, STIVIA_VERSION_HISTORY } from '../../data/versionHistoryData';
+import { updateUserProfile } from '../../services/authService';
 
 interface PengaturanPageProps {
   settings?: UserSettings;
@@ -34,6 +35,10 @@ interface PengaturanPageProps {
   onLogout?: () => void;
   profileName?: string;
   profileSchool?: string;
+  userProfile?: SupabaseUserProfile | null;
+  userId?: string;
+  onProfileUpdated?: (updatedProfile: SupabaseUserProfile) => void;
+  onNavigateTab?: (tab: NavigationTab) => void;
 }
 
 interface EducatorProfile {
@@ -61,13 +66,25 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
   onLogout,
   profileName,
   profileSchool,
+  userProfile,
+  userId,
+  onProfileUpdated,
+  onNavigateTab,
 }) => {
   // Modal state: null = no modal, or 'akun' | 'preferensi' | 'tentang'
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [selectedVersionTab, setSelectedVersionTab] = useState<string>(APP_CURRENT_VERSION);
 
-  // Profile state from localStorage or default
+  // Profile state from localStorage or default or userProfile
   const [profile, setProfile] = useState<EducatorProfile>(() => {
+    if (userProfile) {
+      return {
+        name: userProfile.full_name || profileName || DEFAULT_PROFILE.name,
+        role: userProfile.title || DEFAULT_PROFILE.role,
+        school: userProfile.school_name || profileSchool || DEFAULT_PROFILE.school,
+        avatarUrl: userProfile.avatar_url || '',
+      };
+    }
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -91,16 +108,23 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
     };
   });
 
-  // Sync profile when profileName or profileSchool props change
+  // Sync profile when userProfile, profileName or profileSchool props change
   useEffect(() => {
-    if (profileName) {
+    if (userProfile) {
+      setProfile({
+        name: userProfile.full_name || profileName || DEFAULT_PROFILE.name,
+        role: userProfile.title || DEFAULT_PROFILE.role,
+        school: userProfile.school_name || profileSchool || DEFAULT_PROFILE.school,
+        avatarUrl: userProfile.avatar_url || '',
+      });
+    } else if (profileName) {
       setProfile((prev) => ({
         ...prev,
         name: profileName,
         school: profileSchool || prev.school,
       }));
     }
-  }, [profileName, profileSchool]);
+  }, [userProfile, profileName, profileSchool]);
 
   // Local draft state for editing in modals
   const [formProfile, setFormProfile] = useState<EducatorProfile>(profile);
@@ -155,7 +179,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
   };
 
   // Save profile changes from Modal 1
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const cleanName = formProfile.name.trim() || DEFAULT_PROFILE.name;
@@ -177,6 +201,23 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
       // ignore
     }
 
+    // Simpan ke Supabase public.profiles jika userId tersedia
+    if (userId) {
+      try {
+        const updatedSupabase = await updateUserProfile(userId, {
+          full_name: cleanName,
+          title: cleanRole,
+          school_name: cleanSchool,
+          avatar_url: formProfile.avatarUrl || null,
+        });
+        if (onProfileUpdated) {
+          onProfileUpdated(updatedSupabase);
+        }
+      } catch (err) {
+        console.warn('Gagal sinkronisasi profil ke Supabase dari Pengaturan:', err);
+      }
+    }
+
     // Sync to userSettings if available
     if (onUpdateSettings && settings) {
       onUpdateSettings({
@@ -186,7 +227,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
       });
     }
 
-    const success = 'Informasi Pembuat & Pendidik berhasil disimpan';
+    const success = 'Profil berhasil diperbarui.';
     setToastMsg(success);
     if (onSaveToast) onSaveToast(success);
     handleCloseModal();
@@ -340,14 +381,26 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            id="btn-quick-edit-profile"
-            onClick={() => handleOpenModal('akun')}
-            className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-bold border border-white/15 transition-all cursor-pointer shrink-0"
-          >
-            Edit Profil
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onNavigateTab && (
+              <button
+                type="button"
+                id="btn-open-profil-saya"
+                onClick={() => onNavigateTab('profil_saya')}
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-bold border border-white/15 transition-all cursor-pointer"
+              >
+                Profil Saya
+              </button>
+            )}
+            <button
+              type="button"
+              id="btn-quick-edit-profile"
+              onClick={() => handleOpenModal('akun')}
+              className="px-4 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-slate-100 active:bg-slate-200 text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              Edit Profil
+            </button>
+          </div>
         </div>
       </div>
 
@@ -527,6 +580,26 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
 
                 {/* Modal Body / Form */}
                 <form onSubmit={handleSaveProfile} className="p-6 sm:p-7 space-y-6 text-left">
+                  {onNavigateTab && (
+                    <div className="p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-100 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 text-slate-700">
+                        <Sparkles className="w-4 h-4 text-[#3b49df] shrink-0" />
+                        <span>Halaman lengkap profil pengguna kini tersedia.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCloseModal();
+                          onNavigateTab('profil_saya');
+                        }}
+                        className="font-bold text-[#3b49df] hover:underline inline-flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        <span>Buka Profil Saya</span>
+                        <span>›</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Avatar Upload */}
                   <div className="flex items-center gap-5 p-4 rounded-2xl bg-slate-50 border border-slate-200/60">
                     <div className="relative group shrink-0">

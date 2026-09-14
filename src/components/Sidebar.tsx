@@ -20,6 +20,8 @@ interface SidebarProps {
   effectiveMode?: 'mobile' | 'desktop';
   userName?: string;
   userRole?: string;
+  userSchool?: string;
+  userAvatar?: string | null;
   onLogout?: () => void;
 }
 
@@ -31,6 +33,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   effectiveMode = 'desktop',
   userName = 'Pengguna STIVIA',
   userRole = 'Pendidik & Kreator',
+  userSchool,
+  userAvatar,
   onLogout,
 }) => {
   // Helper to determine if a sub-flow tab belongs to active section
@@ -142,8 +146,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Bottom Section: Pengaturan & Profile Pill */}
-        <div className="space-y-3 pt-4 border-t border-slate-100">
+        {/* Bottom Section: Profil Saya, Pengaturan & Logout */}
+        <div className="space-y-2 pt-4 border-t border-slate-100">
+          {/* Tombol Akses Profil Saya */}
+          <button
+            id="nav-btn-profil-saya"
+            onClick={() => handleNavClick('profil_saya')}
+            className={`w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all text-left group cursor-pointer border ${
+              activeTab === 'profil_saya'
+                ? 'bg-indigo-50 border-indigo-200 text-slate-900 shadow-xs'
+                : 'bg-[#edf2fe]/80 hover:bg-[#e4ebfc] border-transparent text-slate-900'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-full bg-[#3b49df] flex items-center justify-center text-white shrink-0 shadow-xs overflow-hidden">
+              {userAvatar ? (
+                <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-4 h-4" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-slate-900 truncate">
+                {userName}
+              </p>
+              <p className="text-[10px] font-semibold text-[#3b49df] truncate">
+                {userSchool || userRole}
+              </p>
+              <span className="text-[9px] font-bold text-slate-400 group-hover:text-[#3b49df] transition-colors inline-flex items-center gap-1 mt-0.5">
+                <span>Profil Saya</span>
+                <span>›</span>
+              </span>
+            </div>
+          </button>
+
+          {/* Tombol Pengaturan */}
           <button
             id="nav-btn-pengaturan"
             onClick={() => handleNavClick('pengaturan')}
@@ -155,23 +191,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Settings className={`w-5 h-5 ${activeTab === 'pengaturan' ? 'text-white' : 'text-slate-500'}`} />
             <span>Pengaturan</span>
-          </button>
-
-          <button
-            onClick={() => handleNavClick('pengaturan')}
-            className="w-full flex items-center gap-3 p-3 rounded-2xl bg-[#edf2fe] hover:bg-[#e4ebfc] text-slate-900 transition-colors text-left group cursor-pointer"
-          >
-            <div className="w-9 h-9 rounded-full bg-[#3b49df] flex items-center justify-center text-white shrink-0 shadow-xs">
-              <User className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-900 truncate">
-                {userName}
-              </p>
-              <p className="text-[10px] font-semibold text-[#3b49df] truncate">
-                {userRole}
-              </p>
-            </div>
           </button>
 
           {onLogout && (
