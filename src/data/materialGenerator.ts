@@ -1617,7 +1617,7 @@ export function generateMaterialBlocksFromContext(context: ActiveProjectContext)
  * Generate full new Draft strictly from activeProjectContext
  */
 export function createDraftFromContext(context: ActiveProjectContext): InfographicDraft {
-  const { jenjang, kelas, mataPelajaran, tema, materi, cakupanMateri, gayaVisual, format, tingkatVisual, konteksContoh, customExampleContext } = context;
+  const { jenjang, kelas, mataPelajaran, tema, materi, cakupanMateri, userNotes, gayaVisual, format, tingkatVisual, konteksContoh, customExampleContext } = context;
   const bundle = generateDomainTopicBundle(mataPelajaran, materi, tema, jenjang, kelas, 'Kehidupan Sehari-hari');
 
   const pipelineResult = runContentEnginePipeline(context);
@@ -1638,6 +1638,7 @@ export function createDraftFromContext(context: ActiveProjectContext): Infograph
     rawTopic: materi,
     pertemuan: context.pertemuan || 'Pertemuan 1',
     scope: cakupanMateri,
+    userNotes: userNotes || '',
     requiredTopics,
     coverageChecklist,
     contentValidation: pipelineResult.validation,
@@ -1707,9 +1708,11 @@ export function getContentSnapshotFromDraft(draft: InfographicDraft): import('..
       pertemuan: draft.pertemuan || 'Pertemuan 1',
       scope: draft.scope,
       learningObjective: draft.learningObjective,
+      userNotes: draft.userNotes || '',
     },
     title: draft.title,
     overview: draft.overview || `Materi pembelajaran ${draft.rawTopic || draft.title} pada mata pelajaran ${draft.subject} untuk jenjang ${draft.educationLevel} Kelas ${draft.grade} dirancang terstruktur dan aplikatif.`,
+    userNotes: draft.userNotes || '',
     sections,
     keySummary,
     createdAt: draft.createdAt || new Date().toISOString(),
@@ -1769,6 +1772,7 @@ export function validateAndSanitizeDraft(draft: InfographicDraft): InfographicDr
       materi: draft.rawTopic || 'Materi Pokok',
       pertemuan: draft.pertemuan || 'Pertemuan 1',
       cakupanMateri: draft.scope || '1. Pengertian\n2. Tujuan\n3. Fungsi\n4. Ciri-ciri\n5. Peran dalam kehidupan',
+      userNotes: draft.userNotes,
       gayaVisual: draft.visualStyle,
       format: draft.format,
       tingkatVisual: draft.visualLevel,

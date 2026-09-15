@@ -112,6 +112,7 @@ export function generateUniversalMaterialPrompt(project: InfographicDraft): stri
     const title = snapshot.title || project.title || identity.topic;
     const pertemuan = project.pertemuan || identity.pertemuan || 'Pertemuan 1';
     const overview = snapshot.overview || project.overview || '';
+    const userNotes = project.userNotes || snapshot.userNotes || identity.userNotes || '';
     const sections = Array.isArray(snapshot.sections) && snapshot.sections.length > 0
       ? snapshot.sections
       : (Array.isArray(project.blocks) && project.blocks.length > 0
@@ -174,7 +175,7 @@ INFORMASI DASAR PEMBELAJARAN (IDENTITAS):
 - Pertemuan: ${pertemuan}
 - Tema Pembelajaran: ${identity.theme || 'Umum'}
 - Materi Utama: ${identity.topic} (sebagai konteks umum)
-- Tujuan Pembelajaran: ${identity.learningObjective || `Peserta didik memahami konsep ${identity.topic} secara terstruktur dan aplikatif.`}
+${userNotes ? `- Catatan Khusus Pengguna: "${userNotes}"\n` : ''}- Tujuan Pembelajaran: ${identity.learningObjective || `Peserta didik memahami konsep ${identity.topic} secara terstruktur dan aplikatif.`}
 
 GAMBARAN UMUM / PENGANTAR:
 ${overview || `Materi ini dirancang untuk memberikan pemahaman terfokus pada cakupan ${pertemuan}.`}
@@ -204,7 +205,11 @@ PETUNJUK DAN ATURAN PENULISAN:
 4. Menggunakan bahasa Indonesia yang baku, komunikatif, dan sesuai dengan tingkat perkembangan kognitif peserta didik jenjang ${identity.educationLevel}.
 5. Sertakan contoh yang kontekstual dan dekat dengan keseharian peserta didik untuk memudahkan pemahaman.
 6. Buat rangkuman kunci di akhir materi yang hanya merangkum poin-poin yang benar-benar telah dibahas.
-
+${userNotes ? `
+CATATAN KHUSUS PENGGUNA (INSTRUKSI TAMBAHAN GURU):
+"${userNotes}"
+(AI wajib mempertimbangkan dan mengintegrasikan catatan/instruksi khusus pengguna di atas ke dalam penjelasan, contoh, atau penekanan materi pembelajaran.)
+` : ''}
 FORMAT KELUARAN YANG DIHARAPKAN:
 - Judul Utama & Gambaran Umum Pengantar
 - Pembahasan per Bagian sesuai urutan struktur Content Snapshot di atas
@@ -342,6 +347,7 @@ export function analyzeAndGenerateProjectInfographicPrompt(
         rawContent: rawSectionsText || project.scope || project.rawTopic || title,
         learningObjectives,
         keyPoints,
+        userNotes: project.userNotes || snapshot.userNotes || identity.userNotes,
         visualStyleName: options.visualStyleName,
         customStyleDescription: options.customStyleDescription,
       });

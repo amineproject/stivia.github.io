@@ -53,6 +53,7 @@ export const RancanganMateriPage: React.FC<RancanganMateriPageProps> = ({
   );
   const [exampleContext, setExampleContext] = useState<ExampleContext>(draft.exampleContext || 'otomatis');
   const [customContext, setCustomContext] = useState(draft.customExampleContext || '');
+  const [userNotes, setUserNotes] = useState(draft.userNotes || '');
   const [blocks, setBlocks] = useState<MaterialBlock[]>(draft.blocks || []);
 
   // Sync state when draft prop changes
@@ -64,8 +65,9 @@ export const RancanganMateriPage: React.FC<RancanganMateriPageProps> = ({
     );
     setExampleContext(draft.exampleContext || 'otomatis');
     setCustomContext(draft.customExampleContext || '');
+    setUserNotes(draft.userNotes || '');
     setBlocks(draft.blocks || []);
-  }, [draft.id, draft.title, draft.blocks]);
+  }, [draft.id, draft.title, draft.blocks, draft.userNotes]);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,6 +92,11 @@ export const RancanganMateriPage: React.FC<RancanganMateriPageProps> = ({
   const handleCustomContextChange = (val: string) => {
     setCustomContext(val);
     onUpdateDraft({ customExampleContext: val });
+  };
+
+  const handleUserNotesChange = (val: string) => {
+    setUserNotes(val);
+    onUpdateDraft({ userNotes: val });
   };
 
   // Block management
@@ -288,6 +295,24 @@ export const RancanganMateriPage: React.FC<RancanganMateriPageProps> = ({
                 value={learningObjective}
                 onChange={(e) => handleObjectiveChange(e.target.value)}
                 placeholder="Tujuan Pembelajaran..."
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm leading-relaxed focus:bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-slate-500">
+                  Catatan Pengguna <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                </label>
+                <span className="text-[10px] text-indigo-700 font-semibold bg-indigo-50 border border-indigo-100/80 px-2 py-0.5 rounded-md">
+                  Ikut pada Prompt Generate
+                </span>
+              </div>
+              <textarea
+                rows={2}
+                value={userNotes}
+                onChange={(e) => handleUserNotesChange(e.target.value)}
+                placeholder="Catatan pengguna atau instruksi khusus untuk AI generator..."
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm leading-relaxed focus:bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
               />
             </div>

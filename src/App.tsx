@@ -244,6 +244,7 @@ export default function App() {
     const rawTopic = formData.rawTopic || currentDraft.rawTopic;
     const pertemuan = formData.pertemuan || currentDraft.pertemuan || 'Pertemuan 1';
     const scope = formData.scope || currentDraft.scope;
+    const userNotes = formData.userNotes !== undefined ? formData.userNotes : currentDraft.userNotes;
     const level = formData.educationLevel || currentDraft.educationLevel;
     const grade = formData.grade || currentDraft.grade;
     const style = formData.visualStyle || currentDraft.visualStyle;
@@ -261,6 +262,7 @@ export default function App() {
       materi: rawTopic,
       pertemuan,
       cakupanMateri: scope,
+      userNotes,
       gayaVisual: style,
       format,
       tingkatVisual: visualLevel,

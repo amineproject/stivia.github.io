@@ -96,7 +96,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="space-y-2.5">
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
                 <span>🎨</span>
-                <span>Buat Infografis</span>
+                <span>Buat Prompt</span>
               </h2>
               <p className="text-indigo-100/90 text-sm sm:text-base leading-relaxed">
                 Buat infografis pembelajaran melalui alur STIVIA: Struktur → Bobot → Kedalaman → Layout → Visualisasi.

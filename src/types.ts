@@ -156,9 +156,11 @@ export interface ContentSnapshot {
     pertemuan?: number | string;
     scope: string;
     learningObjective?: string;
+    userNotes?: string;
   };
   title: string;
   overview: string;                // Gambaran Umum / Pengantar (1-3 kalimat)
+  userNotes?: string;              // Catatan Pengguna (Opsional) untuk mengarahkan hasil generasi
   sections: ContentSnapshotSection[];
   keySummary: string[];            // Rangkuman Kunci (2-4 poin utama)
   createdAt: string;
@@ -424,6 +426,7 @@ export interface ActiveProjectContext {
   materi: string;
   pertemuan?: number | string;
   cakupanMateri: string;
+  userNotes?: string;
   gayaVisual?: string;
   customVisualStyle?: string;
   format?: InfographicFormat;
@@ -565,6 +568,7 @@ export interface InfographicDraft {
   rawTopic: string;
   pertemuan?: number | string;
   scope: string;
+  userNotes?: string;
   visualStyle: string;
   customVisualStyle?: string;
   styleConfig?: StyleConfig;
@@ -690,6 +694,7 @@ export interface FinalOutputState {
   gradeOrPhase: string;
   topic: string;
   scope: string;
+  userNotes?: string;
   learningObjectives: string;
   generatedContent: string;
   materialSections: MaterialBlock[];

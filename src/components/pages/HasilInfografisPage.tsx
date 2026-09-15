@@ -131,6 +131,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
   const [editTheme, setEditTheme] = useState<string>(draft.theme || '');
   const [editTopic, setEditTopic] = useState<string>(draft.rawTopic || '');
   const [editScope, setEditScope] = useState<string>(draft.scope || '');
+  const [editUserNotes, setEditUserNotes] = useState<string>(draft.userNotes || '');
   const [editStyle, setEditStyle] = useState<string>(draft.visualStyle || 'Modern Edukatif');
 
   // Final Draft Container
@@ -184,6 +185,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
     setEditTheme(currentDraft.theme);
     setEditTopic(currentDraft.rawTopic);
     setEditScope(currentDraft.scope);
+    setEditUserNotes(currentDraft.userNotes || '');
     setEditStyle(currentDraft.visualStyle);
     setShowEditDataModal(true);
   };
@@ -226,7 +228,8 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
       editSubject !== currentDraft.subject ||
       editTheme !== currentDraft.theme ||
       editTopic !== currentDraft.rawTopic ||
-      editScope !== currentDraft.scope;
+      editScope !== currentDraft.scope ||
+      editUserNotes !== (currentDraft.userNotes || '');
 
     const isStyleChanged = editStyle !== currentDraft.visualStyle;
 
@@ -251,6 +254,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
             tema: editTheme,
             materi: editTopic,
             cakupanMateri: editScope,
+            userNotes: editUserNotes,
             gayaVisual: editStyle,
             format: currentDraft.format,
             tingkatVisual: currentDraft.visualLevel,
@@ -622,19 +626,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
               <span>Edit Data</span>
             </button>
 
-            {/* Tombol 2: Ubah Gaya */}
-            <button
-              onClick={handleOpenStyleModal}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-700 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
-            >
-              <Palette className="w-3.5 h-3.5 text-teal-600" />
-              <span>Ubah Gaya</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-100/70 text-teal-800">
-                {currentDraft.visualStyle}
-              </span>
-            </button>
-
-            {/* Tombol 3: Variasi Layout */}
+            {/* Tombol 2: Variasi Layout */}
             <button
               onClick={handleGenerateLayoutVariation}
               disabled={previewStatus === 'processing'}
@@ -774,19 +766,14 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
             </div>
           </div>
 
-          {/* Quick Style Switcher Card */}
+          {/* Active Style Info Card */}
           <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <Palette className="w-4 h-4 text-teal-600" />
-                Gaya Visual Aktif
+                Gaya Visual
               </h3>
-              <button
-                onClick={handleOpenStyleModal}
-                className="text-[11px] font-bold text-teal-600 hover:text-teal-700 cursor-pointer"
-              >
-                Ganti
-              </button>
+              <span className="text-[10px] font-semibold text-slate-400">Standar Otomatis</span>
             </div>
             <div className="p-3 rounded-2xl bg-teal-50/60 border border-teal-100 flex items-center justify-between">
               <div>
@@ -1232,18 +1219,21 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
                 />
               </div>
 
-              {/* Gaya Visual */}
+              {/* Catatan Pengguna */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Gaya Visual</label>
-                <select
-                  value={editStyle}
-                  onChange={(e) => setEditStyle(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold"
-                >
-                  {VISUAL_STYLE_OPTIONS.map((st) => (
-                    <option key={st} value={st}>{st}</option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-700">Catatan Pengguna <span className="text-slate-400 font-normal lowercase">(opsional)</span></label>
+                  <span className="text-[10px] text-indigo-700 font-semibold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                    Ikut pada Generate Prompt
+                  </span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={editUserNotes}
+                  onChange={(e) => setEditUserNotes(e.target.value)}
+                  placeholder="Instruksi khusus atau catatan tambahan untuk prompt dan konten..."
+                  className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-sans"
+                />
               </div>
             </div>
 

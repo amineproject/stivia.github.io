@@ -19,7 +19,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { InfographicDraft, NavigationTab } from '../../types';
-import { VISUAL_STYLE_OPTIONS } from '../../data/mockData';
 import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
 import { 
   generateUniversalMaterialPrompt, 
@@ -30,7 +29,6 @@ import {
   analyzeAndGenerateMaterialPrompt
 } from '../../services/promptStudioEngine';
 import { StiviaThinkingResult } from '../../services/stiviaThinkingFramework';
-import { PilihGayaInfografis } from '../infographic/PilihGayaInfografis';
 import { StiviaThinkingPanel } from '../infographic/StiviaThinkingPanel';
 import { HowStiviaWorksModal } from '../infographic/HowStiviaWorksModal';
 
@@ -400,7 +398,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
               </label>
               {projects.length === 0 ? (
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-                  Belum ada proyek tersimpan. Anda dapat menggunakan draf aktif saat ini atau membuat proyek baru di menu Buat Infografis.
+                  Belum ada proyek tersimpan. Anda dapat menggunakan draf aktif saat ini atau membuat proyek baru di menu Buat Prompt.
                 </div>
               ) : (
                 <select
@@ -444,6 +442,16 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                     <span className="font-semibold text-emerald-700 capitalize">{activeProject.status}</span>
                   </div>
                 </div>
+                {activeProject.userNotes && (
+                  <div className="pt-2.5 border-t border-slate-200/80 flex items-start gap-2">
+                    <span className="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded font-bold uppercase shrink-0">
+                      Catatan Pengguna
+                    </span>
+                    <span className="text-slate-700 text-xs italic leading-relaxed">
+                      "{activeProject.userNotes}"
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -572,7 +580,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   {/* Format Infografis (Standar Tetap Read-Only) */}
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
@@ -591,42 +599,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                       </div>
                     </div>
                   </div>
-
-                  {/* Gaya Visual */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Gaya Visual
-                    </label>
-                    <select
-                      value={selectedVisualStyle}
-                      onChange={(e) => setSelectedVisualStyle(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-indigo-500"
-                    >
-                      {VISUAL_STYLE_OPTIONS.map((style) => (
-                        <option key={style} value={style}>
-                          {style}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
-
-                {/* FITUR BARU: PILIH GAYA INFOGRAFIS (SEBELUM GENERATE PROMPT) */}
-                <PilihGayaInfografis
-                  context={{
-                    educationLevel: activeProject?.educationLevel,
-                    grade: activeProject?.grade,
-                    subject: activeProject?.subject,
-                    theme: activeProject?.theme,
-                    topic: activeProject?.rawTopic || activeProject?.title,
-                    scope: activeProject?.scope,
-                  }}
-                  selectedStyleName={selectedVisualStyle}
-                  onSelectStyle={(style) => {
-                    setSelectedVisualStyle(style.name);
-                    onSaveToast(`Gaya visual "${style.name}" dipilih untuk prompt infografis.`);
-                  }}
-                />
 
                 <div className="pt-2">
                   <button
@@ -689,7 +662,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   {/* Format Infografis (Standar Tetap Read-Only) */}
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
@@ -708,55 +681,7 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                       </div>
                     </div>
                   </div>
-
-                  {/* Gaya Visual */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Gaya Visual
-                    </label>
-                    <select
-                      value={rawVisualStyle}
-                      onChange={(e) => setRawVisualStyle(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-indigo-500"
-                    >
-                      {VISUAL_STYLE_OPTIONS.map((style) => (
-                        <option key={style} value={style}>
-                          {style}
-                        </option>
-                      ))}
-                      <option value="Custom">Kustom (Jelaskan Gaya Sendiri)</option>
-                    </select>
-                  </div>
                 </div>
-
-                {/* Input Deskripsi Gaya Kustom jika dipilih */}
-                {rawVisualStyle === 'Custom' && (
-                  <div className="space-y-2 animate-in fade-in">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Jelaskan Gaya Visual yang Anda Inginkan
-                    </label>
-                    <input
-                      type="text"
-                      value={customStyleDesc}
-                      onChange={(e) => setCustomStyleDesc(e.target.value)}
-                      placeholder="Contoh: Nuansa retro pastel lembut dengan elemen garis doodle dan tipografi serif yang ramah"
-                      className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-indigo-500 shadow-2xs"
-                    />
-                  </div>
-                )}
-
-                {/* FITUR BARU: PILIH GAYA INFOGRAFIS UNTUK MATERI SAYA */}
-                <PilihGayaInfografis
-                  context={{
-                    topic: rawTitle,
-                    scope: rawContent,
-                  }}
-                  selectedStyleName={rawVisualStyle}
-                  onSelectStyle={(style) => {
-                    setRawVisualStyle(style.name);
-                    onSaveToast(`Gaya visual "${style.name}" dipilih untuk prompt materi Anda.`);
-                  }}
-                />
 
                 <div className="pt-2">
                   <button

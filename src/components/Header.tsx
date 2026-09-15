@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'buat':
         return [
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
-          { label: 'Buat Infografis', tab: 'buat' as NavigationTab },
+          { label: 'Buat Prompt', tab: 'buat' as NavigationTab },
           { label: 'Form Konteks & Preferensi', tab: 'buat' as NavigationTab },
         ];
       case 'prompt_studio':

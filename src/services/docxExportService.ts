@@ -126,6 +126,7 @@ export async function exportMaterialToDocx(
     if (snapshot.identity.theme) identityRows.push(['Tema Kegiatan Pembelajaran', snapshot.identity.theme]);
     if (snapshot.identity.topic) identityRows.push(['Materi yang Diajarkan', snapshot.identity.topic]);
     if (snapshot.identity.scope) identityRows.push(['Cakupan Materi', snapshot.identity.scope]);
+    if (snapshot.identity.userNotes || draft.userNotes) identityRows.push(['Catatan Pengguna', (snapshot.identity.userNotes || draft.userNotes)!]);
     if (snapshot.identity.learningObjective) identityRows.push(['Tujuan Pembelajaran', snapshot.identity.learningObjective]);
 
     const tableRows = identityRows.map(([label, val]) => {

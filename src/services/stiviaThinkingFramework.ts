@@ -37,6 +37,7 @@ export interface StiviaThinkingInput {
   grade?: string;
   pertemuan?: string | number;
   scope?: string;
+  userNotes?: string;
   rawContent?: string;
   learningObjectives?: string[];
   keyPoints?: string[];
@@ -760,7 +761,7 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
 - Jenjang Pendidikan & Kelas: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
 - Pertemuan: ${materialAnalysis.tahap4_Pertemuan}
 - Materi Utama: ${materialAnalysis.tahap3_MateriUtama} (digunakan sebagai konteks umum)
-- Cakupan Materi (Batas Wajib Pembahasan):
+${input.userNotes?.trim() ? `- Catatan Khusus Pengguna: "${input.userNotes.trim()}"\n` : ''}- Cakupan Materi (Batas Wajib Pembahasan):
 ${materialAnalysis.tahap5_CakupanMateri.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}
 
 2. TUJUAN PEMBELAJARAN:
@@ -826,7 +827,11 @@ ${resolvedStyle.visualCharacteristics.map(vc => `  • ${vc}`).join('\n')}
 - Tidak boleh ada teks terpotong (truncated), teks bertumpuk, atau elemen ilustrasi yang menutupi tulisan.
 - Ukuran kartu harus menyesuaikan volume teks (padding dan margin proporsional).
 - Tata letak tidak boleh berdesakan; sediakan ruang bernapas (whitespace) yang cukup di antara kartu-kartu materi.
-
+${input.userNotes?.trim() ? `
+CATATAN KHUSUS PENGGUNA (INSTRUKSI TAMBAHAN GURU):
+- "${input.userNotes.trim()}"
+- Arahan AI: Integrasikan catatan/preferensi khusus di atas ke dalam fokus pembahasan, kedalaman materi, atau ilustrasi kontekstual infografis.
+` : ''}
 12. STRUKTUR OUTPUT:
 SEGERA GENERATE DAN TAMPILKAN SATU POSTER INFOGRAFIS PEMBELAJARAN VERTIKAL (RASIO 2:3) YANG UTUH BERDASARKAN SELURUH ANALISIS DI ATAS.
 Jangan hanya memberikan outline teks atau konsep naratif jika kemampuan visual tersedia.
