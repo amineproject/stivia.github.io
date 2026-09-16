@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Sparkles, 
   BookOpen, 
@@ -8,7 +8,13 @@ import {
   RefreshCw,
   Layout,
   Sliders,
-  Wand2
+  Wand2,
+  FolderKanban,
+  CheckCircle2,
+  Plus,
+  Layers,
+  ListFilter,
+  Check
 } from 'lucide-react';
 import { 
   EducationLevel, 
@@ -24,15 +30,19 @@ import {
 import { getStyleProfile } from '../../data/styleProfilesData';
 
 interface BuatInfografisPageProps {
+  projects?: InfographicDraft[];
   currentDraft: InfographicDraft;
   onSubmitForm: (formData: Partial<InfographicDraft>) => void;
   onLoadSampleData: () => void;
+  onSelectProject?: (project: InfographicDraft) => void;
 }
 
 export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
+  projects = [],
   currentDraft,
   onSubmitForm,
   onLoadSampleData,
+  onSelectProject,
 }) => {
   // Form state
   const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft.educationLevel || 'SMA');
@@ -41,8 +51,9 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [customSubject, setCustomSubject] = useState<string>('');
   const [isCustomSubject, setIsCustomSubject] = useState<boolean>(false);
 
-  const [theme, setTheme] = useState<string>(currentDraft.theme || 'Analisis dan Visualisasi Data');
-  const [rawTopic, setRawTopic] = useState<string>(currentDraft.rawTopic || 'Graph, Data Terstruktur, dan Visualisasi Data');
+  const [theme, setTheme] = useState<string>(currentDraft.theme || currentDraft.rawTopic || 'Struktur Data Graph');
+  const [bab, setBab] = useState<string>(currentDraft.bab || '');
+  const [rawTopic, setRawTopic] = useState<string>(currentDraft.theme || currentDraft.rawTopic || 'Struktur Data Graph');
   const [pertemuan, setPertemuan] = useState<string>(currentDraft.pertemuan || 'Pertemuan 1');
   const [scope, setScope] = useState<string>(
     currentDraft.scope || 
@@ -55,6 +66,22 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Filter daftar materi yang telah dibuat pengguna (tidak termasuk mock dummy)
+  const userProjects = useMemo(() => {
+    const list: InfographicDraft[] = [];
+    if (currentDraft && currentDraft.id && !['proj-002', 'proj-003', 'proj-004'].includes(currentDraft.id)) {
+      list.push(currentDraft);
+    }
+    if (projects && projects.length > 0) {
+      projects.forEach((p) => {
+        if (!['proj-002', 'proj-003', 'proj-004'].includes(p.id) && !list.some((existing) => existing.id === p.id)) {
+          list.push(p);
+        }
+      });
+    }
+    return list;
+  }, [projects, currentDraft]);
+
   // Sync available grades when education level changes
   useEffect(() => {
     const availableGrades = GRADE_OPTIONS_BY_LEVEL[educationLevel];
@@ -63,7 +90,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     }
   }, [educationLevel]);
 
-  // Synchronize form fields whenever currentDraft updates (e.g. from Edit Data in Preview)
+  // Synchronize form fields whenever currentDraft updates (e.g. from Edit Data in Preview or Selection)
   useEffect(() => {
     if (currentDraft) {
       setEducationLevel(currentDraft.educationLevel || 'SMA');
@@ -79,8 +106,11 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         setIsCustomSubject(true);
       }
 
-      setTheme(currentDraft.theme || '');
-      setRawTopic(currentDraft.rawTopic || '');
+      const temaMateri = currentDraft.theme || currentDraft.rawTopic || currentDraft.title || '';
+      setTheme(temaMateri);
+      setBab(currentDraft.bab || '');
+      setRawTopic(temaMateri);
+      setPertemuan(currentDraft.pertemuan || 'Pertemuan 1');
       setScope(currentDraft.scope || '');
       setUserNotes(currentDraft.userNotes || '');
       setFormat(currentDraft.format || 'portrait');
@@ -92,13 +122,55 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     setEducationLevel(level);
   };
 
+  const handleSelectCreatedProject = (projId: string) => {
+    const found = userProjects.find((p) => p.id === projId);
+    if (found) {
+      if (onSelectProject) {
+        onSelectProject(found);
+      }
+      setEducationLevel(found.educationLevel || 'SMA');
+      setGrade(found.grade || 'Kelas X');
+      const isKnown = SUBJECT_OPTIONS.includes(found.subject);
+      if (isKnown) {
+        setSubject(found.subject);
+        setIsCustomSubject(false);
+      } else if (found.subject) {
+        setSubject('Lainnya');
+        setCustomSubject(found.subject);
+        setIsCustomSubject(true);
+      }
+      const temaMateri = found.theme || found.rawTopic || found.title || '';
+      setTheme(temaMateri);
+      setBab(found.bab || '');
+      setRawTopic(temaMateri);
+      setPertemuan(found.pertemuan || 'Pertemuan 1');
+      setScope(found.scope || '');
+      setUserNotes(found.userNotes || '');
+    }
+  };
+
+  const handleResetForNew = () => {
+    setTheme('');
+    setBab('');
+    setRawTopic('');
+    setScope('');
+    setUserNotes('');
+    setSubject('Informatika');
+    setIsCustomSubject(false);
+    setEducationLevel('SMA');
+    setGrade('Kelas X');
+    setPertemuan('Pertemuan 1');
+    setFormErrors({});
+  };
+
   const handleFillSample = () => {
     setEducationLevel(INITIAL_SAMPLE_DRAFT.educationLevel);
     setGrade(INITIAL_SAMPLE_DRAFT.grade);
     setSubject(INITIAL_SAMPLE_DRAFT.subject);
     setIsCustomSubject(false);
-    setTheme(INITIAL_SAMPLE_DRAFT.theme);
-    setRawTopic(INITIAL_SAMPLE_DRAFT.rawTopic);
+    setTheme(INITIAL_SAMPLE_DRAFT.theme || 'Struktur Data Graph');
+    setBab(INITIAL_SAMPLE_DRAFT.bab || 'Bab 2: Struktur Data dan Algoritma');
+    setRawTopic(INITIAL_SAMPLE_DRAFT.theme || 'Struktur Data Graph');
     setPertemuan(INITIAL_SAMPLE_DRAFT.pertemuan || 'Pertemuan 1');
     setScope(INITIAL_SAMPLE_DRAFT.scope);
     setUserNotes(INITIAL_SAMPLE_DRAFT.userNotes || '');
@@ -113,10 +185,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
       errors.subject = 'Mata pelajaran wajib diisi atau dipilih.';
     }
     if (!theme.trim()) {
-      errors.theme = 'Tema kegiatan pembelajaran wajib diisi.';
-    }
-    if (!rawTopic.trim()) {
-      errors.rawTopic = 'Materi yang diajarkan wajib diisi.';
+      errors.theme = 'Materi yang akan dibuat promptnya (nama tema materi) wajib diisi.';
     }
     if (!scope.trim()) {
       errors.scope = 'Cakupan materi wajib diisi minimal beberapa poin.';
@@ -138,8 +207,9 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
       educationLevel,
       grade,
       subject: finalSubject,
-      theme,
-      rawTopic,
+      theme: theme.trim(),
+      bab: bab.trim(),
+      rawTopic: theme.trim(),
       pertemuan: pertemuan.trim() || 'Pertemuan 1',
       scope,
       userNotes: userNotes.trim(),
@@ -153,18 +223,18 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
   return (
     <div className="max-w-5xl mx-auto pb-16 space-y-8">
-      {/* Header matching specification */}
+      {/* Header Halaman */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 mb-2">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Langkah 1: Pengumpulan Konteks</span>
+            <span>Data Awal Pembelajaran</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Buat Prompt
           </h1>
           <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-            Berikan konteks pembelajaran materi Anda. STIVIA secara otomatis menggunakan konfigurasi visual terbaik untuk menyusun infografis edukatif.
+            Input data awal: <strong>Kelas</strong>, <strong>Mata Pelajaran (Mapel)</strong>, dan <strong>Materi yang akan dibuat promptnya</strong>. Data ini akan menjadi basis utama saat digenerate di menu <strong>Prompt Studio</strong>.
           </p>
         </div>
 
@@ -180,8 +250,110 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         </button>
       </div>
 
+      {/* DAFTAR MATERI TERSEDIA (YANG TELAH DIBUAT OLEH PENGGUNA) */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+              <FolderKanban className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  Daftar Materi Tersedia
+                </h2>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100">
+                  {userProjects.length} Materi Pengguna
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Materi yang telah dibuat oleh pengguna. Pilih salah satu untuk memuat data Kelas, Mapel, dan Materi, atau input materi baru.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              id="btn-buat-materi-baru-form"
+              type="button"
+              onClick={handleResetForNew}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              title="Kosongkan formulir untuk memasukkan materi baru"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Input Materi Baru</span>
+            </button>
+          </div>
+        </div>
+
+        {userProjects.length > 0 ? (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label htmlFor="select-materi-tersedia-buat" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Pilih Materi Pembelajaran Pengguna:
+              </label>
+              <select
+                id="select-materi-tersedia-buat"
+                value={currentDraft.id}
+                onChange={(e) => handleSelectCreatedProject(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs sm:text-sm font-semibold focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs"
+              >
+                {userProjects.map((p) => {
+                  const namaTemaMateri = p.theme || p.title || p.rawTopic || 'Materi';
+                  return (
+                    <option key={p.id} value={p.id}>
+                      Materi: {namaTemaMateri} | Mapel: {p.subject} | Kelas: {p.educationLevel} {p.grade}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Quick Select Buttons */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                <ListFilter className="w-3 h-3" />
+                Pilih Cepat:
+              </span>
+              {userProjects.map((p) => {
+                const isActive = p.id === currentDraft.id;
+                const namaTemaMateri = p.theme || p.title || p.rawTopic || 'Materi';
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSelectCreatedProject(p.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-2 border cursor-pointer ${
+                      isActive
+                        ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="truncate max-w-[140px] sm:max-w-[200px]">
+                      {namaTemaMateri}
+                    </span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                      isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-white border border-slate-200 text-slate-600'
+                    }`}>
+                      {p.subject} • {p.grade}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+            <span>💡</span>
+            <span>
+              Belum ada materi pembelajaran yang disimpan. Silakan lengkapi data <strong>Kelas</strong>, <strong>Mapel</strong>, dan <strong>Materi yang akan dibuat promptnya</strong> pada formulir di bawah.
+            </span>
+          </div>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* SECTION A: INFORMASI PEMBELAJARAN */}
+        {/* SECTION A: DATA POKOK PEMBELAJARAN (KELAS, MAPEL, MATERI) */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
@@ -189,16 +361,16 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Informasi Pembelajaran
+                Data Pokok Pembelajaran & Prompt
               </h2>
               <p className="text-xs text-slate-500">
-                Tentukan target jenjang, kelas, dan mata pelajaran
+                Tentukan Kelas, Mata Pelajaran (Mapel), dan Materi yang akan dibuat promptnya
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 1. Jenjang Pendidikan */}
+            {/* 1. Jenjang Pendidikan & Kelas */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                 1. Jenjang Pendidikan <span className="text-rose-500">*</span>
@@ -209,7 +381,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                     key={lvl}
                     type="button"
                     onClick={() => handleLevelChange(lvl)}
-                    className={`py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all border text-center ${
+                    className={`py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all border text-center cursor-pointer ${
                       educationLevel === lvl
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/30'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -227,6 +399,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 2. Tingkat / Kelas <span className="text-rose-500">*</span>
               </label>
               <select
+                id="select-kelas"
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
@@ -240,11 +413,11 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             </div>
           </div>
 
-          {/* 3. Mata Pelajaran (Searchable/Custom) */}
-          <div className="space-y-2 pt-2">
+          {/* 3. Mata Pelajaran (Mapel) */}
+          <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                3. Mata Pelajaran <span className="text-rose-500">*</span>
+              <label htmlFor="select-mapel" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                3. Mata Pelajaran (Mapel) <span className="text-rose-500">*</span>
               </label>
               <button
                 type="button"
@@ -252,14 +425,15 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                   setIsCustomSubject(!isCustomSubject);
                   if (!isCustomSubject) setCustomSubject('');
                 }}
-                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
               >
-                {isCustomSubject ? '← Pilih dari Daftar' : '+ Ketik Mata Pelajaran Lain'}
+                {isCustomSubject ? '← Pilih dari Daftar Mapel' : '+ Ketik Mapel Lain'}
               </button>
             </div>
 
             {isCustomSubject ? (
               <input
+                id="input-mapel-kustom"
                 type="text"
                 value={customSubject}
                 onChange={(e) => setCustomSubject(e.target.value)}
@@ -269,6 +443,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               />
             ) : (
               <select
+                id="select-mapel"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
@@ -284,8 +459,8 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             {/* Quick preset chips */}
             {!isCustomSubject && (
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] text-slate-400 font-medium">Saran Cepat:</span>
-                {['Informatika', 'Matematika', 'IPA', 'Bahasa Indonesia', 'Fisika'].map((item) => (
+                <span className="text-[10px] text-slate-400 font-medium">Saran Mapel:</span>
+                {['Informatika', 'Matematika', 'IPA', 'Bahasa Indonesia', 'Fisika', 'Biologi', 'Kimia', 'IPS', 'PPKn'].map((item) => (
                   <button
                     key={item}
                     type="button"
@@ -293,7 +468,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                       const matched = SUBJECT_OPTIONS.find(s => s.startsWith(item)) || item;
                       setSubject(matched);
                     }}
-                    className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
                       subject.startsWith(item)
                         ? 'bg-indigo-100 text-indigo-800 font-semibold'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -309,9 +484,39 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               <p className="text-xs text-rose-500">{formErrors.subject}</p>
             )}
           </div>
+
+          {/* 4. Materi yang Akan Dibuat Promptnya (Tema Materi Saja) */}
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <label htmlFor="input-materi-yang-dibuat-prompt" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                4. Materi yang Akan Dibuat Promptnya <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                Nama Tema Materi Saja
+              </span>
+            </div>
+            <input
+              id="input-materi-yang-dibuat-prompt"
+              type="text"
+              value={theme}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTheme(val);
+                setRawTopic(val);
+              }}
+              placeholder="Contoh: Struktur Data Graph / Ekosistem / Teks LHO"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs"
+            />
+            {formErrors.theme && (
+              <p className="text-xs text-rose-500 font-medium">{formErrors.theme}</p>
+            )}
+            <p className="text-[11px] text-slate-500">
+              * Tuliskan <strong>nama tema materinya saja</strong> agar tidak terlalu panjang (misal: <em>Struktur Data Graph</em>, <em>Sistem Ekskresi</em>, <em>Teks Prosedur</em>).
+            </p>
+          </div>
         </div>
 
-        {/* SECTION B: INFORMASI MATERI */}
+        {/* SECTION B: RINCIAN & CAKUPAN PEMBELAJARAN (STIVIA) */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-sm">
@@ -319,58 +524,64 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Informasi Materi
+                Rincian & Cakupan Pembelajaran (STIVIA)
               </h2>
               <p className="text-xs text-slate-500">
-                Uraikan tema, materi pokok, dan poin-poin bahasan
+                Uraikan bab, rangkaian pertemuan, dan batasan wajib cakupan materi
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 4. Tema Kegiatan Pembelajaran */}
+            {/* 5. Bab / Teks */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                4. Tema Kegiatan Pembelajaran <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="input-bab-teks" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  5. Bab / Teks <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                </label>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Bab atau jenis teks
+                </span>
+              </div>
               <input
+                id="input-bab-teks"
                 type="text"
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                placeholder="Contoh: Analisis dan Visualisasi Data"
+                value={bab}
+                onChange={(e) => setBab(e.target.value)}
+                placeholder="Contoh: Bab 2 / Teks LHO / Unit 1"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               />
-              {formErrors.theme && (
-                <p className="text-xs text-rose-500">{formErrors.theme}</p>
-              )}
             </div>
 
-            {/* 5. Materi yang Diajarkan */}
+            {/* 6. Subtopik Spesifik */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                5. Materi yang Diajarkan <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="input-subtopik" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  6. Subtopik Spesifik <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                </label>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Rincian spesifik tema
+                </span>
+              </div>
               <input
+                id="input-subtopik"
                 type="text"
-                value={rawTopic}
-                onChange={(e) => setRawTopic(e.target.value)}
-                placeholder="Contoh: Graph, Data Terstruktur, dan Visualisasi Data"
+                value={rawTopic !== theme ? rawTopic : ''}
+                onChange={(e) => setRawTopic(e.target.value || theme)}
+                placeholder="Opsional, jika ada fokus subtopik tertentu"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               />
-              {formErrors.rawTopic && (
-                <p className="text-xs text-rose-500">{formErrors.rawTopic}</p>
-              )}
             </div>
           </div>
 
-          {/* 6. Informasi Pertemuan (STIVIA 2.2d) */}
+          {/* 7. Informasi Pertemuan (STIVIA 2.2d) */}
           <div className="space-y-2 pt-1 border-t border-slate-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                6. Rangkaian Pertemuan <span className="text-rose-500">*</span>
+                7. Rangkaian Pertemuan <span className="text-rose-500">*</span>
               </label>
               <span className="text-[11px] text-slate-500 font-medium">
-                Pilih atau ketik pertemuan kegiatan belajar
+                Pilih atau ketik urutan pertemuan belajar
               </span>
             </div>
 
@@ -380,7 +591,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                   key={ptm}
                   type="button"
                   onClick={() => setPertemuan(ptm)}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border text-center ${
+                  className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
                     pertemuan === ptm
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -393,6 +604,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
             <div className="flex items-center gap-2 pt-1">
               <input
+                id="input-pertemuan"
                 type="text"
                 value={pertemuan}
                 onChange={(e) => setPertemuan(e.target.value)}
@@ -409,36 +621,37 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             </div>
           </div>
 
-          {/* 7. Cakupan Materi */}
+          {/* 8. Cakupan Materi */}
           <div className="space-y-2 pt-1 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                7. Cakupan Materi (Batas Wajib Pembahasan) <span className="text-rose-500">*</span>
+              <label htmlFor="textarea-cakupan-materi" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                8. Cakupan Materi (Batas Wajib Pembahasan) <span className="text-rose-500">*</span>
               </label>
               <span className="text-[11px] text-indigo-600 font-medium">
-                Batas utama pembahasan visual
+                Batas utama pembahasan visual & teks
               </span>
             </div>
             <textarea
+              id="textarea-cakupan-materi"
               rows={5}
               value={scope}
               onChange={(e) => setScope(e.target.value)}
-              placeholder="Tuliskan poin-poin materi yang ingin dibahas...&#10;Contoh:&#10;1. Komponen struktur teks&#10;2. Kaidah kebahasaan spesifik&#10;3. Langkah-langkah penyusunan&#10;4. Contoh analisis kontekstual"
+              placeholder="Tuliskan poin-poin materi yang ingin dibahas...&#10;Contoh:&#10;1. Pengantar struktur graph&#10;2. Node (Vertex) dan Edge (Sisi)&#10;3. Graph terarah vs tidak terarah&#10;4. Penerapan navigasi rute dan pertemanan"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm leading-relaxed focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 font-sans"
             />
             {formErrors.scope && (
               <p className="text-xs text-rose-500">{formErrors.scope}</p>
             )}
             <p className="text-[11px] text-slate-500">
-              * Hanya materi yang tertulis dalam Cakupan Materi yang akan divisualisasikan ke dalam infografis.
+              * Hanya poin-poin yang tertera dalam Cakupan Materi yang akan diintegrasikan secara presisi ke dalam struktur prompt.
             </p>
           </div>
 
-          {/* 8. Catatan Pengguna (Opsional) */}
+          {/* 9. Catatan Pengguna (Opsional) */}
           <div className="space-y-2 pt-3 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <label htmlFor="user-notes-field" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                8. Catatan Pengguna <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                9. Catatan Pengguna <span className="text-slate-400 font-normal lowercase">(opsional)</span>
               </label>
               <span className="text-[11px] text-indigo-700 font-semibold bg-indigo-50 border border-indigo-100/80 px-2.5 py-0.5 rounded-md">
                 Ikut pada Hasil Generate
@@ -454,22 +667,72 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             />
             <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
               <span>💡</span>
-              <span>Catatan ini akan otomatis disertakan ke dalam prompt generate AI dan rancangan materi pembelajaran.</span>
+              <span>Catatan ini akan otomatis disertakan ke dalam parameter data awal untuk digenerate di Prompt Studio.</span>
             </p>
           </div>
         </div>
 
-        {/* Submit Main Action Button */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-4">
-          <button
-            id="btn-buat-rancangan-materi"
-            type="submit"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-[#4f46e5] hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-base shadow-xl shadow-indigo-600/25 transition-all cursor-pointer transform hover:-translate-y-0.5"
-          >
-            <Sparkles className="w-5 h-5 text-indigo-200" />
-            <span>Buat Rancangan Materi</span>
-            <ArrowRight className="w-5 h-5" />
-          </button>
+        {/* RINGKASAN DATA PROMPT & TOMBOL SUBMIT */}
+        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-lg space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 block">
+                Ringkasan Data Awal
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-white">
+                Materi Siap Digenerate di Prompt Studio
+              </h3>
+            </div>
+            <span className="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-medium border border-slate-700 self-start sm:self-auto">
+              Universal Prompt Ready
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                Materi yang Dibuat Prompt:
+              </span>
+              <span className="text-sm font-bold text-white block mt-0.5 truncate">
+                {theme.trim() || '(Ketik nama tema materi di atas)'}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                Mata Pelajaran (Mapel):
+              </span>
+              <span className="text-sm font-bold text-emerald-300 block mt-0.5 truncate">
+                {isCustomSubject ? (customSubject.trim() || 'Lainnya') : subject}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                Jenjang & Kelas:
+              </span>
+              <span className="text-sm font-bold text-indigo-300 block mt-0.5 truncate">
+                {educationLevel} • {grade}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div className="text-xs text-slate-400 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Pilih prompt materi atau infografis pada langkah berikutnya.</span>
+            </div>
+
+            <button
+              id="btn-generate-prompt-studio"
+              type="submit"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white font-bold text-base shadow-xl shadow-indigo-500/25 transition-all cursor-pointer transform hover:-translate-y-0.5 shrink-0"
+            >
+              <Sparkles className="w-5 h-5 text-indigo-200" />
+              <span>Generate di Prompt Studio</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </form>
     </div>

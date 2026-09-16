@@ -16,10 +16,13 @@ import {
   Monitor,
   LayoutTemplate,
   Lock,
-  Loader2
+  Loader2,
+  GraduationCap,
+  ArrowRight
 } from 'lucide-react';
 import { InfographicDraft, NavigationTab } from '../../types';
 import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
+import { INITIAL_PROJECTS } from '../../data/mockData';
 import { 
   generateUniversalMaterialPrompt, 
   generateUniversalInfographicFromProjectPrompt, 
@@ -37,6 +40,7 @@ interface PromptStudioPageProps {
   currentDraft: InfographicDraft;
   onNavigate: (tab: NavigationTab) => void;
   onSaveToast: (msg: string) => void;
+  onSelectProject?: (project: InfographicDraft) => void;
 }
 
 type StudioMode = 'selection' | 'material' | 'infographic';
@@ -47,15 +51,59 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
   currentDraft,
   onNavigate,
   onSaveToast,
+  onSelectProject,
 }) => {
   // State navigasi mode internal
   const [mode, setMode] = useState<StudioMode>('selection');
   const [infographicSource, setInfographicSource] = useState<InfographicSource>('project');
 
+  // Gabungkan seluruh materi pembelajaran yang telah dibuat oleh pengguna:
+  // 1. currentDraft aktif
+  // 2. Proyek tersimpan dari user (hanya materi pengguna, tanpa mock dummy)
+  const availableProjects = React.useMemo(() => {
+    const list: InfographicDraft[] = [];
+    
+    if (currentDraft && currentDraft.id && !['proj-002', 'proj-003', 'proj-004'].includes(currentDraft.id)) {
+      list.push(currentDraft);
+    }
+    
+    projects.forEach((proj) => {
+      if (!['proj-002', 'proj-003', 'proj-004'].includes(proj.id) && !list.some((item) => item.id === proj.id)) {
+        list.push(proj);
+      }
+    });
+
+    // Fallback bila list kosong: gunakan currentDraft aktif
+    if (list.length === 0 && currentDraft) {
+      list.push(currentDraft);
+    }
+
+    return list;
+  }, [projects, currentDraft]);
+
   // State Proyek Terpilih untuk Prompt Materi / Infografis Proyek
   const [selectedProjectId, setSelectedProjectId] = useState<string>(() => {
     return currentDraft?.id || (projects.length > 0 ? projects[0].id : '');
   });
+
+  // Sinkronisasi otomatis proyek terpilih saat currentDraft diperbarui (misal dari Buat Prompt)
+  React.useEffect(() => {
+    if (currentDraft?.id) {
+      setSelectedProjectId(currentDraft.id);
+    }
+  }, [currentDraft?.id]);
+
+  // Ambil data proyek yang dipilih
+  const activeProject = availableProjects.find((p) => p.id === selectedProjectId) || currentDraft || availableProjects[0];
+
+  // Helper untuk mengubah pilihan materi dan menyinkronkan draf aktif
+  const handleSelectMaterial = (projId: string) => {
+    setSelectedProjectId(projId);
+    const target = availableProjects.find((p) => p.id === projId);
+    if (target && onSelectProject) {
+      onSelectProject(target);
+    }
+  };
 
   // State Konfigurasi Gaya Visual Infografis dari Proyek
   const [selectedVisualStyle, setSelectedVisualStyle] = useState<string>(() => {
@@ -74,9 +122,6 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isHowWorksModalOpen, setIsHowWorksModalOpen] = useState(false);
-
-  // Ambil data proyek yang dipilih
-  const activeProject = projects.find((p) => p.id === selectedProjectId) || currentDraft;
 
   // Helper untuk scroll mulus ke hasil setelah generate selesai
   const scrollToResult = () => {
@@ -258,113 +303,142 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
         </div>
       )}
 
-      {/* TAHAP 1: HALAMAN UTAMA PROMPT STUDIO (SELEKSI AWAL) */}
+      {/* TAHAP 1: HALAMAN UTAMA PROMPT STUDIO (PILIHAN PROMPT) */}
       {mode === 'selection' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            {/* KARTU 1: PROMPT MATERI */}
-            <div 
-              id="card-prompt-materi"
-              onClick={() => {
-                setMode('material');
-              }}
-              className="bg-white rounded-3xl p-7 border-2 border-slate-200/80 hover:border-indigo-500 shadow-xs hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <BookOpen className="w-7 h-7" />
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                      📝 PROMPT MATERI
-                    </h2>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
-                      Alur STIVIA
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Buat prompt universal untuk menghasilkan materi pembelajaran sesuai struktur, bobot, dan kedalaman materi STIVIA.
-                  </p>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Menjamin 100% cakupan materi terbahas</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Kedalaman proporsional sesuai bobot materi</span>
-                  </div>
-                </div>
+          {/* PILIHAN PROMPT UNIVERSAL */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                <Sparkles className="w-4 h-4" />
               </div>
-
-              <div className="pt-6">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMode('material');
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-indigo-50 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <span>Pilih Prompt Materi</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  Mau Buat Prompt Apa?
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Pilih jenis generator prompt universal AI yang ingin Anda hasilkan
+                </p>
               </div>
             </div>
 
-            {/* KARTU 2: PROMPT INFOGRAFIS */}
-            <div 
-              id="card-prompt-infografis"
-              onClick={() => {
-                setMode('infographic');
-              }}
-              className="bg-white rounded-3xl p-7 border-2 border-slate-200/80 hover:border-emerald-500 shadow-xs hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Palette className="w-7 h-7" />
-                </div>
-                <div className="space-y-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* KARTU 1: PROMPT MATERI */}
+              <div 
+                id="card-prompt-materi"
+                onClick={() => {
+                  setMode('material');
+                }}
+                className="bg-white rounded-3xl p-7 border-2 border-slate-200/80 hover:border-indigo-500 shadow-xs hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between relative overflow-hidden"
+              >
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                      🎨 PROMPT INFOGRAFIS
-                    </h2>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-                      Visual Blueprint
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+                      <BookOpen className="w-7 h-7" />
+                    </div>
+                    <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      Alur STIVIA
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Buat prompt universal untuk menghasilkan infografis berdasarkan proyek STIVIA atau materi yang Anda miliki.
-                  </p>
+
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                      📝 Prompt Materi Pembelajaran
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      Buat prompt universal untuk menyusun materi pembelajaran lengkap, terstruktur, berbobot, dan mendalam sesuai struktur STIVIA.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Menjamin 100% cakupan materi terbahas tuntas</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Kedalaman materi proporsional sesuai bobot</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Format prompt siap pakai di ChatGPT, Claude, & Gemini</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 space-y-1.5 text-xs text-slate-500">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Berdasarkan Content Snapshot terstruktur</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Dukungan sumber proyek STIVIA atau materi mandiri</span>
-                  </div>
+                <div className="pt-6">
+                  <button
+                    id="btn-pilih-prompt-materi"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMode('material');
+                    }}
+                    className="w-full py-3.5 px-4 rounded-xl bg-indigo-50 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+                  >
+                    <span>Buat Prompt Materi</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              <div className="pt-6">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMode('infographic');
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <span>Pilih Prompt Infografis</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              {/* KARTU 2: PROMPT INFOGRAFIS */}
+              <div 
+                id="card-prompt-infografis"
+                onClick={() => {
+                  setMode('infographic');
+                }}
+                className="bg-white rounded-3xl p-7 border-2 border-slate-200/80 hover:border-emerald-500 shadow-xs hover:shadow-lg transition-all cursor-pointer group flex flex-col justify-between relative overflow-hidden"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xs">
+                      <Palette className="w-7 h-7" />
+                    </div>
+                    <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                      Visual Blueprint
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                      🎨 Prompt Desain Infografis
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      Buat prompt universal instruksi visual dan layout infografis edukatif berdasarkan Content Snapshot materi ini.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Berdasarkan Content Snapshot terstruktur STIVIA</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Standar poster vertikal rasio 2:3 teruji</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Instruksi tata letak, palet warna, dan hierarki visual</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6">
+                  <button
+                    id="btn-pilih-prompt-infografis"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMode('infographic');
+                    }}
+                    className="w-full py-3.5 px-4 rounded-xl bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+                  >
+                    <span>Buat Prompt Infografis</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -391,30 +465,30 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
               </div>
             </div>
 
-            {/* Pemilihan Proyek */}
+            {/* Pemilihan Materi / Proyek */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Pilih Proyek STIVIA Sebagai Sumber Snapshot
-              </label>
-              {projects.length === 0 ? (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-                  Belum ada proyek tersimpan. Anda dapat menggunakan draf aktif saat ini atau membuat proyek baru di menu Buat Prompt.
-                </div>
-              ) : (
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => {
-                    setSelectedProjectId(e.target.value);
-                  }}
-                  className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-indigo-500 shadow-2xs"
-                >
-                  {projects.map((proj) => (
-                    <option key={proj.id} value={proj.id}>
-                      {proj.title} — ({proj.subject}, {proj.educationLevel} Kelas {proj.grade}) [{proj.status.toUpperCase()}]
-                    </option>
-                  ))}
-                </select>
-              )}
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Pilih Materi Pembelajaran Sebagai Sumber Snapshot
+                </label>
+                <span className="text-[11px] text-indigo-600 font-semibold">
+                  {availableProjects.length} materi tersedia
+                </span>
+              </div>
+              <select
+                id="select-materi-material-mode"
+                value={selectedProjectId}
+                onChange={(e) => {
+                  handleSelectMaterial(e.target.value);
+                }}
+                className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-indigo-500 shadow-2xs"
+              >
+                {availableProjects.map((proj) => (
+                  <option key={proj.id} value={proj.id}>
+                    {proj.theme || proj.title || 'Materi Tanpa Judul'} — ({proj.subject || 'Umum'}, {proj.educationLevel} Kelas {proj.grade}) {proj.bab ? `[${proj.bab}]` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Ringkasan Metadata Proyek Terpilih */}
@@ -433,6 +507,17 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
                     <span className="text-[10px] text-slate-400 block uppercase font-bold">Jenjang / Kelas</span>
                     <span className="font-semibold text-slate-800">{activeProject.educationLevel} - Kelas {activeProject.grade}</span>
                   </div>
+                  {activeProject.bab ? (
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Bab / Teks</span>
+                      <span className="font-semibold text-slate-800 truncate block" title={activeProject.bab}>{activeProject.bab}</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold">Pertemuan</span>
+                      <span className="font-semibold text-slate-800">{activeProject.pertemuan || 'Pertemuan 1'}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-[10px] text-slate-400 block uppercase font-bold">Total Blok Materi</span>
                     <span className="font-semibold text-slate-800">{activeProject.blocks?.length || 0} Bagian</span>
@@ -562,19 +647,25 @@ export const PromptStudioPage: React.FC<PromptStudioPageProps> = ({
             {infographicSource === 'project' && (
               <div className="space-y-5 pt-2 border-t border-slate-100">
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Pilih Proyek STIVIA
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Pilih Materi Pembelajaran STIVIA
+                    </label>
+                    <span className="text-[11px] text-emerald-600 font-semibold">
+                      {availableProjects.length} materi tersedia
+                    </span>
+                  </div>
                   <select
+                    id="select-materi-infographic-mode"
                     value={selectedProjectId}
                     onChange={(e) => {
-                      setSelectedProjectId(e.target.value);
+                      handleSelectMaterial(e.target.value);
                     }}
                     className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-medium focus:outline-hidden focus:border-indigo-500 shadow-2xs"
                   >
-                    {projects.map((proj) => (
+                    {availableProjects.map((proj) => (
                       <option key={proj.id} value={proj.id}>
-                        {proj.title} — ({proj.subject}, {proj.educationLevel} Kelas {proj.grade})
+                        {proj.theme || proj.title || 'Materi Tanpa Judul'} — ({proj.subject || 'Umum'}, {proj.educationLevel} Kelas {proj.grade}) {proj.bab ? `[${proj.bab}]` : ''}
                       </option>
                     ))}
                   </select>

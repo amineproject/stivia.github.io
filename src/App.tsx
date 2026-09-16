@@ -4,7 +4,6 @@ import { Header } from './components/Header';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { BuatInfografisPage } from './components/pages/BuatInfografisPage';
 import { PromptStudioPage } from './components/pages/PromptStudioPage';
-import { RancanganMateriPage } from './components/pages/RancanganMateriPage';
 import { RancanganVisualPage } from './components/pages/RancanganVisualPage';
 import { HasilInfografisPage } from './components/pages/HasilInfografisPage';
 import { PreviewInfografisPage } from './components/pages/PreviewInfografisPage';
@@ -40,6 +39,13 @@ export default function App() {
   // Navigation active tab (default to dashboard)
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Otomatis arahkan ke prompt_studio jika tab rancangan diakses
+  useEffect(() => {
+    if ((activeTab as string) === 'rancangan') {
+      setActiveTab('prompt_studio');
+    }
+  }, [activeTab]);
 
   // Inisialisasi dan listener session Supabase Auth
   useEffect(() => {
@@ -241,6 +247,7 @@ export default function App() {
   const handleFormSubmit = (formData: Partial<InfographicDraft>) => {
     const subject = formData.subject || currentDraft.subject;
     const theme = formData.theme || currentDraft.theme;
+    const bab = formData.bab !== undefined ? formData.bab : (currentDraft.bab || '');
     const rawTopic = formData.rawTopic || currentDraft.rawTopic;
     const pertemuan = formData.pertemuan || currentDraft.pertemuan || 'Pertemuan 1';
     const scope = formData.scope || currentDraft.scope;
@@ -259,6 +266,7 @@ export default function App() {
       kelas: grade,
       mataPelajaran: subject,
       tema: theme,
+      bab,
       materi: rawTopic,
       pertemuan,
       cakupanMateri: scope,
@@ -284,16 +292,16 @@ export default function App() {
       return [sanitizedDraft, ...filtered];
     });
 
-    setActiveTab('rancangan');
-    showToast('Rancangan materi berhasil disusun secara konsisten!');
+    setActiveTab('prompt_studio');
+    showToast('Data awal berhasil disimpan! Siap digenerate pada Prompt Studio.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Load sample data button handler
   const handleLoadSample = () => {
     setCurrentDraft(INITIAL_SAMPLE_DRAFT);
-    setActiveTab('rancangan');
-    showToast('Memuat contoh rancangan materi: Struktur Data Graph.');
+    setActiveTab('prompt_studio');
+    showToast('Memuat contoh data awal: Struktur Data Graph. Siap di Prompt Studio!');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -309,9 +317,9 @@ export default function App() {
   };
 
   // Project management handlers
-  const handleSelectProject = (project: InfographicDraft, targetTab: 'rancangan' | 'hasil' | 'preview') => {
+  const handleSelectProject = (project: InfographicDraft, targetTab: 'prompt_studio' | 'hasil' | 'preview' | 'rancangan') => {
     setCurrentDraft(project);
-    setActiveTab(targetTab);
+    setActiveTab(targetTab === 'rancangan' ? 'prompt_studio' : targetTab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -456,7 +464,9 @@ export default function App() {
 
           {activeTab === 'buat' && (
             <BuatInfografisPage
+              projects={projects}
               currentDraft={currentDraft}
+              onSelectProject={setCurrentDraft}
               onSubmitForm={handleFormSubmit}
               onLoadSampleData={handleLoadSample}
             />
@@ -466,18 +476,7 @@ export default function App() {
             <PromptStudioPage
               projects={projects}
               currentDraft={currentDraft}
-              onNavigate={(tab) => {
-                setActiveTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onSaveToast={showToast}
-            />
-          )}
-
-          {activeTab === 'rancangan' && (
-            <RancanganMateriPage
-              draft={currentDraft}
-              onUpdateDraft={handleUpdateDraft}
+              onSelectProject={setCurrentDraft}
               onNavigate={(tab) => {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

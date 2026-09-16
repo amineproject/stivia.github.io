@@ -35,6 +35,7 @@ export interface StiviaThinkingInput {
   subject?: string;
   educationLevel?: string;
   grade?: string;
+  bab?: string;
   pertemuan?: string | number;
   scope?: string;
   userNotes?: string;
@@ -759,7 +760,7 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
 - Judul Infografis: ${stage1_Understanding.title}
 - Mata Pelajaran: ${stage1_Understanding.subject}
 - Jenjang Pendidikan & Kelas: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
-- Pertemuan: ${materialAnalysis.tahap4_Pertemuan}
+${input.bab?.trim() ? `- Bab / Teks: ${input.bab.trim()}\n` : ''}- Pertemuan: ${materialAnalysis.tahap4_Pertemuan}
 - Materi Utama: ${materialAnalysis.tahap3_MateriUtama} (digunakan sebagai konteks umum)
 ${input.userNotes?.trim() ? `- Catatan Khusus Pengguna: "${input.userNotes.trim()}"\n` : ''}- Cakupan Materi (Batas Wajib Pembahasan):
 ${materialAnalysis.tahap5_CakupanMateri.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}

@@ -129,6 +129,8 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
   const [editGrade, setEditGrade] = useState<string>(draft.grade || 'Kelas X');
   const [editSubject, setEditSubject] = useState<string>(draft.subject || 'Informatika');
   const [editTheme, setEditTheme] = useState<string>(draft.theme || '');
+  const [editBab, setEditBab] = useState<string>(draft.bab || '');
+  const [editPertemuan, setEditPertemuan] = useState<string>(draft.pertemuan || 'Pertemuan 1');
   const [editTopic, setEditTopic] = useState<string>(draft.rawTopic || '');
   const [editScope, setEditScope] = useState<string>(draft.scope || '');
   const [editUserNotes, setEditUserNotes] = useState<string>(draft.userNotes || '');
@@ -183,6 +185,8 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
     setEditGrade(currentDraft.grade);
     setEditSubject(currentDraft.subject);
     setEditTheme(currentDraft.theme);
+    setEditBab(currentDraft.bab || '');
+    setEditPertemuan(currentDraft.pertemuan || 'Pertemuan 1');
     setEditTopic(currentDraft.rawTopic);
     setEditScope(currentDraft.scope);
     setEditUserNotes(currentDraft.userNotes || '');
@@ -227,6 +231,8 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
       editGrade !== currentDraft.grade ||
       editSubject !== currentDraft.subject ||
       editTheme !== currentDraft.theme ||
+      editBab !== (currentDraft.bab || '') ||
+      editPertemuan !== (currentDraft.pertemuan || 'Pertemuan 1') ||
       editTopic !== currentDraft.rawTopic ||
       editScope !== currentDraft.scope ||
       editUserNotes !== (currentDraft.userNotes || '');
@@ -252,7 +258,9 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
             kelas: editGrade,
             mataPelajaran: editSubject,
             tema: editTheme,
+            bab: editBab,
             materi: editTopic,
+            pertemuan: editPertemuan,
             cakupanMateri: editScope,
             userNotes: editUserNotes,
             gayaVisual: editStyle,
@@ -1186,26 +1194,54 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
                 </div>
               </div>
 
-              {/* Tema */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Tema Kegiatan</label>
-                <input
-                  type="text"
-                  value={editTheme}
-                  onChange={(e) => setEditTheme(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold"
-                />
+              {/* Tema, Bab, dan Pertemuan */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tema Kegiatan</label>
+                  <input
+                    type="text"
+                    value={editTheme}
+                    onChange={(e) => setEditTheme(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Bab / Teks <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editBab}
+                    onChange={(e) => setEditBab(e.target.value)}
+                    placeholder="Contoh: Bab 2 / Teks LHO"
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold"
+                  />
+                </div>
               </div>
 
-              {/* Materi */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Materi Pokok yang Diajarkan</label>
-                <input
-                  type="text"
-                  value={editTopic}
-                  onChange={(e) => setEditTopic(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold"
-                />
+              {/* Pertemuan & Materi */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Pertemuan</label>
+                  <input
+                    type="text"
+                    value={editPertemuan}
+                    onChange={(e) => setEditPertemuan(e.target.value)}
+                    placeholder="Contoh: Pertemuan 1"
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">Materi Pokok yang Diajarkan</label>
+                  <input
+                    type="text"
+                    value={editTopic}
+                    onChange={(e) => setEditTopic(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold"
+                  />
+                </div>
               </div>
 
               {/* Cakupan Materi */}

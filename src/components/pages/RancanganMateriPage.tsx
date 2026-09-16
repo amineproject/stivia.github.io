@@ -265,11 +265,29 @@ export const RancanganMateriPage: React.FC<RancanganMateriPageProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Card: DETAIL INFOGRAFIS */}
         <div className="lg:col-span-8 bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 text-indigo-600 pb-1">
-            <FileText className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-wider">
-              DETAIL INFOGRAFIS
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+            <div className="flex items-center gap-2 text-indigo-600">
+              <FileText className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">
+                DETAIL INFOGRAFIS
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold border border-slate-200/60">
+                {draft.subject || 'Umum'}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold border border-slate-200/60">
+                {draft.educationLevel} - {draft.grade}
+              </span>
+              {draft.bab && (
+                <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100/80">
+                  {draft.bab}
+                </span>
+              )}
+              <span className="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 font-semibold border border-amber-200/60">
+                {draft.pertemuan || 'Pertemuan 1'}
+              </span>
+            </div>
           </div>
 
           <div className="space-y-3">

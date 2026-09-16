@@ -1617,7 +1617,7 @@ export function generateMaterialBlocksFromContext(context: ActiveProjectContext)
  * Generate full new Draft strictly from activeProjectContext
  */
 export function createDraftFromContext(context: ActiveProjectContext): InfographicDraft {
-  const { jenjang, kelas, mataPelajaran, tema, materi, cakupanMateri, userNotes, gayaVisual, format, tingkatVisual, konteksContoh, customExampleContext } = context;
+  const { jenjang, kelas, mataPelajaran, tema, bab, materi, cakupanMateri, userNotes, gayaVisual, format, tingkatVisual, konteksContoh, customExampleContext } = context;
   const bundle = generateDomainTopicBundle(mataPelajaran, materi, tema, jenjang, kelas, 'Kehidupan Sehari-hari');
 
   const pipelineResult = runContentEnginePipeline(context);
@@ -1635,6 +1635,7 @@ export function createDraftFromContext(context: ActiveProjectContext): Infograph
     grade: kelas,
     subject: mataPelajaran,
     theme: tema,
+    bab: bab || '',
     rawTopic: materi,
     pertemuan: context.pertemuan || 'Pertemuan 1',
     scope: cakupanMateri,
@@ -1704,6 +1705,7 @@ export function getContentSnapshotFromDraft(draft: InfographicDraft): import('..
       grade: draft.grade,
       subject: draft.subject,
       theme: draft.theme,
+      bab: draft.bab || '',
       topic: draft.rawTopic || draft.title,
       pertemuan: draft.pertemuan || 'Pertemuan 1',
       scope: draft.scope,
@@ -1769,6 +1771,7 @@ export function validateAndSanitizeDraft(draft: InfographicDraft): InfographicDr
       kelas: draft.grade || '8',
       mataPelajaran: draft.subject || 'Bahasa Indonesia',
       tema: draft.theme || 'Pembelajaran Terpadu',
+      bab: draft.bab,
       materi: draft.rawTopic || 'Materi Pokok',
       pertemuan: draft.pertemuan || 'Pertemuan 1',
       cakupanMateri: draft.scope || '1. Pengertian\n2. Tujuan\n3. Fungsi\n4. Ciri-ciri\n5. Peran dalam kehidupan',
@@ -1963,8 +1966,10 @@ export function regenerateMaterialContent(currentDraft: InfographicDraft, variat
     kelas: currentDraft.grade,
     mataPelajaran: currentDraft.subject,
     tema: currentDraft.theme,
+    bab: currentDraft.bab,
     materi: currentDraft.rawTopic,
     cakupanMateri: currentDraft.scope,
+    userNotes: currentDraft.userNotes,
     gayaVisual: currentDraft.visualStyle,
     customVisualStyle: currentDraft.customVisualStyle,
     format: currentDraft.format,

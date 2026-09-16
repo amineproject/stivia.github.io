@@ -152,6 +152,7 @@ export interface ContentSnapshot {
     grade: string;
     subject: string;
     theme: string;
+    bab?: string;
     topic: string;
     pertemuan?: number | string;
     scope: string;
@@ -423,6 +424,7 @@ export interface ActiveProjectContext {
   kelas: string;
   mataPelajaran: string;
   tema: string;
+  bab?: string;
   materi: string;
   pertemuan?: number | string;
   cakupanMateri: string;
@@ -565,6 +567,7 @@ export interface InfographicDraft {
   grade: string;
   subject: string;
   theme: string;
+  bab?: string;
   rawTopic: string;
   pertemuan?: number | string;
   scope: string;

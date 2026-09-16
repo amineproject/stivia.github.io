@@ -17,7 +17,7 @@ import { InfographicDraft, NavigationTab } from '../../types';
 
 interface DashboardPageProps {
   projects: InfographicDraft[];
-  onSelectProject: (project: InfographicDraft, targetTab: 'rancangan' | 'hasil' | 'preview') => void;
+  onSelectProject: (project: InfographicDraft, targetTab: 'prompt_studio' | 'hasil' | 'preview') => void;
   onNavigate: (tab: NavigationTab) => void;
   onLoadSample: () => void;
 }
@@ -99,7 +99,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <span>Buat Prompt</span>
               </h2>
               <p className="text-indigo-100/90 text-sm sm:text-base leading-relaxed">
-                Buat infografis pembelajaran melalui alur STIVIA: Struktur → Bobot → Kedalaman → Layout → Visualisasi.
+                Input data awal pembelajaran, lalu langsung generate prompt materi atau infografis di Prompt Studio.
               </p>
             </div>
           </div>
@@ -298,7 +298,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       {project.blocks?.length || 0} Blok Konten
                     </span>
                     <button
-                      onClick={() => onSelectProject(project, isFinal ? 'preview' : 'rancangan')}
+                      onClick={() => onSelectProject(project, isFinal ? 'preview' : 'prompt_studio')}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-50 hover:bg-[#3b49df] hover:text-white text-[#3b49df] font-bold text-xs transition-all cursor-pointer"
                     >
                       <span>Buka Proyek</span>

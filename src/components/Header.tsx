@@ -48,20 +48,15 @@ export const Header: React.FC<HeaderProps> = ({
           { label: 'Form Konteks & Preferensi', tab: 'buat' as NavigationTab },
         ];
       case 'prompt_studio':
+      case 'rancangan':
         return [
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
           { label: 'Prompt Studio', tab: 'prompt_studio' as NavigationTab },
         ];
-      case 'rancangan':
-        return [
-          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
-          { label: 'Alur Infografis', tab: 'buat' as NavigationTab },
-          { label: 'Rancangan Materi', tab: 'rancangan' as NavigationTab },
-        ];
       case 'visual':
         return [
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
-          { label: 'Rancangan Materi', tab: 'rancangan' as NavigationTab },
+          { label: 'Prompt Studio', tab: 'prompt_studio' as NavigationTab },
           { label: 'Rancangan Visual', tab: 'visual' as NavigationTab },
         ];
       case 'hasil':
@@ -253,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
               </p>
               <button
                 onClick={() => {
-                  onSelectTab('rancangan');
+                  onSelectTab('prompt_studio');
                   setShowSearchModal(false);
                 }}
                 className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-xs text-slate-700 flex items-center justify-between"

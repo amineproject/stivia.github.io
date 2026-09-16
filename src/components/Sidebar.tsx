@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (tabId === 'beranda' && activeTab === 'dashboard') return true;
     if (tabId === 'proyek_saya' && activeTab === 'infografis_saya') return true;
     if (tabId === 'infografis_saya' && activeTab === 'proyek_saya') return true;
-    if (tabId === 'buat' && (activeTab === 'rancangan' || activeTab === 'visual' || activeTab === 'hasil' || activeTab === 'preview')) {
+    if (tabId === 'buat' && (activeTab === 'visual' || activeTab === 'hasil' || activeTab === 'preview')) {
       return true;
     }
     return false;

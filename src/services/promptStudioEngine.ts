@@ -103,6 +103,7 @@ export function generateUniversalMaterialPrompt(project: InfographicDraft): stri
       subject: project.subject || 'Umum',
       educationLevel: project.educationLevel || 'Semua Jenjang',
       grade: project.grade || 'Lengkap',
+      bab: project.bab || '',
       pertemuan: project.pertemuan || 'Pertemuan 1',
       theme: project.theme || 'Umum',
       topic: project.rawTopic || project.title || 'Materi Pembelajaran',
@@ -172,7 +173,7 @@ INFORMASI DASAR PEMBELAJARAN (IDENTITAS):
 - Judul Materi: ${title}
 - Mata Pelajaran: ${identity.subject || 'Umum'}
 - Jenjang / Target: ${identity.educationLevel} - Kelas ${identity.grade || '-'}
-- Pertemuan: ${pertemuan}
+${(project.bab || identity.bab) ? `- Bab / Teks: ${project.bab || identity.bab}\n` : ''}- Pertemuan: ${pertemuan}
 - Tema Pembelajaran: ${identity.theme || 'Umum'}
 - Materi Utama: ${identity.topic} (sebagai konteks umum)
 ${userNotes ? `- Catatan Khusus Pengguna: "${userNotes}"\n` : ''}- Tujuan Pembelajaran: ${identity.learningObjective || `Peserta didik memahami konsep ${identity.topic} secara terstruktur dan aplikatif.`}

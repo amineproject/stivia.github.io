@@ -124,6 +124,8 @@ export async function exportMaterialToDocx(
     if (snapshot.identity.educationLevel) identityRows.push(['Jenjang Pendidikan', snapshot.identity.educationLevel]);
     if (snapshot.identity.grade) identityRows.push(['Kelas / Fase', snapshot.identity.grade]);
     if (snapshot.identity.theme) identityRows.push(['Tema Kegiatan Pembelajaran', snapshot.identity.theme]);
+    if (snapshot.identity.bab || draft.bab) identityRows.push(['Bab / Teks', (snapshot.identity.bab || draft.bab)!]);
+    if (snapshot.identity.pertemuan || draft.pertemuan) identityRows.push(['Pertemuan', String(snapshot.identity.pertemuan || draft.pertemuan)!]);
     if (snapshot.identity.topic) identityRows.push(['Materi yang Diajarkan', snapshot.identity.topic]);
     if (snapshot.identity.scope) identityRows.push(['Cakupan Materi', snapshot.identity.scope]);
     if (snapshot.identity.userNotes || draft.userNotes) identityRows.push(['Catatan Pengguna', (snapshot.identity.userNotes || draft.userNotes)!]);
