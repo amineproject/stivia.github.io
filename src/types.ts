@@ -662,8 +662,8 @@ export interface PlanConfig {
   name: string;
   description: string;
   monthlyLimit: number;
-  priceMonthly: number;     // Harga dalam Rupiah (0 untuk Free, misal 30000 untuk Pro)
-  priceLabel: string;       // Label harga ramah pengguna (misal "Gratis" atau "Rp 30.000 / bulan")
+  priceMonthly: number;     // Harga dalam Rupiah (0 untuk Free, misal 49000 untuk Pro)
+  priceLabel: string;       // Label harga ramah pengguna (misal "Gratis" atau "Rp 49.000 / bulan")
   badgeColor: string;
 }
 
@@ -676,7 +676,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanConfig> = {
     id: 'free',
     name: 'Free',
     description: 'Paket Dasar Pendidik',
-    monthlyLimit: 5,
+    monthlyLimit: 10,
     priceMonthly: 0,
     priceLabel: 'Gratis',
     badgeColor: 'emerald',
@@ -685,9 +685,9 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanConfig> = {
     id: 'pro',
     name: 'Pro',
     description: 'Paket Pendidik Kreatif & Pro',
-    monthlyLimit: 50,
-    priceMonthly: 30000,
-    priceLabel: 'Rp 30.000 / bulan',
+    monthlyLimit: 100,
+    priceMonthly: 49000,
+    priceLabel: 'Rp 49.000 / bulan',
     badgeColor: 'indigo',
   },
 };
@@ -721,6 +721,10 @@ export interface SubscriptionSummary {
   remaining: number;    // Sisa kuota (atau Infinity jika Admin)
   isLimitReached: boolean;
   usagePercentage?: number;
+  startDate?: string;
+  endDate?: string | null;
+  daysRemaining?: number | null;
+  isExpired?: boolean;
   isAdmin: boolean;
   isPro: boolean;
 }

@@ -213,6 +213,11 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   const handleTogglePlan = async (targetPlan: SubscriptionPlan) => {
     if (!userId) return;
+    const isActualAdmin = Boolean(subscriptionSummary?.isAdmin || userProfile?.role === 'admin');
+    if (!isActualAdmin) {
+      showToast('Akses ditolak: Hanya Administrator yang berwenang mengubah paket secara langsung.');
+      return;
+    }
     setIsSwitchingPlan(true);
     try {
       await updateUserPlan(userId, targetPlan);
@@ -236,6 +241,11 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   const handleToggleRole = async (targetRole: UserRole) => {
     if (!userId) return;
+    const isActualAdmin = Boolean(subscriptionSummary?.isAdmin || userProfile?.role === 'admin');
+    if (!isActualAdmin) {
+      showToast('Akses ditolak: Hanya Administrator yang berwenang mengubah peran.');
+      return;
+    }
     setIsSwitchingRole(true);
     try {
       await updateUserRole(userId, targetRole);
@@ -773,11 +783,26 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                       ? 'Admin'
                       : (subscriptionSummary?.plan || userProfile?.plan) || 'Free'}
                   </span>
-                  <span className="text-[11px] font-semibold text-emerald-600 mt-0.5 block">
+                  <span className={`text-[11px] font-semibold mt-0.5 block ${
+                    subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                      ? 'text-purple-600'
+                      : subscriptionSummary?.isExpired
+                      ? 'text-rose-600'
+                      : 'text-emerald-600'
+                  }`}>
                     {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                       ? 'Hak Akses: Unlimited (Tanpa Batas)'
+                      : subscriptionSummary?.isExpired
+                      ? 'Kedaluwarsa (Perlu Perpanjangan)'
+                      : (subscriptionSummary?.plan || userProfile?.plan) === 'pro' && subscriptionSummary?.daysRemaining !== undefined && subscriptionSummary.daysRemaining !== null
+                      ? `Aktif (${subscriptionSummary.daysRemaining} hari lagi)`
                       : 'Status: Aktif ✓'}
                   </span>
+                  {(subscriptionSummary?.plan || userProfile?.plan) === 'pro' && subscriptionSummary?.endDate && (
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">
+                      s/d {new Date(subscriptionSummary.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  )}
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
@@ -865,76 +890,122 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                 </p>
               </div>
 
-              {/* Mode Pengujian Paket & Peran Admin (Tanpa Payment Gateway Sesuai Ketentuan) */}
-              <div className="pt-3 border-t border-slate-100 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Panel Kontrol Paket & Langganan */}
+              {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
+                /* Panel Uji Coba HANYA untuk Administrator */
+                <div className="pt-3 border-t border-purple-100 bg-purple-50/50 -mx-6 -mb-6 p-6 rounded-b-3xl space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-purple-600 text-white tracking-wider">
+                          KHUSUS ADMIN
+                        </span>
+                        <h4 className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Simulasi Tampilan Paket & Hak Akses</span>
+                        </h4>
+                      </div>
+                      <p className="text-[11px] text-purple-700 mt-1">
+                        Alat bantu internal admin untuk menguji tampilan antarmuka saat dilihat sebagai Free ({SUBSCRIPTION_PLANS.free.monthlyLimit}/bln), Pro ({SUBSCRIPTION_PLANS.pro.monthlyLimit}/bln), atau Admin (Unlimited). Panel ini tidak terlihat oleh pengguna umum.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {/* Switcher Free / Pro untuk Pengujian Admin */}
+                      {(subscriptionSummary?.plan || userProfile?.plan) === 'pro' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePlan('free')}
+                          disabled={isSwitchingPlan}
+                          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isSwitchingPlan ? 'Mengubah...' : `Uji Free (${SUBSCRIPTION_PLANS.free.monthlyLimit}/bln)`}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePlan('pro')}
+                          disabled={isSwitchingPlan}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-sm shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-amber-200" />
+                          <span>{isSwitchingPlan ? 'Mengubah...' : `Uji Pro (${SUBSCRIPTION_PLANS.pro.monthlyLimit}/bln)`}</span>
+                        </button>
+                      )}
+
+                      {/* Switcher Role User / Admin */}
+                      {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRole('user')}
+                          disabled={isSwitchingRole}
+                          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                          title="Kembali ke peran pengguna biasa"
+                        >
+                          {isSwitchingRole ? 'Mengubah...' : 'Ubah ke Pengguna Biasa'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRole('admin')}
+                          disabled={isSwitchingRole}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-purple-600/20 transition-all cursor-pointer disabled:opacity-50"
+                          title="Jadikan akun Administrator dengan kuota Unlimited"
+                        >
+                          <Crown className="w-3.5 h-3.5 text-purple-200" />
+                          <span>{isSwitchingRole ? 'Mengubah...' : 'Uji Admin (Unlimited)'}</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setShowProModal(true)}
+                        className="px-3 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer"
+                      >
+                        Info Paket & Harga
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Untuk PENGGUNA BIASA (Free atau Pro non-admin) — Tidak ada tombol uji coba / manipulasi */
+                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-[#3b49df]" />
-                      <span>Uji Coba Batas Paket & Hak Akses Admin</span>
+                      <span>
+                        {(subscriptionSummary?.plan || userProfile?.plan) === 'pro'
+                          ? 'Status Paket STIVIA Pro'
+                          : 'Tingkatkan ke Paket STIVIA Pro'}
+                      </span>
                     </h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Simulasi instan untuk memeriksa perilaku akun Free ({SUBSCRIPTION_PLANS.free.monthlyLimit}/bln), Pro ({SUBSCRIPTION_PLANS.pro.monthlyLimit}/bln), atau Admin (Unlimited).
+                      {(subscriptionSummary?.plan || userProfile?.plan) === 'pro'
+                        ? `Kapasitas kuota ${SUBSCRIPTION_PLANS.pro.monthlyLimit} generate/bulan aktif untuk mendukung pembuatan materi ajar visual Anda.`
+                        : `Dapatkan kapasitas 10x lipat (${SUBSCRIPTION_PLANS.pro.monthlyLimit} generate/bulan) dan prioritas layanan visual STIVIA.`}
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    {/* Switcher Free / Pro */}
-                    {(subscriptionSummary?.plan || userProfile?.plan) === 'pro' ? (
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePlan('free')}
-                        disabled={isSwitchingPlan}
-                        className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
-                      >
-                        {isSwitchingPlan ? 'Mengubah...' : `Uji Free (${SUBSCRIPTION_PLANS.free.monthlyLimit}/bln)`}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePlan('pro')}
-                        disabled={isSwitchingPlan}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-sm shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        <Zap className="w-3.5 h-3.5 text-amber-200" />
-                        <span>{isSwitchingPlan ? 'Mengubah...' : `Uji Pro (${SUBSCRIPTION_PLANS.pro.monthlyLimit}/bln)`}</span>
-                      </button>
-                    )}
-
-                    {/* Switcher Role User / Admin */}
-                    {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleRole('user')}
-                        disabled={isSwitchingRole}
-                        className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
-                        title="Kembali ke peran pengguna biasa"
-                      >
-                        {isSwitchingRole ? 'Mengubah...' : 'Ubah ke Pengguna Biasa'}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleRole('admin')}
-                        disabled={isSwitchingRole}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-purple-600/20 transition-all cursor-pointer disabled:opacity-50"
-                        title="Jadikan akun Administrator dengan kuota Unlimited"
-                      >
-                        <Crown className="w-3.5 h-3.5 text-purple-200" />
-                        <span>{isSwitchingRole ? 'Mengubah...' : 'Uji Admin (Unlimited)'}</span>
-                      </button>
-                    )}
-
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowProModal(true)}
-                      className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#3b49df] font-bold text-xs transition-colors cursor-pointer"
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm ${
+                        (subscriptionSummary?.plan || userProfile?.plan) === 'pro'
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-amber-500/20'
+                      }`}
                     >
-                      Info Paket & Harga
+                      <Zap className="w-3.5 h-3.5 text-amber-200" />
+                      <span>
+                        {(subscriptionSummary?.plan || userProfile?.plan) === 'pro'
+                          ? 'Rincian Paket & Perpanjangan'
+                          : 'Upgrade ke Paket Pro'}
+                      </span>
                     </button>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Kartu Informasi Hak Akses & Keamanan RLS */}
@@ -1026,13 +1097,13 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold">
-                <Info className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>Fondasi Subscription STIVIA 3.1:</span>
+            <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-[#3b49df]">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>Cara Berlangganan & Aktivasi Paket Pro:</span>
               </div>
-              <p className="leading-relaxed text-[11px] text-amber-800">
-                Tahap ini berfokus pada fondasi limit dan akun. Payment gateway akan diintegrasikan pada tahap rilis komersial selanjutnya.
+              <p className="leading-relaxed text-[11px] text-indigo-900/80">
+                Untuk berlangganan atau memperpanjang paket Pro, silakan hubungi <strong>Administrator STIVIA</strong> dengan menyebutkan alamat email akun Anda. Administrator akan langsung mengaktifkan kuota 100 generate/bulan pada akun Anda.
               </p>
             </div>
 

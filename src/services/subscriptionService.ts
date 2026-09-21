@@ -189,7 +189,24 @@ export async function getSubscriptionSummary(userId: string): Promise<Subscripti
   const usedThisMonth = await getMonthlyUsage(userId, period);
 
   const isAdmin = sub.role === 'admin';
-  const planConfig = SUBSCRIPTION_PLANS[sub.plan] || SUBSCRIPTION_PLANS.free;
+
+  // Periksa kedaluwarsa masa aktif paket bulanan Pro
+  let isExpired = false;
+  let daysRemaining: number | null = null;
+
+  if (sub.plan === 'pro' && sub.endDate) {
+    const endMs = new Date(sub.endDate).getTime();
+    const nowMs = Date.now();
+    if (nowMs > endMs) {
+      isExpired = true;
+    } else {
+      daysRemaining = Math.max(0, Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)));
+    }
+  }
+
+  // Jika paket Pro sudah kedaluwarsa dan bukan admin, gunakan konfigurasi batas paket Free
+  const effectivePlan = (sub.plan === 'pro' && isExpired && !isAdmin) ? 'free' : sub.plan;
+  const planConfig = SUBSCRIPTION_PLANS[effectivePlan] || SUBSCRIPTION_PLANS.free;
 
   // Akun Admin memiliki hak akses Unlimited (tanpa batas kuota bulanan)
   const monthlyLimit = isAdmin ? Infinity : planConfig.monthlyLimit;
@@ -199,11 +216,13 @@ export async function getSubscriptionSummary(userId: string): Promise<Subscripti
     ? 0
     : Math.min(100, Math.round((usedThisMonth / (monthlyLimit || 1)) * 100));
 
+  const effectiveStatus: SubscriptionStatus = isExpired ? 'expired' : sub.status;
+
   return {
     plan: sub.plan,
     planName: isAdmin ? 'Admin (Unlimited)' : planConfig.name,
     role: sub.role,
-    status: sub.status,
+    status: effectiveStatus,
     period,
     periodLabel,
     monthlyLimit,
@@ -211,6 +230,10 @@ export async function getSubscriptionSummary(userId: string): Promise<Subscripti
     remaining,
     isLimitReached,
     usagePercentage,
+    startDate: sub.startDate,
+    endDate: sub.endDate,
+    daysRemaining,
+    isExpired,
     isAdmin,
     isPro: sub.plan === 'pro',
   };
@@ -218,7 +241,7 @@ export async function getSubscriptionSummary(userId: string): Promise<Subscripti
 
 /**
  * Validasi apakah pengguna diizinkan untuk melakukan Generate Prompt Infografis
- * Alur: User Login? -> Check Admin (Unlimited bypass) -> Check Plan Status -> Check Limit
+ * Alur: User Login? -> Check Admin (Unlimited bypass) -> Check Monthly Expiry -> Check Limit
  */
 export async function checkCanGenerate(
   userId: string
@@ -242,8 +265,20 @@ export async function checkCanGenerate(
     };
   }
 
-  // 2. Cek status akun reguler
-  if (summary.status !== 'active') {
+  // 2. Cek apakah paket bulanan Pro telah kedaluwarsa
+  if (summary.isExpired) {
+    // Jika paket Pro kedaluwarsa, cek apakah penggunaan bulan ini melebihi limit Free dasar
+    if (summary.usedThisMonth >= SUBSCRIPTION_PLANS.free.monthlyLimit) {
+      return {
+        allowed: false,
+        reason: 'Masa aktif langganan paket Pro bulanan Anda telah berakhir dan batas kuota Free bulan ini telah terpakai. Silakan perpanjang paket Pro Anda.',
+        summary,
+      };
+    }
+  }
+
+  // 3. Cek status akun reguler
+  if (summary.status === 'inactive') {
     return {
       allowed: false,
       reason: `Status langganan akun Anda saat ini tidak aktif (${summary.status}).`,
@@ -251,7 +286,7 @@ export async function checkCanGenerate(
     };
   }
 
-  // 3. Cek batas kuota bulanan reguler (Free 10, Pro 100)
+  // 4. Cek batas kuota bulanan reguler (Free 10, Pro 100)
   if (summary.isLimitReached) {
     return {
       allowed: false,
@@ -328,10 +363,19 @@ export async function setTestingPlan(
   }
 
   const existingSub = await getUserSubscription(userId);
+  const now = new Date();
+  const isPro = newPlan === 'pro';
+  // Jika beralih ke Pro, berikan masa aktif 30 hari (1 bulan kalender)
+  const startDate = isPro ? now.toISOString() : (existingSub.startDate || now.toISOString());
+  const endDate = isPro ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() : null;
+
   const updatedSub: UserSubscription = {
     ...existingSub,
     plan: newPlan,
-    updatedAt: new Date().toISOString(),
+    startDate,
+    endDate,
+    status: 'active',
+    updatedAt: now.toISOString(),
   };
 
   try {
@@ -348,8 +392,10 @@ export async function setTestingPlan(
           user_id: userId,
           plan: newPlan,
           role: updatedSub.role,
-          status: updatedSub.status,
-          updated_at: new Date().toISOString(),
+          status: 'active',
+          start_date: startDate,
+          end_date: endDate,
+          updated_at: now.toISOString(),
         });
     } catch (err) {
       console.warn('[STIVIA Subscription] Update paket testing Supabase:', err);

@@ -242,11 +242,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
                     isAdmin
                       ? 'bg-purple-50 text-purple-800 border-purple-200'
+                      : subscriptionSummary?.isExpired
+                      ? 'bg-rose-50 text-rose-800 border-rose-200'
                       : plan === 'pro'
                       ? 'bg-amber-50 text-amber-800 border-amber-200'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   }`}>
-                    {isAdmin ? 'Unlimited' : 'Aktif'}
+                    {isAdmin
+                      ? 'Unlimited'
+                      : subscriptionSummary?.isExpired
+                      ? 'Kedaluwarsa'
+                      : plan === 'pro' && subscriptionSummary?.daysRemaining !== undefined && subscriptionSummary.daysRemaining !== null
+                      ? `${subscriptionSummary.daysRemaining} hari lagi`
+                      : 'Aktif'}
                   </span>
                 </div>
               </div>
@@ -254,7 +262,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50">
-            <span className="truncate">Periode {periodLabel}</span>
+            <span className="truncate">
+              {plan === 'pro' && subscriptionSummary?.endDate
+                ? `Berakhir: ${new Date(subscriptionSummary.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                : `Periode: ${periodLabel}`}
+            </span>
             <button
               onClick={() => onNavigate('profil_saya')}
               className="text-[#3b49df] font-bold hover:underline shrink-0 cursor-pointer"
