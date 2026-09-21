@@ -686,8 +686,8 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanConfig> = {
     name: 'Pro',
     description: 'Paket Pendidik Kreatif & Pro',
     monthlyLimit: 100,
-    priceMonthly: 49000,
-    priceLabel: 'Rp 49.000 / bulan',
+    priceMonthly: 30000,
+    priceLabel: 'Rp 30.000 / bulan',
     badgeColor: 'indigo',
   },
 };
