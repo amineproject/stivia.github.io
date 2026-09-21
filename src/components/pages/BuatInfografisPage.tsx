@@ -14,14 +14,21 @@ import {
   Check,
   Copy,
   RotateCcw,
-  Loader2
+  Loader2,
+  Zap,
+  ShieldAlert,
+  AlertTriangle,
+  X,
+  ShieldCheck,
+  Info
 } from 'lucide-react';
 import { 
   EducationLevel, 
   InfographicFormat, 
   VisualLevel, 
   InfographicDraft,
-  NavigationTab
+  NavigationTab,
+  SubscriptionSummary
 } from '../../types';
 import { 
   GRADE_OPTIONS_BY_LEVEL, 
@@ -33,6 +40,7 @@ import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
 import { analyzeAndGenerateProjectInfographicPrompt } from '../../services/promptStudioEngine';
 import { StiviaThinkingResult } from '../../services/stiviaThinkingFramework';
 import { StiviaThinkingPanel } from '../infographic/StiviaThinkingPanel';
+import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 
 interface BuatInfografisPageProps {
   projects?: InfographicDraft[];
@@ -41,6 +49,9 @@ interface BuatInfografisPageProps {
   onLoadSampleData: () => void;
   onSelectProject?: (project: InfographicDraft) => void;
   onNavigate?: (tab: NavigationTab) => void;
+  userId?: string;
+  subscriptionSummary?: SubscriptionSummary | null;
+  onUsageRecorded?: () => void;
 }
 
 export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
@@ -50,6 +61,9 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   onLoadSampleData,
   onSelectProject,
   onNavigate,
+  userId = '',
+  subscriptionSummary,
+  onUsageRecorded,
 }) => {
   // Form state
   const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft.educationLevel || 'SMA');
@@ -78,6 +92,11 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [visualLevel, setVisualLevel] = useState<VisualLevel>(currentDraft.visualLevel || 'seimbang');
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Subscription Limit & Modal State
+  const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
+  const [showProInfoModal, setShowProInfoModal] = useState<boolean>(false);
+  const [limitReason, setLimitReason] = useState<string>('');
 
   // Generation & Output State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -178,7 +197,20 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     executeGeneratePrompt();
   };
 
-  const executeGeneratePrompt = () => {
+  const executeGeneratePrompt = async () => {
+    // 1. Validasi Akses & Limit Subscription
+    if (userId) {
+      const check = await checkCanGenerate(userId);
+      if (!check.allowed) {
+        setLimitReason(
+          check.reason ||
+          'Batas generate bulan ini telah tercapai. Paket Free memiliki batas penggunaan bulanan (10 generate/bulan). Anda dapat menunggu periode berikutnya atau menggunakan paket Pro.'
+        );
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
     const finalSubject = isCustomSubject ? customSubject.trim() : subject;
     const finalStyle = 'Modern Edukatif';
     const styleProfile = getStyleProfile(finalStyle);
@@ -186,7 +218,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     setIsGenerating(true);
     setCopied(false);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const fullDraft: InfographicDraft = {
           ...currentDraft,
@@ -221,6 +253,18 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           stiviaPrompt: prompt,
         });
 
+        // 2. Catat penambahan penggunaan (+1 generate) jika pengguna login
+        if (userId) {
+          try {
+            await recordGenerateUsage(userId);
+            if (onUsageRecorded) {
+              onUsageRecorded();
+            }
+          } catch (usageErr) {
+            console.warn('[Buat Prompt] Gagal mencatat log penggunaan:', usageErr);
+          }
+        }
+
         scrollToResult();
       } catch (err) {
         console.error('[Buat Prompt Generator Error]', err);
@@ -241,10 +285,40 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
       {/* Header Halaman */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>STIVIA v{APP_CURRENT_VERSION} • Generator Prompt Infografis</span>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>STIVIA v{APP_CURRENT_VERSION} • Generator Prompt Infografis</span>
+            </div>
+
+            {/* Quota & Plan Status Pill */}
+            {subscriptionSummary && (
+              <div 
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                  subscriptionSummary.isLimitReached
+                    ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 shadow-2xs'
+                }`}
+                title={`Periode ${subscriptionSummary.periodLabel}`}
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                  subscriptionSummary.isLimitReached ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'
+                }`} />
+                <span>Kuota:</span>
+                <span className="font-bold text-slate-900">
+                  {subscriptionSummary.usedThisMonth}/{subscriptionSummary.monthlyLimit}
+                </span>
+                <span className={`px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase tracking-wide ${
+                  subscriptionSummary.plan === 'pro'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-emerald-100 text-emerald-800'
+                }`}>
+                  {subscriptionSummary.plan}
+                </span>
+              </div>
+            )}
           </div>
+
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Buat Prompt
           </h1>
@@ -264,6 +338,31 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           <span>Gunakan Contoh Otomatis</span>
         </button>
       </div>
+
+      {/* Peringatan Banner Jika Limit Tercapai */}
+      {subscriptionSummary?.isLimitReached && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-rose-50 border border-rose-200 flex items-start gap-3.5 text-rose-900 shadow-2xs">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-sm flex-1">
+            <h4 className="font-bold text-rose-950">
+              Batas Generate Bulan Ini Telah Tercapai
+            </h4>
+            <p className="text-xs sm:text-sm text-rose-800 leading-relaxed">
+              Paket {subscriptionSummary.planName} memiliki batas penggunaan bulanan ({subscriptionSummary.monthlyLimit} generate/bulan). Anda telah menggunakan {subscriptionSummary.usedThisMonth}/{subscriptionSummary.monthlyLimit} generate untuk periode {subscriptionSummary.periodLabel}. Anda dapat menunggu periode berikutnya atau menggunakan paket Pro.
+            </p>
+            <div className="pt-2 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowProInfoModal(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-rose-300 text-xs font-bold text-rose-800 hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-600" />
+                <span>Pelajari Paket Pro (100 Generate/Bulan)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* SECTION A: DATA POKOK PEMBELAJARAN (KELAS, MAPEL, MATERI) */}
@@ -744,6 +843,178 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               <span>Panjang Karakter: {generatedPrompt.length} karakter</span>
               <span>•</span>
               <span className="text-emerald-400 font-semibold">Universal Compatibility ✓</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: BATAS GENERATE BULAN INI TERCAPAI */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5 animate-scale-up">
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowLimitModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                Batas Generate Bulan Ini Telah Tercapai
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                Paket Free memiliki batas penggunaan bulanan (10 generate/bulan). Anda dapat menunggu periode berikutnya atau menggunakan paket Pro.
+              </p>
+            </div>
+
+            {/* Ringkasan Penggunaan */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-600">
+                <span>Paket Anda:</span>
+                <span className="font-extrabold text-slate-900 uppercase">
+                  {subscriptionSummary?.plan || 'Free'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600">
+                <span>Penggunaan Periode Ini:</span>
+                <span className="font-bold text-rose-600">
+                  {subscriptionSummary?.usedThisMonth || 10} / {subscriptionSummary?.monthlyLimit || 10} generate
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-600">
+                <span>Status:</span>
+                <span className="font-bold text-rose-600">
+                  Limit Tercapai (Sisa 0)
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLimitModal(false);
+                  setShowProInfoModal(true);
+                }}
+                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>Pelajari Paket Pro</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowLimitModal(false)}
+                className="w-full sm:w-auto py-3 px-5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: INFORMASI PAKET PRO (TANPA PAYMENT GATEWAY) */}
+      {showProInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 animate-scale-up">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-600 block">
+                    Upgrade Kapasitas
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    Paket STIVIA Pro
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProInfoModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Paket Pro dirancang bagi guru, dosen, dan instruktur aktif yang membutuhkan kapasitas generate prompt infografis intensif setiap bulan.
+            </p>
+
+            <div className="space-y-3">
+              <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-black text-slate-900">Kapasitas Generate Bulanan</h4>
+                  <p className="text-xs text-slate-500">Reset otomatis setiap awal bulan kalender</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-black text-indigo-700">100</span>
+                  <span className="text-xs font-bold text-indigo-500 block">generate / bln</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-slate-700 font-medium">Batas 100 generate/bulan</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-slate-700 font-medium">20 Gaya Visual Lengkap</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-slate-700 font-medium">Semua Format Layout</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-slate-700 font-medium">Prioritas Generate AI</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Catatan Sesuai Ketentuan User: Tanpa Payment Gateway */}
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold">
+                <Info className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Status Pengembangan STIVIA 3.1:</span>
+              </div>
+              <p className="leading-relaxed text-[11px] text-amber-800">
+                Sistem pembayaran otomatis/payment gateway sedang dipersiapkan. Untuk keperluan pengujian limit paket saat ini, Anda dapat beralih antara paket Free (10 generate) dan Pro (100 generate) langsung di menu <strong>Profil Saya</strong>.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProInfoModal(false);
+                  if (onNavigate) {
+                    onNavigate('profil_saya');
+                  }
+                }}
+                className="px-5 py-2.5 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+              >
+                Buka Profil Saya & Kelola Paket
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowProInfoModal(false)}
+                className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>

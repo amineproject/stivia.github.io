@@ -116,6 +116,9 @@ export async function signUpWithEmail({ fullName, email, password }: SignUpCrede
     options: {
       data: {
         full_name: cleanName,
+        role: 'user',
+        plan: 'free',
+        subscription_status: 'active',
       },
     },
   });
@@ -206,6 +209,9 @@ export async function getUserProfile(userId: string): Promise<SupabaseUserProfil
       school_name: data.school_name ?? cachedProfile?.school_name ?? null,
       institution_name: (data as Record<string, any>).institution_name ?? cachedProfile?.institution_name ?? null,
       avatar_url: data.avatar_url ?? cachedProfile?.avatar_url ?? null,
+      role: (data as Record<string, any>).role ?? cachedProfile?.role ?? 'user',
+      plan: (data as Record<string, any>).plan ?? cachedProfile?.plan ?? 'free',
+      subscription_status: (data as Record<string, any>).subscription_status ?? cachedProfile?.subscription_status ?? 'active',
       created_at: data.created_at ?? cachedProfile?.created_at,
       updated_at: data.updated_at ?? cachedProfile?.updated_at,
     };

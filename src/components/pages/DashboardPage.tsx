@@ -11,15 +11,19 @@ import {
   Bookmark, 
   Lock, 
   CheckCircle2, 
-  Play
+  Play,
+  Zap,
+  ShieldCheck,
+  Crown
 } from 'lucide-react';
-import { InfographicDraft, NavigationTab } from '../../types';
+import { InfographicDraft, NavigationTab, SubscriptionSummary } from '../../types';
 
 interface DashboardPageProps {
   projects: InfographicDraft[];
   onSelectProject: (project: InfographicDraft, targetTab: 'buat' | 'hasil' | 'preview') => void;
   onNavigate: (tab: NavigationTab) => void;
   onLoadSample: () => void;
+  subscriptionSummary?: SubscriptionSummary | null;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -27,6 +31,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onSelectProject,
   onNavigate,
   onLoadSample,
+  subscriptionSummary,
 }) => {
   // Hanya ambil proyek yang dibuat/disimpan oleh pengguna (tanpa data contoh bawaan)
   const userProjects = (projects || []).filter(
@@ -36,6 +41,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // Perhitungan prompt murni berdasarkan proyek nyata milik pengguna
   const promptCount = userProjects.length * 2;
+
+  // Data langganan fallback & perlakuan role
+  const isAdmin = Boolean(subscriptionSummary?.isAdmin);
+  const plan = isAdmin ? 'admin' : (subscriptionSummary?.plan || 'free');
+  const usedThisMonth = subscriptionSummary?.usedThisMonth ?? 0;
+  const monthlyLimit = isAdmin ? Infinity : (subscriptionSummary?.monthlyLimit ?? 10);
+  const remaining = isAdmin ? Infinity : (subscriptionSummary?.remaining ?? Math.max(0, monthlyLimit - usedThisMonth));
+  const periodLabel = subscriptionSummary?.periodLabel || 'Bulan Ini';
+  const isLimitReached = isAdmin ? false : (subscriptionSummary?.isLimitReached ?? false);
+  const usagePercentage = isAdmin
+    ? 0
+    : Math.min(100, Math.round((usedThisMonth / (monthlyLimit || 1)) * 100));
 
   // Helper untuk menentukan status badge
   const getStatusBadge = (status: string, isLocked?: boolean) => {
@@ -118,52 +135,132 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* TIGA KARTU STATISTIK (MENGGUNAKAN DATA NYATA PENGGUNA) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      {/* KARTU STATISTIK & PENGGUNAAN (DATA NYATA PENGGUNA & SUBSCRIPTION) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* STAT 1: TOTAL INFOGRAFIS */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xs flex items-center gap-4.5 hover:shadow-xs transition-shadow">
-          <div className="w-13 h-13 rounded-2xl bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0">
-            <FileText className="w-6 h-6" />
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex items-center gap-4 hover:shadow-xs transition-shadow">
+          <div className="w-12 h-12 rounded-2xl bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               TOTAL INFOGRAFIS
             </span>
-            <span className="text-3xl font-black text-slate-900 tracking-tight">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {userProjects.length}
             </span>
           </div>
         </div>
 
         {/* STAT 2: PROMPT TERSIMPAN */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xs flex items-center gap-4.5 hover:shadow-xs transition-shadow">
-          <div className="w-13 h-13 rounded-2xl bg-[#dcfce7] text-[#16a34a] flex items-center justify-center shrink-0">
-            <Bookmark className="w-6 h-6" />
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex items-center gap-4 hover:shadow-xs transition-shadow">
+          <div className="w-12 h-12 rounded-2xl bg-[#dcfce7] text-[#16a34a] flex items-center justify-center shrink-0">
+            <Bookmark className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               PROMPT TERSIMPAN
             </span>
-            <span className="text-3xl font-black text-slate-900 tracking-tight">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {promptCount}
             </span>
           </div>
         </div>
 
-        {/* STAT 3: AKTIVITAS TERAKHIR */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xs flex items-center gap-4.5 hover:shadow-xs transition-shadow">
-          <div className="w-13 h-13 rounded-2xl bg-[#eff6ff] text-[#2563eb] flex items-center justify-center shrink-0">
-            <Clock className="w-6 h-6" />
+        {/* STAT 3: PENGGUNAAN BULAN INI (LIMIT CHECKER) */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex flex-col justify-between gap-3 hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                isLimitReached 
+                  ? 'bg-rose-50 text-rose-600' 
+                  : 'bg-amber-50 text-amber-600'
+              }`}>
+                <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  PENGGUNAAN BULAN INI
+                </span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    {usedThisMonth}
+                  </span>
+                  <span className="text-xs font-bold text-slate-400">
+                    / {isAdmin ? 'Unlimited (∞)' : `${monthlyLimit} generate`}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              AKTIVITAS TERAKHIR
-            </span>
-            <span className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate block max-w-[170px]">
-              {userProjects.length > 0
-                ? (userProjects[0].updatedAt ? `Diperbarui ${userProjects[0].updatedAt}` : 'Hari ini')
-                : 'Belum Ada Aktivitas'}
-            </span>
+
+          <div className="space-y-1.5 pt-1">
+            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isAdmin
+                    ? 'bg-gradient-to-r from-purple-500 to-indigo-600 w-full'
+                    : isLimitReached 
+                    ? 'bg-rose-500' 
+                    : usagePercentage > 80 
+                    ? 'bg-amber-500' 
+                    : 'bg-[#3b49df]'
+                }`}
+                style={{ width: isAdmin ? '100%' : `${usagePercentage}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className={`font-semibold ${isAdmin ? 'text-purple-600' : isLimitReached ? 'text-rose-600' : 'text-slate-500'}`}>
+                {isAdmin ? 'Akses Admin: Tanpa batas kuota' : isLimitReached ? 'Limit bulan ini tercapai' : `Sisa: ${remaining} generate`}
+              </span>
+              <span className="text-slate-400">{isAdmin ? 'Unlimited' : `${usagePercentage}%`}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* STAT 4: PAKET AKUN */}
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex flex-col justify-between gap-3 hover:shadow-xs transition-shadow">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                isAdmin
+                  ? 'bg-purple-50 text-purple-700'
+                  : plan === 'pro'
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'bg-emerald-50 text-emerald-700'
+              }`}>
+                {isAdmin ? <Crown className="w-5 h-5 sm:w-6 sm:h-6" /> : <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />}
+              </div>
+              <div>
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  {isAdmin ? 'PERAN AKUN' : 'PAKET ANDA'}
+                </span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
+                    {isAdmin ? 'ADMIN' : plan}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
+                    isAdmin
+                      ? 'bg-purple-50 text-purple-800 border-purple-200'
+                      : plan === 'pro'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  }`}>
+                    {isAdmin ? 'Unlimited' : 'Aktif'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50">
+            <span className="truncate">Periode {periodLabel}</span>
+            <button
+              onClick={() => onNavigate('profil_saya')}
+              className="text-[#3b49df] font-bold hover:underline shrink-0 cursor-pointer"
+            >
+              Kelola ›
+            </button>
           </div>
         </div>
       </div>

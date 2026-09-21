@@ -642,8 +642,87 @@ export interface SupabaseUserProfile {
   school_name: string | null;
   institution_name?: string | null;
   avatar_url: string | null;
+  role?: UserRole;
+  plan?: SubscriptionPlan;
+  subscription_status?: SubscriptionStatus;
   created_at?: string;
   updated_at?: string;
+}
+
+// ==========================================
+// STIVIA 3.1: FONDASI SUBSCRIPTION & USAGE LIMIT
+// ==========================================
+
+export type UserRole = 'user' | 'admin';
+export type SubscriptionPlan = 'free' | 'pro';
+export type SubscriptionStatus = 'active' | 'inactive' | 'expired';
+
+export interface PlanConfig {
+  id: SubscriptionPlan;
+  name: string;
+  description: string;
+  monthlyLimit: number;
+  priceMonthly: number;     // Harga dalam Rupiah (0 untuk Free, misal 49000 untuk Pro)
+  priceLabel: string;       // Label harga ramah pengguna (misal "Gratis" atau "Rp 49.000 / bulan")
+  badgeColor: string;
+}
+
+/**
+ * Single Source of Truth untuk Konfigurasi Paket STIVIA 3.1
+ * Harga dan limit bulanan dapat diubah langsung di sini tanpa merombak kode lainnya.
+ */
+export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanConfig> = {
+  free: {
+    id: 'free',
+    name: 'Free',
+    description: 'Paket Dasar Pendidik',
+    monthlyLimit: 10,
+    priceMonthly: 0,
+    priceLabel: 'Gratis',
+    badgeColor: 'emerald',
+  },
+  pro: {
+    id: 'pro',
+    name: 'Pro',
+    description: 'Paket Pendidik Kreatif & Pro',
+    monthlyLimit: 100,
+    priceMonthly: 49000,
+    priceLabel: 'Rp 49.000 / bulan',
+    badgeColor: 'indigo',
+  },
+};
+
+export interface UserSubscription {
+  userId: string;
+  plan: SubscriptionPlan;
+  role: UserRole;
+  status: SubscriptionStatus;
+  startDate: string;
+  endDate?: string | null;
+  updatedAt: string;
+}
+
+export interface MonthlyUsage {
+  userId: string;
+  period: string; // Format: "YYYY-MM", misal "2026-09"
+  generateCount: number;
+  lastGeneratedAt?: string;
+}
+
+export interface SubscriptionSummary {
+  plan: SubscriptionPlan;
+  planName: string;
+  role: UserRole;
+  status: SubscriptionStatus;
+  period: string;       // "2026-09"
+  periodLabel: string;  // "September 2026"
+  monthlyLimit: number; // Angka limit (atau Infinity jika Admin)
+  usedThisMonth: number;
+  remaining: number;    // Sisa kuota (atau Infinity jika Admin)
+  isLimitReached: boolean;
+  usagePercentage?: number;
+  isAdmin: boolean;
+  isPro: boolean;
 }
 
 // ==========================================

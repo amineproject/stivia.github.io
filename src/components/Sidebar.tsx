@@ -22,6 +22,8 @@ interface SidebarProps {
   userRole?: string;
   userSchool?: string;
   userAvatar?: string | null;
+  userPlan?: 'free' | 'pro';
+  isAdmin?: boolean;
   onLogout?: () => void;
 }
 
@@ -35,6 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userRole = 'Pendidik & Kreator',
   userSchool,
   userAvatar,
+  userPlan = 'free',
+  isAdmin = false,
   onLogout,
 }) => {
   // Helper to determine if a sub-flow tab belongs to active section
@@ -165,9 +169,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-900 truncate">
-                {userName}
-              </p>
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-xs font-bold text-slate-900 truncate">
+                  {userName}
+                </p>
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide shrink-0 ${
+                  isAdmin || userRole === 'admin'
+                    ? 'bg-purple-100 text-purple-800 border border-purple-300/60'
+                    : userPlan === 'pro'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300/60'
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-300/60'
+                }`}>
+                  {isAdmin || userRole === 'admin' ? 'ADMIN (∞)' : userPlan}
+                </span>
+              </div>
               <p className="text-[10px] font-semibold text-[#3b49df] truncate">
                 {userSchool || userRole}
               </p>

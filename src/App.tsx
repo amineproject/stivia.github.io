@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DashboardPage } from './components/pages/DashboardPage';
@@ -15,12 +15,14 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { AuthPage } from './components/auth/AuthPage';
 import { getUserProfile, signOutUser } from './services/authService';
+import { getSubscriptionSummary } from './services/subscriptionService';
 import { 
   InfographicDraft, 
   NavigationTab, 
   UserSettings,
   ResponsiveViewMode,
-  SupabaseUserProfile 
+  SupabaseUserProfile,
+  SubscriptionSummary
 } from './types';
 import { 
   INITIAL_SAMPLE_DRAFT, 
@@ -34,6 +36,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
   const [userProfile, setUserProfile] = useState<SupabaseUserProfile | null>(null);
+  const [subscriptionSummary, setSubscriptionSummary] = useState<SubscriptionSummary | null>(null);
 
   // Navigation active tab (default to dashboard)
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
@@ -47,6 +50,20 @@ export default function App() {
   }, [activeTab]);
 
   // Inisialisasi dan listener session Supabase Auth
+  const refreshSubscriptionSummary = useCallback(async (userIdOverride?: string) => {
+    const targetUserId = userIdOverride || session?.user?.id;
+    if (!targetUserId) {
+      setSubscriptionSummary(null);
+      return;
+    }
+    try {
+      const summary = await getSubscriptionSummary(targetUserId);
+      setSubscriptionSummary(summary);
+    } catch (err) {
+      console.warn('Gagal memuat ringkasan paket:', err);
+    }
+  }, [session?.user?.id]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -81,6 +98,7 @@ export default function App() {
             data.session.user.id,
             data.session.user.user_metadata?.full_name
           );
+          await refreshSubscriptionSummary(data.session.user.id);
         }
       } catch (err) {
         console.warn('Gagal memuat sesi Supabase:', err);
@@ -101,8 +119,10 @@ export default function App() {
           newSession.user.id,
           newSession.user.user_metadata?.full_name
         );
+        await refreshSubscriptionSummary(newSession.user.id);
       } else {
         setUserProfile(null);
+        setSubscriptionSummary(null);
       }
     });
 
@@ -110,7 +130,7 @@ export default function App() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [refreshSubscriptionSummary]);
 
   // Handler Keluar (Logout)
   const handleLogout = async () => {
@@ -121,6 +141,7 @@ export default function App() {
     } finally {
       setSession(null);
       setUserProfile(null);
+      setSubscriptionSummary(null);
       showToast('Berhasil keluar dari akun STIVIA.');
     }
   };
@@ -141,7 +162,11 @@ export default function App() {
       full_name: 'Guru Penggerak STIVIA',
       title: 'Pendidik Kreatif & Inovator',
       school_name: 'Sekolah Penggerak STIVIA',
+      plan: 'free',
+      subscription_status: 'active',
+      role: 'user',
     });
+    refreshSubscriptionSummary('demo-pendidik-001');
     showToast('Masuk dalam Mode Demo STIVIA.');
   };
 
@@ -420,6 +445,8 @@ export default function App() {
         userRole={currentUserRole}
         userSchool={currentUserSchool}
         userAvatar={userProfile?.avatar_url}
+        userPlan={subscriptionSummary?.plan || userProfile?.plan || 'free'}
+        isAdmin={Boolean(subscriptionSummary?.isAdmin || userProfile?.role === 'admin')}
         onLogout={handleLogout}
       />
 
@@ -460,6 +487,7 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onLoadSample={handleLoadSample}
+              subscriptionSummary={subscriptionSummary}
             />
           )}
 
@@ -474,6 +502,9 @@ export default function App() {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              userId={session?.user?.id}
+              subscriptionSummary={subscriptionSummary}
+              onUsageRecorded={() => refreshSubscriptionSummary()}
             />
           )}
 
@@ -546,6 +577,8 @@ export default function App() {
               }}
               showToast={showToast}
               effectiveMode={effectiveMode}
+              subscriptionSummary={subscriptionSummary}
+              onRefreshSubscription={() => refreshSubscriptionSummary()}
             />
           )}
 
