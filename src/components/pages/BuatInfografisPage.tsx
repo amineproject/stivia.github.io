@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   BookOpen, 
@@ -9,18 +9,19 @@ import {
   Layout,
   Sliders,
   Wand2,
-  FolderKanban,
   CheckCircle2,
-  Plus,
   Layers,
-  ListFilter,
-  Check
+  Check,
+  Copy,
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import { 
   EducationLevel, 
   InfographicFormat, 
   VisualLevel, 
-  InfographicDraft 
+  InfographicDraft,
+  NavigationTab
 } from '../../types';
 import { 
   GRADE_OPTIONS_BY_LEVEL, 
@@ -28,13 +29,18 @@ import {
   INITIAL_SAMPLE_DRAFT
 } from '../../data/mockData';
 import { getStyleProfile } from '../../data/styleProfilesData';
+import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
+import { analyzeAndGenerateProjectInfographicPrompt } from '../../services/promptStudioEngine';
+import { StiviaThinkingResult } from '../../services/stiviaThinkingFramework';
+import { StiviaThinkingPanel } from '../infographic/StiviaThinkingPanel';
 
 interface BuatInfografisPageProps {
   projects?: InfographicDraft[];
   currentDraft: InfographicDraft;
-  onSubmitForm: (formData: Partial<InfographicDraft>) => void;
+  onSubmitForm: (formData: Partial<InfographicDraft>, options?: { navigateToStudio?: boolean }) => void;
   onLoadSampleData: () => void;
   onSelectProject?: (project: InfographicDraft) => void;
+  onNavigate?: (tab: NavigationTab) => void;
 }
 
 export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
@@ -43,6 +49,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   onSubmitForm,
   onLoadSampleData,
   onSelectProject,
+  onNavigate,
 }) => {
   // Form state
   const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft.educationLevel || 'SMA');
@@ -51,9 +58,15 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [customSubject, setCustomSubject] = useState<string>('');
   const [isCustomSubject, setIsCustomSubject] = useState<boolean>(false);
 
-  const [theme, setTheme] = useState<string>(currentDraft.theme || currentDraft.rawTopic || 'Struktur Data Graph');
+  const [materiDiajarkan, setMateriDiajarkan] = useState<string>(
+    currentDraft.rawTopic || currentDraft.title || currentDraft.theme || 'Struktur Data Graph'
+  );
   const [bab, setBab] = useState<string>(currentDraft.bab || '');
-  const [rawTopic, setRawTopic] = useState<string>(currentDraft.theme || currentDraft.rawTopic || 'Struktur Data Graph');
+  const [temaKegiatan, setTemaKegiatan] = useState<string>(
+    currentDraft.theme && currentDraft.theme !== (currentDraft.rawTopic || currentDraft.title)
+      ? currentDraft.theme
+      : ''
+  );
   const [pertemuan, setPertemuan] = useState<string>(currentDraft.pertemuan || 'Pertemuan 1');
   const [scope, setScope] = useState<string>(
     currentDraft.scope || 
@@ -66,21 +79,11 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Filter daftar materi yang telah dibuat pengguna (tidak termasuk mock dummy)
-  const userProjects = useMemo(() => {
-    const list: InfographicDraft[] = [];
-    if (currentDraft && currentDraft.id && !['proj-002', 'proj-003', 'proj-004'].includes(currentDraft.id)) {
-      list.push(currentDraft);
-    }
-    if (projects && projects.length > 0) {
-      projects.forEach((p) => {
-        if (!['proj-002', 'proj-003', 'proj-004'].includes(p.id) && !list.some((existing) => existing.id === p.id)) {
-          list.push(p);
-        }
-      });
-    }
-    return list;
-  }, [projects, currentDraft]);
+  // Generation & Output State
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedPrompt, setGeneratedPrompt] = useState<string>(() => currentDraft.stiviaPrompt || '');
+  const [thinkingResult, setThinkingResult] = useState<StiviaThinkingResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Sync available grades when education level changes
   useEffect(() => {
@@ -106,10 +109,10 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         setIsCustomSubject(true);
       }
 
-      const temaMateri = currentDraft.theme || currentDraft.rawTopic || currentDraft.title || '';
-      setTheme(temaMateri);
+      const rawMat = currentDraft.rawTopic || currentDraft.title || currentDraft.theme || '';
+      setMateriDiajarkan(rawMat);
       setBab(currentDraft.bab || '');
-      setRawTopic(temaMateri);
+      setTemaKegiatan(currentDraft.theme && currentDraft.theme !== rawMat ? currentDraft.theme : '');
       setPertemuan(currentDraft.pertemuan || 'Pertemuan 1');
       setScope(currentDraft.scope || '');
       setUserNotes(currentDraft.userNotes || '');
@@ -122,55 +125,14 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     setEducationLevel(level);
   };
 
-  const handleSelectCreatedProject = (projId: string) => {
-    const found = userProjects.find((p) => p.id === projId);
-    if (found) {
-      if (onSelectProject) {
-        onSelectProject(found);
-      }
-      setEducationLevel(found.educationLevel || 'SMA');
-      setGrade(found.grade || 'Kelas X');
-      const isKnown = SUBJECT_OPTIONS.includes(found.subject);
-      if (isKnown) {
-        setSubject(found.subject);
-        setIsCustomSubject(false);
-      } else if (found.subject) {
-        setSubject('Lainnya');
-        setCustomSubject(found.subject);
-        setIsCustomSubject(true);
-      }
-      const temaMateri = found.theme || found.rawTopic || found.title || '';
-      setTheme(temaMateri);
-      setBab(found.bab || '');
-      setRawTopic(temaMateri);
-      setPertemuan(found.pertemuan || 'Pertemuan 1');
-      setScope(found.scope || '');
-      setUserNotes(found.userNotes || '');
-    }
-  };
-
-  const handleResetForNew = () => {
-    setTheme('');
-    setBab('');
-    setRawTopic('');
-    setScope('');
-    setUserNotes('');
-    setSubject('Informatika');
-    setIsCustomSubject(false);
-    setEducationLevel('SMA');
-    setGrade('Kelas X');
-    setPertemuan('Pertemuan 1');
-    setFormErrors({});
-  };
-
   const handleFillSample = () => {
     setEducationLevel(INITIAL_SAMPLE_DRAFT.educationLevel);
     setGrade(INITIAL_SAMPLE_DRAFT.grade);
     setSubject(INITIAL_SAMPLE_DRAFT.subject);
     setIsCustomSubject(false);
-    setTheme(INITIAL_SAMPLE_DRAFT.theme || 'Struktur Data Graph');
-    setBab(INITIAL_SAMPLE_DRAFT.bab || 'Bab 2: Struktur Data dan Algoritma');
-    setRawTopic(INITIAL_SAMPLE_DRAFT.theme || 'Struktur Data Graph');
+    setMateriDiajarkan('Struktur Data Graph');
+    setBab('Bab 2: Struktur Data dan Algoritma');
+    setTemaKegiatan('Eksplorasi Struktur Data Non-Linear');
     setPertemuan(INITIAL_SAMPLE_DRAFT.pertemuan || 'Pertemuan 1');
     setScope(INITIAL_SAMPLE_DRAFT.scope);
     setUserNotes(INITIAL_SAMPLE_DRAFT.userNotes || '');
@@ -184,8 +146,8 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     if (!finalSubject) {
       errors.subject = 'Mata pelajaran wajib diisi atau dipilih.';
     }
-    if (!theme.trim()) {
-      errors.theme = 'Materi yang akan dibuat promptnya (nama tema materi) wajib diisi.';
+    if (!materiDiajarkan.trim()) {
+      errors.materiDiajarkan = 'Materi yang akan diajarkan wajib diisi.';
     }
     if (!scope.trim()) {
       errors.scope = 'Cakupan materi wajib diisi minimal beberapa poin.';
@@ -195,30 +157,83 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const handleCopyPrompt = () => {
+    if (!generatedPrompt) return;
+    navigator.clipboard.writeText(generatedPrompt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
 
+  const scrollToResult = () => {
+    setTimeout(() => {
+      const resultEl = document.getElementById('prompt-result-section');
+      if (resultEl) {
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  };
+
+  const handleRegenerate = () => {
+    if (!validateForm()) return;
+    executeGeneratePrompt();
+  };
+
+  const executeGeneratePrompt = () => {
     const finalSubject = isCustomSubject ? customSubject.trim() : subject;
     const finalStyle = 'Modern Edukatif';
     const styleProfile = getStyleProfile(finalStyle);
 
-    onSubmitForm({
-      educationLevel,
-      grade,
-      subject: finalSubject,
-      theme: theme.trim(),
-      bab: bab.trim(),
-      rawTopic: theme.trim(),
-      pertemuan: pertemuan.trim() || 'Pertemuan 1',
-      scope,
-      userNotes: userNotes.trim(),
-      visualStyle: finalStyle,
-      format,
-      visualLevel,
-      styleProfile,
-      typographyMode: 'otomatis',
-    });
+    setIsGenerating(true);
+    setCopied(false);
+
+    setTimeout(() => {
+      try {
+        const fullDraft: InfographicDraft = {
+          ...currentDraft,
+          educationLevel,
+          grade,
+          subject: finalSubject,
+          theme: temaKegiatan.trim() || materiDiajarkan.trim(),
+          title: materiDiajarkan.trim(),
+          rawTopic: materiDiajarkan.trim(),
+          bab: bab.trim(),
+          pertemuan: pertemuan.trim() || 'Pertemuan 1',
+          scope,
+          userNotes: userNotes.trim(),
+          visualStyle: finalStyle,
+          format,
+          visualLevel,
+          styleProfile,
+          typographyMode: 'otomatis',
+          updatedAt: new Date().toISOString().split('T')[0],
+        };
+
+        const { prompt, thinkingResult: result } = analyzeAndGenerateProjectInfographicPrompt(fullDraft, {
+          format: 'Vertikal',
+          visualStyleName: finalStyle,
+        });
+
+        setGeneratedPrompt(prompt);
+        setThinkingResult(result);
+
+        onSubmitForm({
+          ...fullDraft,
+          stiviaPrompt: prompt,
+        });
+
+        scrollToResult();
+      } catch (err) {
+        console.error('[Buat Prompt Generator Error]', err);
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 250);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    executeGeneratePrompt();
   };
 
   return (
@@ -228,13 +243,13 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 mb-2">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Data Awal Pembelajaran</span>
+            <span>STIVIA v{APP_CURRENT_VERSION} • Generator Prompt Infografis</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Buat Prompt
           </h1>
           <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-            Input data awal: <strong>Kelas</strong>, <strong>Mata Pelajaran (Mapel)</strong>, dan <strong>Materi yang akan dibuat promptnya</strong>. Data ini akan menjadi basis utama saat digenerate di menu <strong>Prompt Studio</strong>.
+            Input data materi: <strong>Kelas</strong>, <strong>Mata Pelajaran</strong>, dan <strong>Materi yang akan dibuat promptnya</strong>. Sistem STIVIA akan menganalisis data pembelajaran dan langsung menghasilkan <strong>Prompt Infografis</strong> yang siap digunakan.
           </p>
         </div>
 
@@ -248,108 +263,6 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           <Wand2 className="w-4 h-4 text-indigo-600" />
           <span>Gunakan Contoh Otomatis</span>
         </button>
-      </div>
-
-      {/* DAFTAR MATERI TERSEDIA (YANG TELAH DIBUAT OLEH PENGGUNA) */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
-              <FolderKanban className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                  Daftar Materi Tersedia
-                </h2>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100">
-                  {userProjects.length} Materi Pengguna
-                </span>
-              </div>
-              <p className="text-xs text-slate-500">
-                Materi yang telah dibuat oleh pengguna. Pilih salah satu untuk memuat data Kelas, Mapel, dan Materi, atau input materi baru.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              id="btn-buat-materi-baru-form"
-              type="button"
-              onClick={handleResetForNew}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
-              title="Kosongkan formulir untuk memasukkan materi baru"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Input Materi Baru</span>
-            </button>
-          </div>
-        </div>
-
-        {userProjects.length > 0 ? (
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label htmlFor="select-materi-tersedia-buat" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Pilih Materi Pembelajaran Pengguna:
-              </label>
-              <select
-                id="select-materi-tersedia-buat"
-                value={currentDraft.id}
-                onChange={(e) => handleSelectCreatedProject(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs sm:text-sm font-semibold focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs"
-              >
-                {userProjects.map((p) => {
-                  const namaTemaMateri = p.theme || p.title || p.rawTopic || 'Materi';
-                  return (
-                    <option key={p.id} value={p.id}>
-                      Materi: {namaTemaMateri} | Mapel: {p.subject} | Kelas: {p.educationLevel} {p.grade}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            {/* Quick Select Buttons */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
-                <ListFilter className="w-3 h-3" />
-                Pilih Cepat:
-              </span>
-              {userProjects.map((p) => {
-                const isActive = p.id === currentDraft.id;
-                const namaTemaMateri = p.theme || p.title || p.rawTopic || 'Materi';
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSelectCreatedProject(p.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-2 border cursor-pointer ${
-                      isActive
-                        ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-2xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="truncate max-w-[140px] sm:max-w-[200px]">
-                      {namaTemaMateri}
-                    </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                      isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-white border border-slate-200 text-slate-600'
-                    }`}>
-                      {p.subject} • {p.grade}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
-            <span>💡</span>
-            <span>
-              Belum ada materi pembelajaran yang disimpan. Silakan lengkapi data <strong>Kelas</strong>, <strong>Mapel</strong>, dan <strong>Materi yang akan dibuat promptnya</strong> pada formulir di bawah.
-            </span>
-          </div>
-        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -485,33 +398,29 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             )}
           </div>
 
-          {/* 4. Materi yang Akan Dibuat Promptnya (Tema Materi Saja) */}
+          {/* 4. Materi yang Akan Diajarkan */}
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <label htmlFor="input-materi-yang-dibuat-prompt" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                4. Materi yang Akan Dibuat Promptnya <span className="text-rose-500">*</span>
+              <label htmlFor="input-materi-yang-diajarkan" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                4. Materi yang Akan Diajarkan <span className="text-rose-500">*</span>
               </label>
               <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
-                Nama Tema Materi Saja
+                Materi Pokok Pembelajaran
               </span>
             </div>
             <input
-              id="input-materi-yang-dibuat-prompt"
+              id="input-materi-yang-diajarkan"
               type="text"
-              value={theme}
-              onChange={(e) => {
-                const val = e.target.value;
-                setTheme(val);
-                setRawTopic(val);
-              }}
-              placeholder="Contoh: Struktur Data Graph / Ekosistem / Teks LHO"
+              value={materiDiajarkan}
+              onChange={(e) => setMateriDiajarkan(e.target.value)}
+              placeholder="Contoh: Struktur Data Graph / Sistem Ekskresi Manusia / Teks LHO"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs"
             />
-            {formErrors.theme && (
-              <p className="text-xs text-rose-500 font-medium">{formErrors.theme}</p>
+            {formErrors.materiDiajarkan && (
+              <p className="text-xs text-rose-500 font-medium">{formErrors.materiDiajarkan}</p>
             )}
             <p className="text-[11px] text-slate-500">
-              * Tuliskan <strong>nama tema materinya saja</strong> agar tidak terlalu panjang (misal: <em>Struktur Data Graph</em>, <em>Sistem Ekskresi</em>, <em>Teks Prosedur</em>).
+              * Tuliskan materi pokok yang akan diajarkan dan dirumuskan ke dalam prompt infografis (misal: <em>Struktur Data Graph</em>, <em>Sistem Ekskresi Manusia</em>, <em>Hukum Newton</em>).
             </p>
           </div>
         </div>
@@ -527,7 +436,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 Rincian & Cakupan Pembelajaran (STIVIA)
               </h2>
               <p className="text-xs text-slate-500">
-                Uraikan bab, rangkaian pertemuan, dan batasan wajib cakupan materi
+                Uraikan bab, tema materi/kegiatan, rangkaian pertemuan, dan batasan wajib cakupan materi
               </p>
             </div>
           </div>
@@ -553,22 +462,22 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               />
             </div>
 
-            {/* 6. Subtopik Spesifik */}
+            {/* 6. Tema Materi / Kegiatan */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="input-subtopik" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  6. Subtopik Spesifik <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                <label htmlFor="input-tema-kegiatan" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  6. Tema Materi / Kegiatan <span className="text-slate-400 font-normal lowercase">(opsional)</span>
                 </label>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  Rincian spesifik tema
+                  Tema materi / kegiatan belajar
                 </span>
               </div>
               <input
-                id="input-subtopik"
+                id="input-tema-kegiatan"
                 type="text"
-                value={rawTopic !== theme ? rawTopic : ''}
-                onChange={(e) => setRawTopic(e.target.value || theme)}
-                placeholder="Opsional, jika ada fokus subtopik tertentu"
+                value={temaKegiatan}
+                onChange={(e) => setTemaKegiatan(e.target.value)}
+                placeholder="Contoh: Eksplorasi Struktur Data Non-Linear / Praktikum Jaringan / Diskusi Kelompok"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
@@ -667,7 +576,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             />
             <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
               <span>💡</span>
-              <span>Catatan ini akan otomatis disertakan ke dalam parameter data awal untuk digenerate di Prompt Studio.</span>
+              <span>Catatan ini akan otomatis disertakan ke dalam parameter data materi untuk analisis Prompt Infografis.</span>
             </p>
           </div>
         </div>
@@ -677,25 +586,30 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 block">
-                Ringkasan Data Awal
+                Ringkasan Data Materi
               </span>
               <h3 className="text-base sm:text-lg font-bold text-white">
-                Materi Siap Digenerate di Prompt Studio
+                Materi Siap Digenerate Menjadi Prompt Infografis
               </h3>
             </div>
             <span className="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-medium border border-slate-700 self-start sm:self-auto">
-              Universal Prompt Ready
+              STIVIA 3.1 Ready
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
               <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
-                Materi yang Dibuat Prompt:
+                Materi yang Diajarkan:
               </span>
               <span className="text-sm font-bold text-white block mt-0.5 truncate">
-                {theme.trim() || '(Ketik nama tema materi di atas)'}
+                {materiDiajarkan.trim() || '(Ketik materi yang diajarkan di atas)'}
               </span>
+              {temaKegiatan.trim() && (
+                <span className="text-[11px] text-indigo-300 block truncate mt-0.5 font-medium">
+                  Tema/Kegiatan: {temaKegiatan.trim()}
+                </span>
+              )}
             </div>
 
             <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
@@ -720,21 +634,120 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
             <div className="text-xs text-slate-400 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Pilih prompt materi atau infografis pada langkah berikutnya.</span>
+              <span>Sistem menganalisis data & langsung menghasilkan Prompt Infografis STIVIA.</span>
             </div>
 
             <button
-              id="btn-generate-prompt-studio"
+              id="btn-generate-prompt"
               type="submit"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white font-bold text-base shadow-xl shadow-indigo-500/25 transition-all cursor-pointer transform hover:-translate-y-0.5 shrink-0"
+              disabled={isGenerating}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base shadow-xl transition-all ${
+                isGenerating
+                  ? 'bg-indigo-400 text-white cursor-not-allowed opacity-80'
+                  : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-indigo-600/25 cursor-pointer transform hover:-translate-y-0.5 shrink-0'
+              }`}
             >
-              <Sparkles className="w-5 h-5 text-indigo-200" />
-              <span>Generate di Prompt Studio</span>
-              <ArrowRight className="w-5 h-5" />
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                  <span>Menganalisis & Menghasilkan Prompt...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 text-indigo-200" />
+                  <span>GENERATE PROMPT</span>
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </div>
         </div>
       </form>
+
+      {/* PANEL HASIL KERANGKA BERPIKIR STIVIA (7 TAHAP) */}
+      {thinkingResult && (
+        <StiviaThinkingPanel thinkingResult={thinkingResult} />
+      )}
+
+      {/* HASIL PROMPT INFOGRAFIS KELUARAN (READ-ONLY TEXTAREA & COPY BUTTON) */}
+      {generatedPrompt && (
+        <div 
+          id="prompt-result-section"
+          className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300 scroll-mt-6"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <h3 className="text-base font-bold text-white tracking-wide">
+                  Hasil Prompt Infografis STIVIA (Siap Digunakan)
+                </h3>
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/80">
+                  Universal AI Prompt
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                Salin teks prompt di bawah ini dan tempelkan langsung ke AI pilihan Anda (ChatGPT, Claude, Gemini, dll).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                id="btn-regenerate-prompt"
+                onClick={handleRegenerate}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
+                title="Regenerate Prompt dengan data materi saat ini"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                <span>Regenerate</span>
+              </button>
+
+              <button
+                id="btn-copy-prompt"
+                type="button"
+                onClick={handleCopyPrompt}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md ${
+                  copied
+                    ? 'bg-emerald-600 text-white shadow-emerald-900/40'
+                    : 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white shadow-indigo-900/40'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Prompt Tersalin!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Salin Prompt</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Area Teks Prompt Read-Only */}
+          <div className="relative">
+            <textarea
+              readOnly
+              rows={14}
+              value={generatedPrompt}
+              className="w-full bg-slate-950/80 text-slate-200 border border-slate-800 rounded-2xl p-4 sm:p-5 text-xs sm:text-sm font-mono leading-relaxed focus:outline-hidden select-all"
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+            <div className="flex items-center gap-3">
+              <span>Panjang Karakter: {generatedPrompt.length} karakter</span>
+              <span>•</span>
+              <span className="text-emerald-400 font-semibold">Universal Compatibility ✓</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -50,6 +50,10 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
   profileName,
   profileSchool,
   userProfile,
+  userId,
+  userEmail,
+  onProfileUpdated,
+  onSaveToast,
   onNavigateTab,
 }) => {
   // Modal state: null = no modal, or 'tentang'
@@ -123,7 +127,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
             Pengaturan
           </h1>
           <p className="text-sm sm:text-base text-slate-500 mt-2 font-normal leading-relaxed">
-            Informasi aplikasi, sistem perancangan materi, dan catatan rilis STIVIA.
+            Kelola profil pendidik, informasi sistem perancangan materi, dan catatan rilis STIVIA.
           </p>
         </div>
 
@@ -164,9 +168,9 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                 Pendidik
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-indigo-200/90 font-medium">
-              {profile.school}
-            </p>
+            <div className="text-xs sm:text-sm text-indigo-200/90 font-medium">
+              <p>{profile.school}</p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -177,7 +181,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                 onClick={() => onNavigateTab('profil_saya')}
                 className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-bold border border-white/15 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
               >
-                <span>Kelola di Profil Saya</span>
+                <span>Edit Profil</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}

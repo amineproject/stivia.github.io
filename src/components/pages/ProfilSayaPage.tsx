@@ -3,7 +3,6 @@ import {
   User, 
   School, 
   Mail, 
-  Award, 
   ShieldCheck, 
   Edit3, 
   Save, 
@@ -58,10 +57,10 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [detailedError, setDetailedError] = useState<SupabaseDetailedError | null>(null);
 
-  // Form input state
+  // Form input state: Nama, Sekolah, Instansi
   const [fullName, setFullName] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
   const [schoolName, setSchoolName] = useState<string>('');
+  const [institutionName, setInstitutionName] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
@@ -71,8 +70,8 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
   useEffect(() => {
     if (userProfile) {
       setFullName(userProfile.full_name || '');
-      setTitle(userProfile.title || '');
       setSchoolName(userProfile.school_name || '');
+      setInstitutionName(userProfile.institution_name || '');
       setAvatarUrl(userProfile.avatar_url || '');
       setIsLoading(false);
       setErrorMessage(null);
@@ -92,12 +91,13 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
       if (data) {
         onProfileUpdated(data);
         setFullName(data.full_name || '');
-        setTitle(data.title || '');
         setSchoolName(data.school_name || '');
+        setInstitutionName(data.institution_name || '');
         setAvatarUrl(data.avatar_url || '');
       } else {
         // Fallback inisialisasi awal jika record baru
         setFullName(session?.user?.user_metadata?.full_name || '');
+        setInstitutionName(session?.user?.user_metadata?.institution_name || '');
       }
     } catch {
       setErrorMessage('Profil belum dapat dimuat. Silakan coba lagi.');
@@ -109,8 +109,8 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
   // Masuk ke mode edit
   const handleStartEdit = () => {
     setFullName(userProfile?.full_name || '');
-    setTitle(userProfile?.title || '');
     setSchoolName(userProfile?.school_name || '');
+    setInstitutionName(userProfile?.institution_name || '');
     setAvatarUrl(userProfile?.avatar_url || '');
     setSelectedPreset(null);
     setErrorMessage(null);
@@ -120,8 +120,8 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
   // Batalkan mode edit
   const handleCancelEdit = () => {
     setFullName(userProfile?.full_name || '');
-    setTitle(userProfile?.title || '');
     setSchoolName(userProfile?.school_name || '');
+    setInstitutionName(userProfile?.institution_name || '');
     setAvatarUrl(userProfile?.avatar_url || '');
     setSelectedPreset(null);
     setErrorMessage(null);
@@ -163,14 +163,14 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
     try {
       const cleanName = fullName.trim() || 'Pendidik STIVIA';
-      const cleanTitle = title.trim() || null;
       const cleanSchool = schoolName.trim() || null;
       const cleanAvatar = avatarUrl.trim() || null;
 
       const updated = await updateUserProfile(userId, {
         full_name: cleanName,
-        title: cleanTitle,
+        title: null, // Tanpa gelar
         school_name: cleanSchool,
+        institution_name: userProfile?.institution_name || null, // Pertahankan data instansi yang ada di akun
         avatar_url: cleanAvatar,
       });
 
@@ -193,11 +193,10 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
     }
   };
 
-  // Nama tampilan gabungan (Nama Lengkap + Gelar jika ada)
+  // Nama tampilan (hanya Nama Lengkap tanpa gelar)
   const displayName = fullName || userProfile?.full_name || session?.user?.user_metadata?.full_name || 'Pendidik STIVIA';
-  const displayTitle = title || userProfile?.title;
-  const fullDisplayName = displayTitle ? `${displayName}, ${displayTitle}` : displayName;
-  const displaySchool = schoolName || userProfile?.school_name || 'Instansi Sekolah belum diatur';
+  const fullDisplayName = displayName;
+  const displaySchool = schoolName || userProfile?.school_name || 'Sekolah belum diatur';
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -327,7 +326,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
               Ubah Data Profil Pendidik
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Perbarui nama, gelar, nama sekolah, dan foto profil Anda. Data akan disimpan aman ke database akun Anda.
+              Perbarui nama lengkap, sekolah, dan foto profil Anda. Data akan disimpan aman ke akun Anda.
             </p>
           </div>
 
@@ -442,7 +441,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
           {/* Form Input Fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Field 1: Nama Lengkap */}
-            <div className="space-y-1.5 sm:col-span-1">
+            <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-[#3b49df]" />
                 <span>Nama Lengkap <span className="text-rose-500">*</span></span>
@@ -457,34 +456,15 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                 className="w-full px-4 py-3 text-sm bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-[#3b49df] text-slate-900 font-medium transition-all shadow-2xs"
               />
               <p className="text-[11px] text-slate-500">
-                Nama lengkap pendidik tanpa gelar akademik.
+                Nama lengkap pendidik.
               </p>
             </div>
 
-            {/* Field 2: Gelar */}
-            <div className="space-y-1.5 sm:col-span-1">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5 text-[#3b49df]" />
-                <span>Gelar Akademik / Profesi</span>
-              </label>
-              <input
-                type="text"
-                id="input-profil-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Contoh: S.Pd., M.Pd., atau Gr."
-                className="w-full px-4 py-3 text-sm bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-[#3b49df] text-slate-900 font-medium transition-all shadow-2xs"
-              />
-              <p className="text-[11px] text-slate-500">
-                Gelar akademik yang disematkan di belakang nama.
-              </p>
-            </div>
-
-            {/* Field 3: Asal Sekolah / Instansi */}
+            {/* Field 2: Sekolah */}
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <School className="w-3.5 h-3.5 text-[#3b49df]" />
-                <span>Nama Sekolah / Instansi Pendidikan</span>
+                <span>Sekolah</span>
               </label>
               <input
                 type="text"
@@ -495,35 +475,37 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                 className="w-full px-4 py-3 text-sm bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-[#3b49df] text-slate-900 font-medium transition-all shadow-2xs"
               />
               <p className="text-[11px] text-slate-500">
-                Nama sekolah, madrasah, atau instansi pendidikan tempat Anda bertugas.
+                Nama sekolah atau madrasah tempat bertugas.
               </p>
             </div>
 
-            {/* Field 4: Email Akun (Read-only dari auth.users) */}
+            {/* Field 3: Alamat Email (Permanen ketika login, tidak dapat diisi/diubah) */}
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Email Akun (Terdaftar)</span>
+                  <span>Alamat Email</span>
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                  Hanya Baca
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                  Permanen (Tidak dapat diubah)
                 </span>
               </label>
               <div className="relative">
                 <input
                   type="email"
+                  id="input-profil-email"
                   disabled
+                  readOnly
                   value={userEmail}
                   className="w-full px-4 py-3 text-sm bg-slate-100 border border-slate-200 rounded-2xl text-slate-500 font-medium cursor-not-allowed select-none"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Akun Aktif</span>
+                  <span>Akun Login</span>
                 </div>
               </div>
               <p className="text-[11px] text-slate-400">
-                Email terhubung langsung dengan akun Supabase Auth dan tidak dapat diedit melalui formulir ini.
+                Alamat email terhubung permanen saat login akun dan tidak dapat diedit.
               </p>
             </div>
           </div>
@@ -584,18 +566,13 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
               </div>
             </div>
 
-            {/* Nama & Gelar */}
+            {/* Nama Lengkap */}
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
               {fullDisplayName}
             </h2>
-            {displayTitle && (
-              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-[#3b49df] border border-indigo-100">
-                {displayTitle}
-              </span>
-            )}
 
             {/* Sekolah */}
-            <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 max-w-full">
+            <div className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 max-w-full">
               <School className="w-4 h-4 text-[#3b49df] shrink-0" />
               <span className="truncate">{displaySchool}</span>
             </div>
@@ -651,40 +628,29 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                   </span>
                 </div>
 
-                {/* 2. Gelar */}
-                <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm">
-                  <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-slate-400" />
-                    <span>Gelar</span>
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {displayTitle || <span className="text-slate-400 font-normal italic">Belum diisi</span>}
-                  </span>
-                </div>
-
-                {/* 3. Sekolah */}
+                {/* 2. Sekolah */}
                 <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm">
                   <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
                     <School className="w-4 h-4 text-slate-400" />
-                    <span>Sekolah / Instansi</span>
+                    <span>Sekolah</span>
                   </span>
                   <span className="font-bold text-slate-900">
                     {displaySchool}
                   </span>
                 </div>
 
-                {/* 4. Email */}
+                {/* 3. Email Akun (Permanen) */}
                 <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm">
                   <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
                     <Mail className="w-4 h-4 text-slate-400" />
-                    <span>Email Akun</span>
+                    <span>Email Akun (Permanen)</span>
                   </span>
                   <span className="font-mono font-semibold text-slate-800 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 text-xs">
                     {userEmail || '-'}
                   </span>
                 </div>
 
-                {/* 5. Status */}
+                {/* 4. Status */}
                 <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm">
                   <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-slate-400" />

@@ -137,9 +137,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* 1. Dashboard */}
             {renderNavButton('dashboard', 'Dashboard', <Home className="w-5 h-5" />)}
 
-            {/* 2. Buat Prompt & Prompt Studio */}
+            {/* 2. Buat Prompt */}
             {renderNavButton('buat', 'Buat Prompt', <Palette className="w-5 h-5" />)}
-            {renderNavButton('prompt_studio', 'Prompt Studio', <Sparkles className="w-5 h-5" />)}
 
             {/* 3. Proyek Saya */}
             {renderNavButton('infografis_saya', 'Proyek Saya', <FolderKanban className="w-5 h-5" />)}

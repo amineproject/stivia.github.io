@@ -602,13 +602,13 @@ export interface InfographicDraft {
   authorRole?: string;
   finalOutput?: FinalOutputState | null;
   isLocked?: boolean;
+  stiviaPrompt?: string;
 }
 
 export type NavigationTab = 
   | 'dashboard'
   | 'beranda'
   | 'buat'
-  | 'prompt_studio'
   | 'rancangan'
   | 'visual'
   | 'hasil'
@@ -640,6 +640,7 @@ export interface SupabaseUserProfile {
   full_name: string | null;
   title: string | null;
   school_name: string | null;
+  institution_name?: string | null;
   avatar_url: string | null;
   created_at?: string;
   updated_at?: string;

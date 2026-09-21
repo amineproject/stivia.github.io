@@ -17,7 +17,7 @@ import { InfographicDraft, NavigationTab } from '../../types';
 
 interface DashboardPageProps {
   projects: InfographicDraft[];
-  onSelectProject: (project: InfographicDraft, targetTab: 'prompt_studio' | 'hasil' | 'preview') => void;
+  onSelectProject: (project: InfographicDraft, targetTab: 'buat' | 'hasil' | 'preview') => void;
   onNavigate: (tab: NavigationTab) => void;
   onLoadSample: () => void;
 }
@@ -82,35 +82,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* DUA KARTU UTAMA HERO PRIORITAS TINGGI (SESUAI GAMBAR REFERENSI) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        {/* KARTU 1: BUAT INFOGRAFIS (ROYAL BLUE/INDIGO) */}
-        <div className="relative overflow-hidden bg-[#3b49df] text-white rounded-[32px] p-8 sm:p-9 shadow-xl shadow-indigo-600/20 flex flex-col justify-between space-y-7 group hover:shadow-2xl transition-all">
-          <div className="space-y-5 relative z-10">
-            {/* Top Icon Box */}
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white shadow-inner">
-              <Palette className="w-7 h-7" />
-            </div>
-
-            {/* Content */}
-            <div className="space-y-2.5">
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
-                <span>🎨</span>
-                <span>Buat Prompt</span>
-              </h2>
-              <p className="text-indigo-100/90 text-sm sm:text-base leading-relaxed">
-                Input data awal pembelajaran, lalu langsung generate prompt materi atau infografis di Prompt Studio.
-              </p>
-            </div>
+      {/* KARTU HERO UTAMA (SESUAI ALUR BARU STIVIA 3.1) */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#3b49df] to-indigo-800 text-white rounded-[32px] p-8 sm:p-10 shadow-xl shadow-indigo-600/20 flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:shadow-2xl transition-all">
+        <div className="space-y-4 max-w-2xl relative z-10">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white shadow-inner">
+            <Palette className="w-7 h-7" />
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-4 flex flex-wrap items-center gap-3 relative z-10">
+          <div className="space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
+              <span>🎨</span>
+              <span>Buat Prompt Infografis</span>
+            </h2>
+            <p className="text-indigo-100/90 text-sm sm:text-base leading-relaxed">
+              Input data pembelajaran, jalankan analisis 7 Tahap Kerangka Berpikir STIVIA, dan langsung hasilkan Prompt Infografis terstruktur siap pakai.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => onNavigate('buat')}
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#34d399] hover:bg-[#2bd094] active:bg-[#20b881] text-slate-950 font-bold text-sm shadow-lg shadow-emerald-950/15 transition-all cursor-pointer transform hover:-translate-y-0.5"
             >
-              <span>Mulai Membuat</span>
+              <span>Mulai Buat Prompt</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -118,39 +112,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs sm:text-sm border border-white/25 transition-all cursor-pointer backdrop-blur-xs"
             >
               <Play className="w-3.5 h-3.5 fill-current text-white/90" />
-              <span>Lihat Demo</span>
-            </button>
-          </div>
-        </div>
-
-        {/* KARTU 2: PROMPT STUDIO (DARK NAVY/SLATE) */}
-        <div className="relative overflow-hidden bg-[#181c2e] text-white rounded-[32px] p-8 sm:p-9 shadow-xl shadow-slate-950/25 flex flex-col justify-between space-y-7 group hover:shadow-2xl transition-all">
-          <div className="space-y-5 relative z-10">
-            {/* Top Icon Box */}
-            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center text-amber-300 shadow-inner">
-              <Sparkles className="w-7 h-7" />
-            </div>
-
-            {/* Content */}
-            <div className="space-y-2.5">
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
-                <span>✨</span>
-                <span>Prompt Studio</span>
-              </h2>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Buat prompt materi dan prompt infografis yang dapat digunakan di berbagai AI (ChatGPT, Claude, Gemini).
-              </p>
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <div className="pt-4 relative z-10">
-            <button
-              onClick={() => onNavigate('prompt_studio')}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#3b49df] hover:bg-[#323ecb] active:bg-[#2833ab] text-white font-bold text-sm shadow-lg shadow-indigo-950/40 transition-all cursor-pointer transform hover:-translate-y-0.5"
-            >
-              <span>Buka Prompt Studio</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Lihat Contoh Data</span>
             </button>
           </div>
         </div>
@@ -298,7 +260,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       {project.blocks?.length || 0} Blok Konten
                     </span>
                     <button
-                      onClick={() => onSelectProject(project, isFinal ? 'preview' : 'prompt_studio')}
+                      onClick={() => onSelectProject(project, isFinal ? 'preview' : 'buat')}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-50 hover:bg-[#3b49df] hover:text-white text-[#3b49df] font-bold text-xs transition-all cursor-pointer"
                     >
                       <span>Buka Proyek</span>

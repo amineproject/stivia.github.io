@@ -254,11 +254,11 @@ export const RancanganVisualPage: React.FC<RancanganVisualPageProps> = ({
       <div className="pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() => onNavigate('prompt_studio')}
+          onClick={() => onNavigate('buat')}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Kembali ke Prompt Studio</span>
+          <span>Kembali ke Buat Prompt</span>
         </button>
 
         <button

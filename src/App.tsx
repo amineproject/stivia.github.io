@@ -3,7 +3,6 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { BuatInfografisPage } from './components/pages/BuatInfografisPage';
-import { PromptStudioPage } from './components/pages/PromptStudioPage';
 import { RancanganVisualPage } from './components/pages/RancanganVisualPage';
 import { HasilInfografisPage } from './components/pages/HasilInfografisPage';
 import { PreviewInfografisPage } from './components/pages/PreviewInfografisPage';
@@ -40,10 +39,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Otomatis arahkan ke prompt_studio jika tab rancangan diakses
+  // Otomatis arahkan ke buat jika tab rancangan atau prompt_studio lama diakses
   useEffect(() => {
-    if ((activeTab as string) === 'rancangan') {
-      setActiveTab('prompt_studio');
+    if ((activeTab as string) === 'rancangan' || (activeTab as string) === 'prompt_studio') {
+      setActiveTab('buat');
     }
   }, [activeTab]);
 
@@ -244,7 +243,7 @@ export default function App() {
   };
 
   // Handlers for Buat Infografis
-  const handleFormSubmit = (formData: Partial<InfographicDraft>) => {
+  const handleFormSubmit = (formData: Partial<InfographicDraft>, options?: { navigateToStudio?: boolean }) => {
     const subject = formData.subject || currentDraft.subject;
     const theme = formData.theme || currentDraft.theme;
     const bab = formData.bab !== undefined ? formData.bab : (currentDraft.bab || '');
@@ -292,17 +291,19 @@ export default function App() {
       return [sanitizedDraft, ...filtered];
     });
 
-    setActiveTab('prompt_studio');
-    showToast('Data awal berhasil disimpan! Siap digenerate pada Prompt Studio.');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (options?.navigateToStudio) {
+      setActiveTab('buat');
+      showToast('Data materi berhasil disimpan!');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      showToast('Prompt Infografis STIVIA berhasil dibuat dan tersimpan!');
+    }
   };
 
   // Load sample data button handler
   const handleLoadSample = () => {
     setCurrentDraft(INITIAL_SAMPLE_DRAFT);
-    setActiveTab('prompt_studio');
-    showToast('Memuat contoh data awal: Struktur Data Graph. Siap di Prompt Studio!');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('Memuat contoh data awal: Struktur Data Graph.');
   };
 
   const handleUpdateDraft = (updated: Partial<InfographicDraft>) => {
@@ -317,9 +318,9 @@ export default function App() {
   };
 
   // Project management handlers
-  const handleSelectProject = (project: InfographicDraft, targetTab: 'prompt_studio' | 'hasil' | 'preview' | 'rancangan') => {
+  const handleSelectProject = (project: InfographicDraft, targetTab: 'buat' | 'hasil' | 'preview') => {
     setCurrentDraft(project);
-    setActiveTab(targetTab === 'rancangan' ? 'prompt_studio' : targetTab);
+    setActiveTab(targetTab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -469,19 +470,10 @@ export default function App() {
               onSelectProject={setCurrentDraft}
               onSubmitForm={handleFormSubmit}
               onLoadSampleData={handleLoadSample}
-            />
-          )}
-
-          {activeTab === 'prompt_studio' && (
-            <PromptStudioPage
-              projects={projects}
-              currentDraft={currentDraft}
-              onSelectProject={setCurrentDraft}
               onNavigate={(tab) => {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onSaveToast={showToast}
             />
           )}
 

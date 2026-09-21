@@ -204,6 +204,7 @@ export async function getUserProfile(userId: string): Promise<SupabaseUserProfil
       full_name: data.full_name ?? cachedProfile?.full_name ?? null,
       title: data.title ?? cachedProfile?.title ?? null,
       school_name: data.school_name ?? cachedProfile?.school_name ?? null,
+      institution_name: (data as Record<string, any>).institution_name ?? cachedProfile?.institution_name ?? null,
       avatar_url: data.avatar_url ?? cachedProfile?.avatar_url ?? null,
       created_at: data.created_at ?? cachedProfile?.created_at,
       updated_at: data.updated_at ?? cachedProfile?.updated_at,
@@ -239,6 +240,7 @@ export async function updateUserProfile(
     full_name?: string | null;
     title?: string | null;
     school_name?: string | null;
+    institution_name?: string | null;
     avatar_url?: string | null;
   }
 ): Promise<SupabaseUserProfile> {
@@ -253,6 +255,7 @@ export async function updateUserProfile(
       full_name: updates.full_name !== undefined ? updates.full_name : null,
       title: updates.title !== undefined ? updates.title : null,
       school_name: updates.school_name !== undefined ? updates.school_name : null,
+      institution_name: updates.institution_name !== undefined ? updates.institution_name : null,
       avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : null,
       updated_at: new Date().toISOString(),
     };
@@ -453,13 +456,15 @@ export async function updateUserProfile(
     }
   }
 
-  // Sinkronisasi metadata pengguna di Supabase Auth jika full_name diperbarui
-  if (updates.full_name) {
+  // Sinkronisasi metadata pengguna di Supabase Auth jika full_name / institution_name diperbarui
+  if (updates.full_name || updates.institution_name !== undefined) {
     try {
+      const authDataUpdates: Record<string, any> = {};
+      if (updates.full_name) authDataUpdates.full_name = updates.full_name.trim();
+      if (updates.institution_name !== undefined) authDataUpdates.institution_name = updates.institution_name ? updates.institution_name.trim() : '';
+      
       await supabase.auth.updateUser({
-        data: {
-          full_name: updates.full_name.trim(),
-        },
+        data: authDataUpdates,
       });
     } catch (authUpdateErr) {
       console.warn('[STIVIA Profil] Catatan pembaruan user_metadata Auth:', authUpdateErr);
@@ -472,6 +477,7 @@ export async function updateUserProfile(
     full_name: updates.full_name !== undefined ? updates.full_name : (savedData?.full_name || null),
     title: updates.title !== undefined ? updates.title : (savedData?.title || null),
     school_name: updates.school_name !== undefined ? updates.school_name : (savedData?.school_name || null),
+    institution_name: updates.institution_name !== undefined ? updates.institution_name : (savedData?.institution_name || null),
     avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : (savedData?.avatar_url || null),
     created_at: savedData?.created_at,
     updated_at: savedData?.updated_at || new Date().toISOString(),

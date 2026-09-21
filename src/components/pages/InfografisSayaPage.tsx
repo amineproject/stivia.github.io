@@ -19,7 +19,7 @@ import { InfographicDraft, NavigationTab } from '../../types';
 
 interface InfografisSayaPageProps {
   projects: InfographicDraft[];
-  onSelectProject: (project: InfographicDraft, targetTab: 'prompt_studio' | 'hasil' | 'preview') => void;
+  onSelectProject: (project: InfographicDraft, targetTab: 'buat' | 'hasil' | 'preview') => void;
   onDeleteProject: (projectId: string) => void;
   onDuplicateProject: (project: InfographicDraft) => void;
   onNavigate: (tab: NavigationTab) => void;
@@ -220,15 +220,15 @@ export const InfografisSayaPage: React.FC<InfografisSayaPageProps> = ({
                   </button>
                 </div>
 
-                {/* Status-based primary button: Lanjutkan (Draft) or Preview (Final/Terkunci) */}
+                {/* Status-based primary button: Lanjutkan / Edit (Draft) or Preview (Final/Terkunci) */}
                 <div className="flex items-center gap-1.5">
                   {project.status === 'draft' && !project.isLocked ? (
                     <button
-                      onClick={() => onSelectProject(project, 'prompt_studio')}
+                      onClick={() => onSelectProject(project, 'buat')}
                       className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Prompt Studio</span>
+                      <span>Buka & Edit</span>
                     </button>
                   ) : (
                     <button

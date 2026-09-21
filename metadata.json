@@ -1,6 +1,6 @@
 {
-  "name": "STIVIA",
-  "description": "Platform pendidikan STIVIA v3.0 untuk menyusun materi pembelajaran menjadi rancangan infografis edukatif dengan Sistem Autentikasi Supabase & Pengembangan Sistem Desain Infografis 5 Kategori.",
+  "name": "STIVIA 3.1",
+  "description": "Platform pendidikan STIVIA v3.1 - AI Expert Infographic Generator untuk merancang kerangka, komponen, materi edukasi, dan panduan visual infografis pembelajaran sekolah yang interaktif dan tepat sasaran.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

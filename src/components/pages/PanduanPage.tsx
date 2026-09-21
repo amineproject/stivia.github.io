@@ -44,9 +44,9 @@ export const PanduanPage: React.FC<PanduanPageProps> = ({ onNavigate }) => {
     },
     {
       number: 4,
-      title: 'Generate di Prompt Studio',
-      subtitle: 'Pilih jenis prompt universal untuk materi atau infografis',
-      desc: 'Setelah melengkapi data awal pada menu Buat Prompt, klik "Generate di Prompt Studio". Anda dapat memilih membuat Prompt Materi Pembelajaran atau Prompt Desain Infografis terstruktur berbasis Kerangka Berpikir STIVIA.',
+      title: 'Generate Prompt Infografis',
+      subtitle: 'Sistem menganalisis data & menghasilkan Prompt Infografis siap pakai',
+      desc: 'Setelah mengisi data materi pada menu "Buat Prompt", klik tombol "GENERATE PROMPT". Sistem STIVIA 3.1 akan menganalisis data pembelajaran melalui 7 Tahap Kerangka Berpikir dan langsung menghasilkan Prompt Infografis yang siap digunakan.',
       tips: 'Gunakan tombol "Salin Prompt" untuk langsung menempelkan prompt universal ke AI pilihan Anda (ChatGPT, Claude, Gemini, dll).',
     },
     {
@@ -54,7 +54,7 @@ export const PanduanPage: React.FC<PanduanPageProps> = ({ onNavigate }) => {
       title: 'Pratinjau Hasil & Manajemen Proyek',
       subtitle: 'Semua draf tersimpan rapi dan siap disesuaikan kembali',
       desc: 'Hasil prompt dan proyek infografis tersimpan aman di Proyek Saya. Anda dapat mengubah data awal, memilih gaya visual baru, serta melihat pratinjau hasil kapan saja.',
-      tips: 'Gunakan tombol "Ubah Data Awal" di Prompt Studio jika ingin menyempurnakan topik, bab, atau catatan materi.',
+      tips: 'Gunakan tombol "Buka & Edit" di Proyek Saya jika ingin menyempurnakan topik, bab, atau catatan materi.',
     },
     {
       number: 6,

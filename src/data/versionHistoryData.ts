@@ -10,17 +10,43 @@ export interface VersionItem {
   bugFixes: string[];
 }
 
-export const APP_CURRENT_VERSION = '3.0';
+export const APP_CURRENT_VERSION = '3.1';
 export const APP_VERSION_LABEL = `v${APP_CURRENT_VERSION}`;
 export const APP_FULL_VERSION_LABEL = `STIVIA Versi ${APP_CURRENT_VERSION}`;
-export const APP_UPDATE_NAME = 'SISTEM AKUN SUPABASE & ARSITEKTUR VERSI TERPUSAT';
+export const APP_UPDATE_NAME = 'AI EXPERT INFOGRAPHIC GENERATOR & EXTENSION SISTEM';
 export const APP_TAGLINE = 'Belajar Lebih Visual, Mengajar Lebih Mudah';
 
 export const STIVIA_VERSION_HISTORY: VersionItem[] = [
   {
+    version: '3.1',
+    updateName: 'AI EXPERT INFOGRAPHIC GENERATOR & EXTENSION SISTEM',
+    status: 'Rilis Terbaru',
+    tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
+    releaseDate: 'September 2026',
+    description: 'Pembaruan akbar STIVIA 3.1 sebagai AI Expert Infographic Generator terpadu. Memperkuat perancangan kerangka, komponen, struktur materi, dan panduan visual dengan 5 Gaya Layout Utama (Timeline, Balanced Grid 4-6 Poin, Comparison, Anatomy, Mind Map), Adaptasi Tingkat Kelas (SD vs SMP/Menengah), Penyesuaian Visual Rumpun Mapel, Aturan Ketat 4–6 Poin dengan Rangkuman Wajib (Footer Summary), serta Modul Validasi Konten 4 Pilar dengan jaminan backward-compatibility penuh terhadap seluruh modul STIVIA yang sudah ada.',
+    newFeatures: [
+      'Modul Analisis Parameter & Gaya Infografik (Style Mapping): pemetaan cerdas 5 Gaya Tata Letak utama (Timeline / Step-by-Step, Balanced Grid 4–6 Poin, Comparison / Versus, Anatomy / Callout, Mind Map / Hub-and-Spoke).',
+      'Modul Adaptasi Tingkat Kelas (Grade-Level Adaptation): diferensiasi otomatis diksi, kedalaman konsep, dan aset visual untuk jenjang SD (ramah anak, kalimat pendek, contoh konkret, ilustrasi kartun ceria) serta SMP/SMA (kosakata struktural, hubungan logis, analisis, clean vector).',
+      'Modul Penyesuaian Rumpun Mata Pelajaran (Subject-Based Styling): optimasi diagram, simbol, dan palet warna untuk Sains/IPA (sebab-akibat, biru/toska/hijau), Bahasa & Humaniora (kutipan, teks, krem/terakota), dan Teknologi/Matematika/Informatika (flowchart, logika, biru tua/abu-abu).',
+      'Aturan Ketat Struktur Materi: batasan baku maksimal 4–6 poin utama untuk mencegah information overload, konsistensi struktur (Judul → Definisi Singkat → Poin Kunci → Contoh Konkret), dan Rangkuman Wajib (Footer Summary).',
+      'Modul Validasi Konten 4 Pilar: validasi internal otomatis yang mencakup Validasi Materi, Validasi Pembelajaran, Validasi Struktur, dan Validasi Visual sebelum output disajikan.',
+      'Format Output Terstandarisasi 5 Tahap: 1. Analisis Target & Gaya Terpilih, 2. Judul Utama Infografis, 3. Rincian Komponen 1-6 Poin, 4. Rangkuman Inti (Footer Summary), 5. Panduan Visual & Aset.',
+      'Sistem Peran Resmi STIVIA 3.1: Generator prompt universal mengusung identitas resmi "Stivia", AI Expert Infographic Generator v3.1.'
+    ],
+    improvements: [
+      'Penyelarasan seluruh generator prompt dengan spesifikasi sistem dan peran resmi STIVIA 3.1.',
+      'Integrasi Single Source of Truth versi 3.1 pada seluruh antarmuka, navigasi sidebar, header, dan riwayat rilis sistem.',
+      'Prinsip Kontinuitas Penuh (Preserve → Extend → Improve): seluruh sistem autentikasi Supabase, profil pendidik, draf materi, 20 gaya visual, dan kanvas editor tetap berfungsi prima 100% tanpa gangguan.'
+    ],
+    bugFixes: [
+      'Pencegahan kelebihan muatan kognitif (cognitive overload) pada materi melalui pembatasan 4–6 poin terstruktur.',
+      'Penyelarasan menyeluruh deskripsi sistem pada halaman Buat Prompt, Panduan, dan Pengaturan.'
+    ]
+  },
+  {
     version: '3.0',
     updateName: 'SISTEM AKUN SUPABASE & ARSITEKTUR VERSI TERPUSAT',
-    status: 'Rilis Terbaru',
+    status: 'Versi Sebelumnya',
     tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
     releaseDate: 'September 2026',
     description: 'Pembaruan akbar STIVIA 3.0 menghadirkan integrasi sistem autentikasi pendidik berbasis Supabase Auth (Login, Register, Session Management, Logout, Lupa Password), proteksi aplikasi terpusat, serta arsitektur Single Source of Truth untuk konsistensi nomor versi di seluruh aplikasi.',
@@ -30,7 +56,7 @@ export const STIVIA_VERSION_HISTORY: VersionItem[] = [
       'Sistem pemulihan kata sandi (Lupa Password) via email resmi dengan validasi lengkap.',
       'Session Management terproteksi (Protected Application): akses aplikasi terkunci untuk pengguna belum login dan auto-resume saat refresh halaman.',
       'Sistem Keluar (Logout) aman via supabase.auth.signOut() pada navigasi Sidebar dan Pengaturan.',
-      'Sistem Versi Terpusat (Single Source of Truth): nomor versi aktif dikonsolidasikan dari satu konstanta terpusat untuk Sidebar, Pengaturan, Prompt Studio, Kerangka Berpikir, dan seluruh antarmuka aplikasi.',
+      'Sistem Versi Terpusat (Single Source of Truth): nomor versi aktif dikonsolidasikan dari satu konstanta terpusat untuk Sidebar, Pengaturan, Buat Prompt, Kerangka Berpikir, dan seluruh antarmuka aplikasi.',
       'Integrasi identitas nama pendidik aktif secara real-time pada navigasi Sidebar dan Pengaturan Profil.'
     ],
     improvements: [
@@ -91,7 +117,7 @@ export const STIVIA_VERSION_HISTORY: VersionItem[] = [
     ],
     improvements: [
       'Memperkuat integritas materi kurikulum berkesinambungan agar setiap pertemuan dalam satu tema pembelajaran memiliki fokus yang unik dan progresif.',
-      'Penyelarasan Prompt Studio dan Kerangka Berpikir STIVIA dengan aturan batas pertemuan dan cakupan materi.',
+      'Penyelarasan Generator Prompt dan Kerangka Berpikir STIVIA dengan aturan batas pertemuan dan cakupan materi.',
       'Meningkatkan kontras dan perbedaan visual antar gaya sehingga setiap desain memiliki identitas estetika yang unik.',
       'Memperkuat hubungan harmonis antara gaya visual dan tipografi kurasi tinggi (Google Fonts web-ready).',
       'Mengembangkan struktur tata letak infografis adaptif (Hero Visual, Modular Grid, Central Concept, Timeline, Process Flow, Comparison, dan Editorial).',

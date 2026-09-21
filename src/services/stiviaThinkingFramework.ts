@@ -24,7 +24,12 @@ export type InfographicLayoutStrategy =
   | 'Timeline'
   | 'Process Flow'
   | 'Comparison'
-  | 'Editorial';
+  | 'Editorial'
+  | 'Gaya 1 — Timeline / Step-by-Step'
+  | 'Gaya 2 — Balanced Grid (4–6 Poin)'
+  | 'Gaya 3 — Comparison / Versus'
+  | 'Gaya 4 — Anatomy / Callout'
+  | 'Gaya 5 — Mind Map / Hub-and-Spoke';
 
 /**
  * Input untuk Kerangka Berpikir STIVIA
@@ -32,6 +37,7 @@ export type InfographicLayoutStrategy =
 export interface StiviaThinkingInput {
   title: string;
   topic?: string;
+  theme?: string;
   subject?: string;
   educationLevel?: string;
   grade?: string;
@@ -442,75 +448,53 @@ function determineLayoutStrategy(
   readingFlow: string;
   rationale: string;
 } {
-  // Aturan Mapping Layout:
-  // 1. Materi Proses -> Process Flow
-  // 2. Materi Sejarah / Kronologis -> Timeline
-  // 3. Materi Perbandingan -> Comparison
-  // 4. Konsep Utama Terpadu -> Central Concept
-  // 5. Banyak Informasi / Padat -> Modular Grid
-  // 6. Gaya Editorial -> Editorial
-  // 7. Materi Visual Dominan -> Hero Visual
-
-  if (primaryChar === 'Proses') {
+  // STIVIA 3.1: Pemetaan 5 Gaya Tata Letak Standar (Style Mapping)
+  // Gaya 1 — Timeline / Step-by-Step
+  if (primaryChar === 'Proses' || primaryChar === 'Kronologis') {
     return {
-      strategy: 'Process Flow',
-      layoutDescription: 'Tata letak alur proses bertahap dari atas ke bawah, menghubungkan setiap tahapan dengan panah penunjuk visual yang mengalir alami.',
-      readingFlow: 'Alur Alami Sekuensial: Input / Tahap 1 → Proses Berjalan → Output / Hasil Akhir.',
-      rationale: 'Materi berkarakter Proses menuntut penyajian alur tahapan bertahap agar siswa dapat memahami mekanisme secara runut.'
+      strategy: 'Gaya 1 — Timeline / Step-by-Step',
+      layoutDescription: 'Garis alur vertikal berangka dari awal hingga akhir, menghubungkan urutan langkah/tahapan/fase/siklus secara runtut dan alami.',
+      readingFlow: 'Alur Sekuensial Vertikal: Tahap Awal (Atas) → Langkah/Fase Inti (Tengah) → Output / Dampak Akhir (Bawah).',
+      rationale: 'Materi berkarakter proses atau kronologis paling efektif disajikan dengan alur Timeline/Step-by-Step agar peserta didik memahami urutan tahapan secara berkesinambungan.'
     };
   }
 
-  if (primaryChar === 'Kronologis') {
-    return {
-      strategy: 'Timeline',
-      layoutDescription: 'Garis waktu vertikal berpenanda tonggak tahun/fase yang tersusun berurutan dengan kartu peristiwa di sisi alur.',
-      readingFlow: 'Kronologi Vertikal: Awal Peristiwa (atas) → Perkembangan / Puncak → Dampak / Warisan Sejarah (bawah).',
-      rationale: 'Materi mengandung linimasa sejarah yang harus ditata dengan garis waktu agar kronologi peristiwa tidak tertukar.'
-    };
-  }
-
+  // Gaya 3 — Comparison / Versus
   if (primaryChar === 'Perbandingan') {
     return {
-      strategy: 'Comparison',
-      layoutDescription: 'Tata letak perbandingan terstruktur (kolom sejajar atau kartu berpasangan) dengan parameter pembeda yang jelas.',
-      readingFlow: 'Komparasi Komprehensif: Pengantar Karakteristik → Kartu Entitas A vs Entitas B → Matriks Kesimpulan.',
-      rationale: 'Materi menyoroti perbedaan dan persamaan antara dua konsep atau lebih sehingga layout komparatif memberikan kejelasan instan.'
+      strategy: 'Gaya 3 — Comparison / Versus',
+      layoutDescription: 'Kolom sejajar berdampingan untuk membandingkan 2–3 konsep atau entitas dengan indikator pembeda yang kontras dan jelas.',
+      readingFlow: 'Alur Komparasi: Parameter Pembeda → Kolom Objek A vs Objek B → Matriks Sintesis & Kesimpulan.',
+      rationale: 'Materi komparatif menuntut struktur berdampingan agar perbedaan dan persamaan esensial terlihat seketika.'
     };
   }
 
-  if (styleItem.id === 'editorial') {
+  // Gaya 4 — Anatomy / Callout
+  if (primaryChar === 'Sistem' || primaryChar === 'Data') {
     return {
-      strategy: 'Editorial',
-      layoutDescription: 'Tata letak publikasi sains berwibawa dengan kolom berita teratur, blok kutipan penting (pull quotes), dan aksen akademis.',
-      readingFlow: 'Alur Majalah Edukatif: Tajuk Utama → Ulasan Mendalam → Sorotan Fakta Kunci → Refleksi Akhir.',
-      rationale: 'Gaya Editorial paling optimal disajikan dengan layout bergaya majalah ilmiah dengan tipografi berbobot tinggi.'
+      strategy: 'Gaya 4 — Anatomy / Callout',
+      layoutDescription: 'Objek visual sentral (alat, organ, struktur mesin, atau sistem fisik) di bagian tengah kanvas, dilengkapi garis penunjuk (callout) ke setiap komponen dan fungsinya.',
+      readingFlow: 'Alur Anatomi: Pengenalan Objek Utama → Titik Callout Komponen & Fungsi → Sintesis Cara Kerja Sistem.',
+      rationale: 'Materi berbasis objek fisik dan organ menuntut tata letak Anatomy/Callout agar korelasi spasial dan fungsional jelas bagi siswa.'
     };
   }
 
-  if (contentVolume === 'Padat' || primaryChar === 'Data' || primaryChar === 'Sistem') {
+  // Gaya 5 — Mind Map / Hub-and-Spoke
+  if (styleItem.id === 'minimalism' || styleItem.id === 'swiss_design' || styleItem.id === 'sketch_notetaking' || styleItem.category === 'ABSTRAK & SENI') {
     return {
-      strategy: 'Modular Grid',
-      layoutDescription: 'Sistem kartu modular (grid cards) proporsional yang membagi informasi padat ke dalam blok-blok terpisah yang mudah dicerna.',
-      readingFlow: 'Alur Modular Grid: Header Pengantar → Blok-Blok Kartu Materi Seimbang → Kartu Rangkuman Inti.',
-      rationale: 'Volume informasi yang kaya dan beragam paling efektif ditata dalam kisi modular agar tidak terasa sesak dan mudah dipindai.'
+      strategy: 'Gaya 5 — Mind Map / Hub-and-Spoke',
+      layoutDescription: 'Konsep utama di tengah kanvas memancarkan cabang-cabang sub-topik teratur dengan hierarki warna logis dan konektor ide.',
+      readingFlow: 'Alur Hub-and-Spoke: Konsep Sentral Inti → Percabangan Kategori Utama → Rincian Aplikatif.',
+      rationale: 'Materi teoretis dan abstrak paling optimal dipetakan secara konseptual dengan Mind Map/Hub-and-Spoke untuk memperlihatkan hubungan antar-gagasan.'
     };
   }
 
-  if (styleItem.id === 'minimalism' || styleItem.id === 'swiss_design') {
-    return {
-      strategy: 'Central Concept',
-      layoutDescription: 'Pusat konsep utama terletak di bagian tengah/fokus atas, dengan cabang-cabang subkonsep tersusun mengelilinginya secara harmonis.',
-      readingFlow: 'Alur Konsentris: Konsep Inti di Tengah → Percabangan Komponen → Implementasi Terapan.',
-      rationale: 'Memudahkan peserta didik memusatkan perhatian pada ide pokok sebelum mendalami cabang-cabang pembahasannya.'
-    };
-  }
-
-  // Default: Hero Visual
+  // Gaya 2 — Balanced Grid (4–6 Poin) (Default & Fondasi Utama STIVIA 3.1)
   return {
-    strategy: 'Hero Visual',
-    layoutDescription: 'Kartu visual utama (Hero Card) yang dominan dan memukau di sepertiga atas, diikuti kartu-kartu materi penjelas di bawahnya.',
-    readingFlow: 'Alur Hero Visual: Visual Utama yang Kuat → Analisis Komponen → Ringkasan Aplikatif.',
-    rationale: 'Menarik perhatian visual peserta didik seketika melalui visual utama yang memikat, lalu membawa mereka membaca materi secara terarah.'
+    strategy: 'Gaya 2 — Balanced Grid (4–6 Poin)',
+    layoutDescription: 'Grid kartu simetris proporsional untuk 4–6 poin utama dengan sub-bagian seragam: Judul → Definisi Singkat → Poin Kunci → Contoh Konkret.',
+    readingFlow: 'Alur Balanced Grid: Header Identitas → 4–6 Blok Kartu Poin Simetris → Rangkuman Inti (Footer Summary).',
+    rationale: 'Standar emas STIVIA 3.1 untuk pengelompokan komponen, jenis, dan karakteristik agar materi mudah dipindai tanpa membebani memori kerja (cognitive overload) siswa.'
   };
 }
 
@@ -753,91 +737,96 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
     rationale: layoutAnalysis.rationale
   };
 
-  // TAHAP 7: MENYUSUN PROMPT AKHIR DENGAN 12 STRUKTUR RESMI
-  const stage7_FinalPrompt = `=== UNIVERSAL PROMPT INFOGRAFIS STIVIA (ANALISIS 7 TAHAP) ===
+  // TAHAP 7: MENYUSUN PROMPT AKHIR SISTEM STIVIA 3.1
+  const isElementary = stage1_Understanding.educationLevel === 'SD';
+  const gradeAdaptationNote = isElementary
+    ? 'Jenjang SD (Kelas 1–6): Diksi & bahasa sangat lugas, ramah anak, kalimat pendek, contoh konkret dari kehidupan sehari-hari, analogi sederhana. Aset visual berupa ilustrasi kartun/bergaya ceria, warna cerah ramah anak, ikon literal dan mudah dikenali.'
+    : 'Jenjang Menengah (SMP/SMA/SMK): Kosakata terstruktur, definisi akademis lugas dan tepat, fokus pada hubungan logis, ciri, klasifikasi, perbandingan, atau analisis. Aset visual clean vector, modern, profesional, diagram analitis, ikon konsep, layout tertata rapi.';
 
-1. IDENTITAS MATERI:
+  const subjectLower = (stage1_Understanding.subject || '').toLowerCase();
+  const isScience = subjectLower.includes('ipa') || subjectLower.includes('sains') || subjectLower.includes('biologi') || subjectLower.includes('fisika') || subjectLower.includes('kimia');
+  const isLanguageHumanities = subjectLower.includes('bahasa') || subjectLower.includes('indonesia') || subjectLower.includes('inggris') || subjectLower.includes('sejarah') || subjectLower.includes('ips') || subjectLower.includes('sosiologi') || subjectLower.includes('geografi') || subjectLower.includes('ppkn');
+  const isTechMath = subjectLower.includes('matematika') || subjectLower.includes('informatika') || subjectLower.includes('komputer') || subjectLower.includes('teknologi') || subjectLower.includes('rpl') || subjectLower.includes('tkj');
+
+  const subjectStylingNote = isScience
+    ? 'Rumpun Sains / IPA: Fokus visual pada sebab-akibat, proses/mekanisme, diagram sistem, atau fenomena alam. Nuansa warna sejuk (biru/toska, hijau sains, aksen oranye/kuning).'
+    : isLanguageHumanities
+    ? 'Rumpun Bahasa & Humaniora: Fokus visual pada teks kunci, kata/frasa penting, kutipan bermakna, karakter, konteks budaya atau historis. Nuansa warna hangat (krem, terakota, cokelat muda, aksen buku klasik).'
+    : isTechMath
+    ? 'Rumpun Teknologi / Matematika: Fokus visual pada diagram logika, pola, flowchart, struktur algoritma, formula, atau simbol. Nuansa warna modern (biru tua, abu-abu modern, aksen cerah berenergi).'
+    : 'Rumpun Umum / Terpadu: Keseimbangan antara ilustrasi visual, teks terstruktur, dan tata letak harmonis ramah peserta didik.';
+
+  const stage7_FinalPrompt = `=== SYSTEM ROLE & OBJECTIVE — STIVIA 3.1 ===
+Anda adalah "Stivia", AI Expert Infographic Generator v3.1 yang merupakan pengembangan lanjutan dari sistem STIVIA.
+Tugas utama Anda adalah merancang kerangka, komponen, struktur, materi edukasi, dan panduan visual untuk infografis pembelajaran sekolah yang interaktif, estetis, mudah dipahami, sesuai tingkat kelas, dan tepat sasaran.
+
+1. IDENTITAS MATERI & TARGET BELAJAR:
 - Judul Infografis: ${stage1_Understanding.title}
 - Mata Pelajaran: ${stage1_Understanding.subject}
-- Jenjang Pendidikan & Kelas: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
-${input.bab?.trim() ? `- Bab / Teks: ${input.bab.trim()}\n` : ''}- Pertemuan: ${materialAnalysis.tahap4_Pertemuan}
-- Materi Utama: ${materialAnalysis.tahap3_MateriUtama} (digunakan sebagai konteks umum)
-${input.userNotes?.trim() ? `- Catatan Khusus Pengguna: "${input.userNotes.trim()}"\n` : ''}- Cakupan Materi (Batas Wajib Pembahasan):
+- Jenjang & Kelas: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
+${input.bab?.trim() ? `- Bab / Teks: ${input.bab.trim()}\n` : ''}${input.theme?.trim() ? `- Tema Materi / Kegiatan: ${input.theme.trim()}\n` : ''}- Posisi Pertemuan: ${materialAnalysis.tahap4_Pertemuan}
+- Konteks Materi Utama: ${materialAnalysis.tahap3_MateriUtama}
+- Cakupan Materi (Batas Wajib Pembahasan):
 ${materialAnalysis.tahap5_CakupanMateri.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}
+${input.userNotes?.trim() ? `- Catatan Khusus Pendidik: "${input.userNotes.trim()}"\n` : ''}- Tujuan Pembelajaran:
+  ${stage1_Understanding.learningObjective}
 
-2. TUJUAN PEMBELAJARAN:
-- ${stage1_Understanding.learningObjective}
-- Menjadikan materi kompleks mudah dipahami, diingat, dan dianalisis oleh peserta didik melalui visualisasi yang tepat.
+2. MODUL ADAPTASI TINGKAT KELAS (GRADE-LEVEL ADAPTATION):
+- Target Tingkat: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
+- Arahan Bahasa & Visual: ${gradeAdaptationNote}
 
-3. INFORMASI YANG HARUS DIPERTAHANKAN & BATAS CAKUPAN MATERI:
-- PRINSIP BATAS MATERI: Cakupan Materi adalah Batas Wajib Pembahasan. Materi Utama adalah konteks umum, dan Nomor Pertemuan (${materialAnalysis.tahap4_Pertemuan}) menunjukkan posisi materi dalam rangkaian pembelajaran.
-- MATERI YANG BOLEH DIBAHAS:
-${materialAnalysis.tahap6_MateriBolehDibahas.map(m => `  ✓ ${m}`).join('\n')}
-- MATERI YANG TIDAK PERLU DIULANG:
-${materialAnalysis.tahap7_MateriTidakPerluDiulang.map(m => `  ✗ ${m}`).join('\n')}
-- ATURAN PENCEGAHAN PENGULANGAN MATERI (WAJIB DIPATUHI AI):
-${materialAnalysis.boundaryRules.map(r => `  • "${r}"`).join('\n')}
-- Single Source of Truth: Data materi sumber tidak boleh diubah fakta atau rumus ilmiahnya.
+3. MODUL PENYESUAIAN MATA PELAJARAN (SUBJECT-BASED STYLING):
+- Rumpun Pelajaran: ${stage1_Understanding.subject}
+- Arahan Styling: ${subjectStylingNote}
+
+4. MODUL ANALISIS PARAMETER & GAYA INFOGRAFIK (STYLE MAPPING):
+- Karakter Materi Terdeteksi: ${stage3_MaterialCharacters.detectedCharacters.join(', ')} (Primer: ${stage3_MaterialCharacters.primaryCharacter} — ${stage3_MaterialCharacters.rationale})
+- Gaya Layout Terpilih: ${stage6_LayoutStrategy.strategy}
+- Deskripsi Tata Letak: ${stage6_LayoutStrategy.layoutDescription}
+- Alur Baca Vertikal: ${stage6_LayoutStrategy.readingFlow}
+- Format Kanvas: Poster Infografis Vertikal (Portrait), Rasio Baku 2:3.
+- Standar Resolusi: 1200 × 1800 px (atau 1024 × 1536 px).
+
+5. ATURAN KETAT STRUKTUR MATERI:
+- Batasan Poin: Maksimal 4–6 poin utama dalam satu infografis (menghindari cognitive overload).
+- Konsistensi Format Per Poin: Judul → Definisi Singkat → Poin Kunci → Contoh Konkret.
+- Rangkuman Wajib: Bagian penutup poster wajib memuat Rangkuman Inti / Footer Summary.
+- Single Source of Truth: Data fakta materi tidak boleh diubah atau menyimpang secara ilmiah.
 - Kata Kunci Wajib: ${stage2_ImportantInfo.keywords.join(', ')}.
 
-4. KONSEP UTAMA:
-- Konsep Sentral: ${stage2_ImportantInfo.mainConcept}
-- Sub-Konsep Penjelas:
-${stage2_ImportantInfo.subConcepts.map((sc, i) => `  ${i + 1}. ${sc}`).join('\n')}
-- Hubungan Antar-Informasi: ${stage2_ImportantInfo.informationRelationship}
-- Karakter Materi Terdeteksi: ${stage3_MaterialCharacters.detectedCharacters.join(', ')} (Karakter Primer: ${stage3_MaterialCharacters.primaryCharacter} — ${stage3_MaterialCharacters.rationale}).
+6. MODUL VALIDASI KONTEN (4 PILAR VALIDASI INTERNAL):
+- Validasi Materi: Konsep ilmiah 100% akurat, tidak ada miskonsepsi.
+- Validasi Pembelajaran: Tingkat kosa kata dan kedalaman cocok untuk ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade}).
+- Validasi Struktur: Tepat 4–6 poin utama, dilengkapi Footer Summary.
+- Validasi Visual: Teks tajam, kontras WCAG AA (minimal 4.5:1), tidak ada teks terpotong atau tertutup ilustrasi.
 
-5. STRATEGI VISUAL:
-- Format Kanvas: Poster Infografis Pembelajaran Vertikal (Portrait), Rasio Tetap 2:3.
-- Ukuran Referensi Desain: 1200 × 1800 px (atau 1024 × 1536 px).
-- Hierarki Visual: Alokasi ruang terbesar diberikan kepada Konsep Utama dan Visual Sentral, diikuti kartu-kartu sub-materi proporsional, dan ditutup dengan rangkuman inti.
-- Larangan: Jangan mengubah format menjadi horizontal atau persegi. Pertahankan orientasi vertikal 2:3.
+7. PANDUAN VISUAL, GAYA, & ASET:
+- Gaya Desain: ${resolvedStyle.name} (${resolvedStyle.category})
+- Visual Utama (Hero Visual): ${stage5_SupportingVisuals.heroVisual}
+- Objek Nyata Terkait: ${stage5_SupportingVisuals.relevantObjects.join(', ')}
+- Ilustrasi Pendukung: ${stage5_SupportingVisuals.supportingIllustrations.join(', ')}
+- Ikon Fungsional: ${stage5_SupportingVisuals.icons.join(', ')}
+- Palet Warna & Ornamen: ${stage5_SupportingVisuals.supportingOrnaments.join(', ')}
 
-6. VISUAL UTAMA:
-- ${stage5_SupportingVisuals.heroVisual}
-- Objek Nyata Utama: ${stage5_SupportingVisuals.relevantObjects.join(', ')}.
+==================================================
+FORMAT OUTPUT YANG DIHASILKAN (WAJIB MEMATUHI 5 TAHAP):
+==================================================
+1. Analisis Target & Gaya Terpilih:
+   - Paparkan hasil analisis materi, alasan pemilihan ${stage6_LayoutStrategy.strategy}, dan pendekatan adaptasi untuk ${stage1_Understanding.educationLevel}.
+2. Judul Utama Infografis:
+   - Rumuskan judul yang menarik, jelas, dan edukatif untuk poster ini.
+3. Rincian Komponen & Konten Per Poin (Tepat 4–6 Poin Utama):
+   - Sajikan 4–6 poin secara terstruktur dengan format seragam:
+     • Judul Poin: [...]
+     • Definisi Singkat: [...]
+     • Poin Kunci: [...]
+     • Contoh Konkret: [...]
+4. Rangkuman Inti (Footer Summary):
+   - Tuliskan 2–3 kalimat sintesis kesimpulan penutup yang mengikat seluruh konsep pembelajaran.
+5. Panduan Visual & Aset:
+   - Rincikan arahan tata letak visual, spesifikasi warna, ikon pendukung, dan deskripsi visual utama untuk desainer/AI image generator dalam rasio vertikal 2:3.
 
-7. VISUAL PENDUKUNG:
-- Ilustrasi Pendukung:
-${stage5_SupportingVisuals.supportingIllustrations.map(il => `  • ${il}`).join('\n')}
-- Ikon Edukatif Relevan: ${stage5_SupportingVisuals.icons.join(', ')}.
-- Ornamen Pendukung: ${stage5_SupportingVisuals.supportingOrnaments.join(', ')}.
-- Arahan Visual Adaptif: ${stage5_SupportingVisuals.styleAdaptiveVisualNote}
-
-8. GAYA INFOGRAFIS:
-- Nama Gaya: ${resolvedStyle.name}
-- Kategori Gaya: ${resolvedStyle.category}
-- Deskripsi Gaya: ${resolvedStyle.description}${customStyleDescription ? ` (Kustom: ${customStyleDescription})` : ''}
-
-9. KARAKTER GAYA:
-- Karakter Visual: ${stage4_StyleUnderstanding.visualTone}
-- Ciri Khas Desain:
-${resolvedStyle.visualCharacteristics.map(vc => `  • ${vc}`).join('\n')}
-- Arahan Visual Gaya AI: ${resolvedStyle.promptInstruction}
-- Batasan Mutlak: ${stage4_StyleUnderstanding.invarianceNotice}
-
-10. LAYOUT YANG DIGUNAKAN:
-- Strategi Layout Terpilih: ${stage6_LayoutStrategy.strategy}
-- Deskripsi Tata Letak: ${stage6_LayoutStrategy.layoutDescription}
-- Alur Baca Vertikal (Atas ke Bawah):
-  ${stage6_LayoutStrategy.readingFlow}
-- Rasionalitas Layout: ${stage6_LayoutStrategy.rationale}
-
-11. ATURAN KETERBACAAN & AKSESIBILITAS:
-- Semua tulisan harus terlihat lengkap, tajam, dan mudah dibaca dengan standar kontras WCAG AA (rasio kontras minimal 4.5:1 untuk teks normal).
-- Tidak boleh ada teks terpotong (truncated), teks bertumpuk, atau elemen ilustrasi yang menutupi tulisan.
-- Ukuran kartu harus menyesuaikan volume teks (padding dan margin proporsional).
-- Tata letak tidak boleh berdesakan; sediakan ruang bernapas (whitespace) yang cukup di antara kartu-kartu materi.
-${input.userNotes?.trim() ? `
-CATATAN KHUSUS PENGGUNA (INSTRUKSI TAMBAHAN GURU):
-- "${input.userNotes.trim()}"
-- Arahan AI: Integrasikan catatan/preferensi khusus di atas ke dalam fokus pembahasan, kedalaman materi, atau ilustrasi kontekstual infografis.
-` : ''}
-12. STRUKTUR OUTPUT:
-SEGERA GENERATE DAN TAMPILKAN SATU POSTER INFOGRAFIS PEMBELAJARAN VERTIKAL (RASIO 2:3) YANG UTUH BERDASARKAN SELURUH ANALISIS DI ATAS.
-Jangan hanya memberikan outline teks atau konsep naratif jika kemampuan visual tersedia.
-Prioritaskan output visual berupa poster pembelajaran yang siap digunakan oleh guru dan peserta didik.
-LANGSUNG HASILKAN DESAIN POSTER INFOGRAFIS VERTIKALNYA.`;
+LANGSUNG HASILKAN OUTPUT TERSTRUKTUR DI ATAS DENGAN MUTU TERTINGGI.`;
 
   return {
     materialAnalysis,

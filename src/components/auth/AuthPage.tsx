@@ -232,9 +232,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <Palette className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">20 Gaya Visual Edukatif</h3>
+                <h3 className="text-sm font-bold text-white">Prompt Infografis Edukatif</h3>
                 <p className="text-xs text-indigo-100/80 mt-1 leading-relaxed">
-                  Dari Modern & Digital, Hand Drawing, hingga Infografis Sains yang terstandar.
+                  Analisis 7 Tahap Kerangka Berpikir STIVIA menghasilkan prompt visual terstruktur dengan panduan tata letak dan hierarki materi siap pakai di berbagai AI.
                 </p>
               </div>
             </div>
