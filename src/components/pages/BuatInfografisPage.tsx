@@ -21,7 +21,8 @@ import {
   X,
   ShieldCheck,
   Info,
-  Coins
+  Coins,
+  MessageCircle
 } from 'lucide-react';
 import { 
   EducationLevel, 
@@ -43,6 +44,7 @@ import { analyzeAndGenerateProjectInfographicPrompt } from '../../services/promp
 import { StiviaThinkingResult } from '../../services/stiviaThinkingFramework';
 import { StiviaThinkingPanel } from '../infographic/StiviaThinkingPanel';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
+import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
 
 interface BuatInfografisPageProps {
   projects?: InfographicDraft[];
@@ -360,14 +362,24 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             <p className="text-xs sm:text-sm text-rose-800 leading-relaxed">
               Anda telah menggunakan seluruh saldo prompt yang tersedia. Lakukan isi ulang saldo prompt tambahan (mulai Rp 20.000 untuk 20 prompt) untuk melanjutkan pembuatan prompt infografis. Saldo baru aktif selamanya dan tidak pernah hangus.
             </p>
-            <div className="pt-2 flex items-center gap-3">
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <a
+                href={getWhatsAppTopUpUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                title="Hubungi Admin di WhatsApp untuk top-up instan"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Top-Up via WhatsApp</span>
+              </a>
               <button
                 type="button"
                 onClick={() => setShowProInfoModal(true)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-rose-300 text-xs font-bold text-rose-800 hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs"
               >
                 <Coins className="w-3.5 h-3.5 text-amber-600" />
-                <span>Lihat Pilihan Paket Top-Up Saldo Prompt</span>
+                <span>Lihat Pilihan Paket Saldo</span>
               </button>
             </div>
           </div>
@@ -984,9 +996,23 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">{pkg.description}</p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
                       <span className="text-base font-black text-[#3b49df]">{pkg.priceLabel}</span>
                       <span className="text-[11px] font-bold text-amber-700 block">{pkg.prompts} Prompt</span>
+                      <a
+                        href={getWhatsAppTopUpUrl({
+                          planName: pkg.name,
+                          prompts: pkg.prompts,
+                          priceLabel: pkg.priceLabel,
+                        })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-2xs transition-colors"
+                        title={`Pesan ${pkg.name} via WhatsApp`}
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        <span>Pesan via WA</span>
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -1004,26 +1030,38 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProInfoModal(false);
-                  if (onNavigate) {
-                    onNavigate('profil_saya');
-                  }
-                }}
-                className="px-5 py-2.5 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <a
+                href={getWhatsAppTopUpUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
               >
-                Lihat Status di Profil Saya
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowProInfoModal(false)}
-                className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-              >
-                Tutup
-              </button>
+                <MessageCircle className="w-4 h-4" />
+                <span>Chat Admin via WhatsApp</span>
+              </a>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProInfoModal(false);
+                    if (onNavigate) {
+                      onNavigate('profil_saya');
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+                >
+                  Status di Profil Saya
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowProInfoModal(false)}
+                  className="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         </div>

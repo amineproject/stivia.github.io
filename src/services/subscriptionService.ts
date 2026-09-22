@@ -82,13 +82,14 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
       const role: UserRole = isAdmin ? 'admin' : 'user';
 
       // Baca saldo prompt dari Supabase (atau fallback berdasarkan plan)
+      const freeDefault = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
       const promptBalance = typeof data.prompt_balance === 'number'
         ? data.prompt_balance
-        : (data.plan === 'pro' ? 50 : 10);
+        : (data.plan === 'pro' ? 50 : freeDefault);
 
       const totalGranted = typeof data.total_granted === 'number'
         ? data.total_granted
-        : Math.max(promptBalance, data.plan === 'pro' ? 50 : 10);
+        : Math.max(promptBalance, data.plan === 'pro' ? 50 : freeDefault);
 
       const usedCount = typeof data.used_count === 'number'
         ? data.used_count
@@ -514,6 +515,7 @@ export const updateUserPlan = setTestingPlan;
 /**
  * Utilitas Administrasi: Mengubah Role Pengguna (user <-> admin)
  * Pengguna yang dijadikan admin menjadi ADMINISTRATOR PERMANEN dengan kuota Unlimited (∞).
+ * Ketika admin menguji akun sebagai user, status admin tetap terotorisasi dan dapat dikembalikan kapan saja.
  */
 export async function updateUserRole(
   userId: string,
@@ -525,10 +527,28 @@ export async function updateUserRole(
 
   const existingSub = await getUserSubscription(userId);
   const isAdmin = newRole === 'admin';
+  const freePrompts = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
+
+  // Simpan jejak bahwa user ini memiliki hak admin asli di browser
+  if (isAdmin) {
+    try {
+      localStorage.setItem(`stivia_is_admin_user_${userId}`, 'true');
+    } catch {
+      // ignore
+    }
+  }
+
   const updatedSub: UserSubscription = {
     ...existingSub,
     role: newRole,
-    endDate: isAdmin ? null : existingSub.endDate, // Admin permanen tanpa batas waktu
+    plan: isAdmin ? 'pro' : existingSub.plan,
+    // Jika kembali jadi admin, berikan kuota unlimited (999999).
+    // Jika beralih ke user untuk simulasi, berikan kuota testing (3 prompt jika sebelumnya habis atau unlimited)
+    promptBalance: isAdmin
+      ? 999999
+      : (existingSub.promptBalance > 900000 ? freePrompts : existingSub.promptBalance),
+    totalGranted: isAdmin ? 999999 : (existingSub.totalGranted > 900000 ? freePrompts : existingSub.totalGranted),
+    endDate: null, // Tanpa batas waktu (permanen)
     updatedAt: new Date().toISOString(),
   };
 
@@ -575,16 +595,17 @@ export async function updateUserRole(
 }
 
 /**
- * Helper internal untuk membuat record subscription default (10 Saldo Prompt Gratis Awal)
+ * Helper internal untuk membuat record subscription default (3 Saldo Prompt Gratis Awal)
  */
 function createDefaultSubscription(userId: string): UserSubscription {
+  const freePrompts = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
   return {
     userId,
     plan: 'free',
     role: 'user',
     status: 'active',
-    promptBalance: 10,
-    totalGranted: 10,
+    promptBalance: freePrompts,
+    totalGranted: freePrompts,
     usedCount: 0,
     startDate: new Date().toISOString(),
     endDate: null, // Tanpa kedaluwarsa (aktif selamanya)
@@ -598,6 +619,7 @@ function createDefaultSubscription(userId: string): UserSubscription {
 function createFallbackSummary(userId: string): SubscriptionSummary {
   const period = getCurrentBillingPeriod();
   const freeConfig = SUBSCRIPTION_PLANS.free;
+  const initial = freeConfig.initialPrompts; // 3 Prompt
   return {
     plan: 'free',
     planName: freeConfig.name,
@@ -605,12 +627,12 @@ function createFallbackSummary(userId: string): SubscriptionSummary {
     status: 'active',
     period,
     periodLabel: 'Aktif Selamanya (Tanpa Kedaluwarsa)',
-    promptBalance: 10,
-    totalGranted: 10,
+    promptBalance: initial,
+    totalGranted: initial,
     usedTotal: 0,
-    monthlyLimit: 10,
+    monthlyLimit: initial,
     usedThisMonth: 0,
-    remaining: 10,
+    remaining: initial,
     isLimitReached: false,
     isAdmin: false,
     isPro: false,

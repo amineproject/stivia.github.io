@@ -18,12 +18,14 @@ import {
   Zap,
   Crown,
   Info,
-  Coins
+  Coins,
+  MessageCircle
 } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { NavigationTab, SupabaseUserProfile, SubscriptionSummary, SubscriptionPlan, UserRole, SUBSCRIPTION_PLANS, PROMPT_PACKAGES } from '../../types';
 import { getUserProfile, updateUserProfile, ProfileSaveError, SupabaseDetailedError } from '../../services/authService';
 import { updateUserPlan, updateUserRole, topUpPromptBalance } from '../../services/subscriptionService';
+import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
 
 // Pilihan avatar preset pendidik khas STIVIA (fallback ramah visual)
 const AVATAR_PRESETS = [
@@ -79,6 +81,30 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
   const [showProModal, setShowProModal] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Verifikasi apakah akun ini adalah Administrator yang sah
+  // (Tetap diakui meski admin sedang dalam mode simulasi pengguna biasa)
+  const isActualAdmin = Boolean(
+    subscriptionSummary?.isAdmin ||
+    userProfile?.role === 'admin' ||
+    (userId && typeof window !== 'undefined' && localStorage.getItem(`stivia_is_admin_user_${userId}`) === 'true') ||
+    userEmail === 'aminexplore@gmail.com' ||
+    session?.user?.email === 'aminexplore@gmail.com'
+  );
+
+  // Simpan status otorisasi admin ke browser agar tidak terputus saat simulasi
+  useEffect(() => {
+    if (userId && (subscriptionSummary?.isAdmin || userProfile?.role === 'admin' || userEmail === 'aminexplore@gmail.com')) {
+      try {
+        localStorage.setItem(`stivia_is_admin_user_${userId}`, 'true');
+      } catch {
+        // ignore
+      }
+    }
+  }, [userId, subscriptionSummary?.isAdmin, userProfile?.role, userEmail]);
+
+  // Status apakah admin sedang menguji akun sebagai pengguna biasa
+  const isSimulatingUser = isActualAdmin && !subscriptionSummary?.isAdmin;
 
   // Inisialisasi data form dari props userProfile
   useEffect(() => {
@@ -242,7 +268,6 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   const handleToggleRole = async (targetRole: UserRole) => {
     if (!userId) return;
-    const isActualAdmin = Boolean(subscriptionSummary?.isAdmin || userProfile?.role === 'admin');
     if (!isActualAdmin) {
       showToast('Akses ditolak: Hanya Administrator yang berwenang mengubah peran.');
       return;
@@ -252,8 +277,8 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
       await updateUserRole(userId, targetRole);
       showToast(
         targetRole === 'admin'
-          ? 'Peran diubah menjadi ADMIN (Akses Unlimited aktif)'
-          : 'Peran diubah menjadi PENGGUNA STANDAR'
+          ? 'Peran berhasil dikembalikan menjadi ADMIN (Akses Unlimited Permanen)'
+          : 'Beralih ke mode UJI COBA PENGGUNA (Saldo Terbatas 3 Prompt)'
       );
       if (onRefreshSubscription) {
         onRefreshSubscription();
@@ -892,9 +917,36 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
               </div>
 
               {/* Panel Kontrol Paket & Saldo Prompt */}
-              {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
-                /* Panel Uji Coba HANYA untuk Administrator */
+              {isActualAdmin ? (
+                /* Panel Uji Coba HANYA untuk Administrator (Tetap Muncul Meski Sedang Uji Akun Pengguna) */
                 <div className="pt-3 border-t border-purple-100 bg-purple-50/50 -mx-6 -mb-6 p-6 rounded-b-3xl space-y-3">
+                  {isSimulatingUser && (
+                    <div className="p-3.5 rounded-2xl bg-amber-100/90 border border-amber-300 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-amber-950">
+                            Mode Uji Coba Pengguna Sedang Aktif
+                          </p>
+                          <p className="text-[11px] text-amber-800 mt-0.5">
+                            Anda sedang menguji sistem sebagai <strong>Pengguna Standar</strong> (Saldo: {subscriptionSummary?.promptBalance} Prompt).
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleRole('admin')}
+                        disabled={isSwitchingRole}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-purple-600/20 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                      >
+                        <Crown className="w-3.5 h-3.5 text-purple-200" />
+                        <span>{isSwitchingRole ? 'Mengaktifkan...' : 'Kembali ke Admin (Permanen Unlimited)'}</span>
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -936,13 +988,13 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                       </button>
 
                       {/* Switcher Role User / Admin */}
-                      {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
+                      {subscriptionSummary?.isAdmin ? (
                         <button
                           type="button"
                           onClick={() => handleToggleRole('user')}
                           disabled={isSwitchingRole}
                           className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                          title="Simulasikan tampilan sebagai pengguna biasa (kuota terbatas)"
+                          title="Simulasikan tampilan sebagai pengguna biasa (kuota 3 prompt)"
                         >
                           {isSwitchingRole ? 'Mengubah...' : 'Uji Akun Pengguna'}
                         </button>
@@ -955,7 +1007,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                           title="Kembalikan akun ke Administrator Permanen"
                         >
                           <Crown className="w-3.5 h-3.5 text-purple-200" />
-                          <span>{isSwitchingRole ? 'Mengubah...' : 'Aktifkan Admin (Permanen)'}</span>
+                          <span>{isSwitchingRole ? 'Mengubah...' : 'Kembali ke Admin (Permanen)'}</span>
                         </button>
                       )}
 
@@ -982,14 +1034,27 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <a
+                      href={getWhatsAppTopUpUrl({
+                        userEmail,
+                        userName: userProfile?.full_name,
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                      title="Chat langsung dengan Admin via WhatsApp untuk aktivasi cepat"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Chat Admin via WA</span>
+                    </a>
                     <button
                       type="button"
                       onClick={() => setShowProModal(true)}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm bg-gradient-to-r from-[#3b49df] to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white shadow-indigo-600/20"
                     >
                       <Coins className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Pilihan Paket Saldo Prompt</span>
+                      <span>Pilihan Paket Saldo</span>
                     </button>
                   </div>
                 </div>
@@ -1063,9 +1128,25 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">{pkg.description}</p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
                       <span className="text-base font-black text-[#3b49df]">{pkg.priceLabel}</span>
                       <span className="text-[11px] font-bold text-amber-700 block">+{pkg.prompts} Prompt</span>
+                      <a
+                        href={getWhatsAppTopUpUrl({
+                          userEmail,
+                          userName: userProfile?.full_name,
+                          planName: pkg.name,
+                          prompts: pkg.prompts,
+                          priceLabel: pkg.priceLabel,
+                        })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-2xs transition-colors"
+                        title={`Pesan ${pkg.name} via WhatsApp`}
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        <span>Pesan via WA</span>
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -1101,11 +1182,24 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <a
+                href={getWhatsAppTopUpUrl({
+                  userEmail,
+                  userName: userProfile?.full_name,
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Chat Admin via WhatsApp</span>
+              </a>
+
               <button
                 type="button"
                 onClick={() => setShowProModal(false)}
-                className="px-5 py-2.5 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
               >
                 Tutup Informasi
               </button>
