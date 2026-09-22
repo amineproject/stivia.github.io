@@ -42,17 +42,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   // Perhitungan prompt murni berdasarkan proyek nyata milik pengguna
   const promptCount = userProjects.length * 2;
 
-  // Data langganan fallback & perlakuan role
+  // Data langganan fallback & perlakuan role Saldo Prompt
   const isAdmin = Boolean(subscriptionSummary?.isAdmin);
   const plan = isAdmin ? 'admin' : (subscriptionSummary?.plan || 'free');
-  const usedThisMonth = subscriptionSummary?.usedThisMonth ?? 0;
-  const monthlyLimit = isAdmin ? Infinity : (subscriptionSummary?.monthlyLimit ?? 10);
-  const remaining = isAdmin ? Infinity : (subscriptionSummary?.remaining ?? Math.max(0, monthlyLimit - usedThisMonth));
-  const periodLabel = subscriptionSummary?.periodLabel || 'Bulan Ini';
-  const isLimitReached = isAdmin ? false : (subscriptionSummary?.isLimitReached ?? false);
+  const promptBalance = isAdmin ? Infinity : (subscriptionSummary?.promptBalance ?? subscriptionSummary?.remaining ?? 10);
+  const totalGranted = isAdmin ? Infinity : (subscriptionSummary?.totalGranted ?? 10);
+  const usedTotal = subscriptionSummary?.usedTotal ?? subscriptionSummary?.usedThisMonth ?? 0;
+  const isLimitReached = isAdmin ? false : promptBalance <= 0;
   const usagePercentage = isAdmin
     ? 0
-    : Math.min(100, Math.round((usedThisMonth / (monthlyLimit || 1)) * 100));
+    : totalGranted > 0
+    ? Math.min(100, Math.round((usedTotal / totalGranted) * 100))
+    : 100;
 
   // Helper untuk menentukan status badge
   const getStatusBadge = (status: string, isLocked?: boolean) => {
@@ -167,12 +168,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        {/* STAT 3: PENGGUNAAN BULAN INI (LIMIT CHECKER) */}
+        {/* STAT 3: SALDO PROMPT (TOKEN BALANCE) */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex flex-col justify-between gap-3 hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                isLimitReached 
+                isAdmin 
+                  ? 'bg-purple-50 text-purple-600'
+                  : isLimitReached 
                   ? 'bg-rose-50 text-rose-600' 
                   : 'bg-amber-50 text-amber-600'
               }`}>
@@ -180,14 +183,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
               <div>
                 <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  PENGGUNAAN BULAN INI
+                  SALDO PROMPT
                 </span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    {usedThisMonth}
-                  </span>
-                  <span className="text-xs font-bold text-slate-400">
-                    / {isAdmin ? 'Unlimited (∞)' : `${monthlyLimit} generate`}
+                    {isAdmin ? 'Unlimited (∞)' : `${promptBalance} Prompt`}
                   </span>
                 </div>
               </div>
@@ -202,23 +202,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     ? 'bg-gradient-to-r from-purple-500 to-indigo-600 w-full'
                     : isLimitReached 
                     ? 'bg-rose-500' 
-                    : usagePercentage > 80 
+                    : promptBalance <= 3 
                     ? 'bg-amber-500' 
                     : 'bg-[#3b49df]'
                 }`}
-                style={{ width: isAdmin ? '100%' : `${usagePercentage}%` }}
+                style={{ width: isAdmin ? '100%' : `${Math.min(100, Math.max(8, 100 - usagePercentage))}%` }}
               />
             </div>
             <div className="flex items-center justify-between text-[11px]">
               <span className={`font-semibold ${isAdmin ? 'text-purple-600' : isLimitReached ? 'text-rose-600' : 'text-slate-500'}`}>
-                {isAdmin ? 'Akses Admin: Tanpa batas kuota' : isLimitReached ? 'Limit bulan ini tercapai' : `Sisa: ${remaining} generate`}
+                {isAdmin ? 'Akses Admin: Tanpa batas kuota' : isLimitReached ? 'Saldo habis • Perlu top-up' : `Tersisa ${promptBalance} • Terpakai: ${usedTotal}`}
               </span>
-              <span className="text-slate-400">{isAdmin ? 'Unlimited' : `${usagePercentage}%`}</span>
+              <span className="text-slate-400">{isAdmin ? 'Permanen' : 'Aktif Selamanya'}</span>
             </div>
           </div>
         </div>
 
-        {/* STAT 4: PAKET AKUN */}
+        {/* STAT 4: PAKET & STATUS AKUN */}
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex flex-col justify-between gap-3 hover:shadow-xs transition-shadow">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
@@ -242,19 +242,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
                     isAdmin
                       ? 'bg-purple-50 text-purple-800 border-purple-200'
-                      : subscriptionSummary?.isExpired
-                      ? 'bg-rose-50 text-rose-800 border-rose-200'
                       : plan === 'pro'
                       ? 'bg-amber-50 text-amber-800 border-amber-200'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   }`}>
                     {isAdmin
-                      ? 'Unlimited'
-                      : subscriptionSummary?.isExpired
-                      ? 'Kedaluwarsa'
-                      : plan === 'pro' && subscriptionSummary?.daysRemaining !== undefined && subscriptionSummary.daysRemaining !== null
-                      ? `${subscriptionSummary.daysRemaining} hari lagi`
-                      : 'Aktif'}
+                      ? 'Permanen'
+                      : 'Aktif Selamanya'}
                   </span>
                 </div>
               </div>
@@ -263,15 +257,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
           <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50">
             <span className="truncate">
-              {plan === 'pro' && subscriptionSummary?.endDate
-                ? `Berakhir: ${new Date(subscriptionSummary.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                : `Periode: ${periodLabel}`}
+              {isAdmin
+                ? 'Hak akses penuh tanpa kedaluwarsa'
+                : 'Saldo tidak pernah hangus'}
             </span>
             <button
               onClick={() => onNavigate('profil_saya')}
               className="text-[#3b49df] font-bold hover:underline shrink-0 cursor-pointer"
             >
-              Kelola ›
+              {isAdmin ? 'Kelola ›' : 'Top-Up Saldo ›'}
             </button>
           </div>
         </div>

@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   X,
   ShieldCheck,
-  Info
+  Info,
+  Coins
 } from 'lucide-react';
 import { 
   EducationLevel, 
@@ -28,7 +29,8 @@ import {
   VisualLevel, 
   InfographicDraft,
   NavigationTab,
-  SubscriptionSummary
+  SubscriptionSummary,
+  PROMPT_PACKAGES
 } from '../../types';
 import { 
   GRADE_OPTIONS_BY_LEVEL, 
@@ -291,29 +293,37 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               <span>STIVIA v{APP_CURRENT_VERSION} • Generator Prompt Infografis</span>
             </div>
 
-            {/* Quota & Plan Status Pill */}
+            {/* Saldo Prompt & Role Status Pill */}
             {subscriptionSummary && (
               <div 
                 className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
-                  subscriptionSummary.isLimitReached
+                  subscriptionSummary.isAdmin
+                    ? 'bg-purple-50 text-purple-700 border-purple-200 shadow-xs'
+                    : subscriptionSummary.isLimitReached
                     ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-xs'
                     : 'bg-white text-slate-700 border-slate-200 shadow-2xs'
                 }`}
-                title={`Periode ${subscriptionSummary.periodLabel}`}
+                title={subscriptionSummary.isAdmin ? 'Akses Admin Permanen Unlimited' : 'Saldo Prompt Aktif Selamanya'}
               >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${
-                  subscriptionSummary.isLimitReached ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'
+                  subscriptionSummary.isAdmin
+                    ? 'bg-purple-600'
+                    : subscriptionSummary.isLimitReached 
+                    ? 'bg-rose-500 animate-pulse' 
+                    : 'bg-emerald-500'
                 }`} />
-                <span>Kuota:</span>
+                <span>Saldo Prompt:</span>
                 <span className="font-bold text-slate-900">
-                  {subscriptionSummary.usedThisMonth}/{subscriptionSummary.monthlyLimit}
+                  {subscriptionSummary.isAdmin ? 'Unlimited (∞)' : `${subscriptionSummary.promptBalance ?? subscriptionSummary.remaining} Prompt`}
                 </span>
                 <span className={`px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase tracking-wide ${
-                  subscriptionSummary.plan === 'pro'
-                    ? 'bg-amber-100 text-amber-800'
+                  subscriptionSummary.isAdmin
+                    ? 'bg-purple-100 text-purple-800'
+                    : subscriptionSummary.plan === 'pro'
+                    ? 'bg-indigo-100 text-indigo-800'
                     : 'bg-emerald-100 text-emerald-800'
                 }`}>
-                  {subscriptionSummary.plan}
+                  {subscriptionSummary.isAdmin ? 'ADMIN' : subscriptionSummary.plan}
                 </span>
               </div>
             )}
@@ -339,16 +349,16 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         </button>
       </div>
 
-      {/* Peringatan Banner Jika Limit Tercapai */}
-      {subscriptionSummary?.isLimitReached && (
+      {/* Peringatan Banner Jika Saldo Prompt Habis */}
+      {subscriptionSummary?.isLimitReached && !subscriptionSummary?.isAdmin && (
         <div className="p-4 sm:p-5 rounded-3xl bg-rose-50 border border-rose-200 flex items-start gap-3.5 text-rose-900 shadow-2xs">
           <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="space-y-1 text-sm flex-1">
             <h4 className="font-bold text-rose-950">
-              Batas Generate Bulan Ini Telah Tercapai
+              Saldo Kuota Prompt Telah Habis (0 Prompt Tersisa)
             </h4>
             <p className="text-xs sm:text-sm text-rose-800 leading-relaxed">
-              Paket {subscriptionSummary.planName} memiliki batas penggunaan bulanan ({subscriptionSummary.monthlyLimit} generate/bulan). Anda telah menggunakan {subscriptionSummary.usedThisMonth}/{subscriptionSummary.monthlyLimit} generate untuk periode {subscriptionSummary.periodLabel}. Anda dapat menunggu periode berikutnya atau menggunakan paket Pro.
+              Anda telah menggunakan seluruh saldo prompt yang tersedia. Lakukan isi ulang saldo prompt tambahan (mulai Rp 20.000 untuk 20 prompt) untuk melanjutkan pembuatan prompt infografis. Saldo baru aktif selamanya dan tidak pernah hangus.
             </p>
             <div className="pt-2 flex items-center gap-3">
               <button
@@ -356,8 +366,8 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 onClick={() => setShowProInfoModal(true)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-rose-300 text-xs font-bold text-rose-800 hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-600" />
-                <span>Pelajari Paket Pro (100 Generate/Bulan)</span>
+                <Coins className="w-3.5 h-3.5 text-amber-600" />
+                <span>Lihat Pilihan Paket Top-Up Saldo Prompt</span>
               </button>
             </div>
           </div>
@@ -867,10 +877,10 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
             <div>
               <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                Batas Generate Bulan Ini Telah Tercapai
+                Saldo Kuota Prompt Telah Habis
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                Paket Free memiliki batas penggunaan bulanan (10 generate/bulan). Anda dapat menunggu periode berikutnya atau menggunakan paket Pro.
+                Anda telah menggunakan seluruh saldo prompt pada akun Anda. Isi ulang saldo prompt Anda untuk melanjutkan membuat prompt infografis. Saldo aktif selamanya.
               </p>
             </div>
 
@@ -879,19 +889,19 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               <div className="flex items-center justify-between text-slate-600">
                 <span>Paket Anda:</span>
                 <span className="font-extrabold text-slate-900 uppercase">
-                  {subscriptionSummary?.plan || 'Free'}
+                  {subscriptionSummary?.isAdmin ? 'Admin' : subscriptionSummary?.plan || 'Free'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span>Penggunaan Periode Ini:</span>
+                <span>Saldo Prompt Tersisa:</span>
                 <span className="font-bold text-rose-600">
-                  {subscriptionSummary?.usedThisMonth || 10} / {subscriptionSummary?.monthlyLimit || 10} generate
+                  {subscriptionSummary?.isAdmin ? 'Unlimited' : `${subscriptionSummary?.promptBalance ?? 0} Prompt`}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span>Status:</span>
-                <span className="font-bold text-rose-600">
-                  Limit Tercapai (Sisa 0)
+                <span>Masa Aktif Saldo:</span>
+                <span className="font-bold text-emerald-600">
+                  Aktif Selamanya (Tanpa Batas Waktu)
                 </span>
               </div>
             </div>
@@ -905,8 +915,8 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 }}
                 className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
               >
-                <Zap className="w-4 h-4 text-amber-300" />
-                <span>Pelajari Paket Pro</span>
+                <Coins className="w-4 h-4 text-amber-300" />
+                <span>Pilihan Top-Up Saldo Prompt</span>
               </button>
 
               <button
@@ -921,21 +931,21 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         </div>
       )}
 
-      {/* MODAL 2: INFORMASI PAKET PRO (TANPA PAYMENT GATEWAY) */}
+      {/* MODAL 2: PILIHAN PAKET TOP-UP SALDO PROMPT */}
       {showProInfoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 animate-scale-up">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <Zap className="w-6 h-6" />
+                  <Coins className="w-6 h-6" />
                 </div>
                 <div>
                   <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-600 block">
-                    Upgrade Kapasitas
+                    Top-Up Saldo Prompt
                   </span>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    Paket STIVIA Pro
+                    Paket Saldo Prompt STIVIA
                   </h3>
                 </div>
               </div>
@@ -949,49 +959,48 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             </div>
 
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Paket Pro dirancang bagi guru, dosen, dan instruktur aktif yang membutuhkan kapasitas generate prompt infografis intensif setiap bulan.
+              Pilih paket saldo prompt sesuai ritme mengajar Anda. Saldo <strong>aktif selamanya</strong> dan hanya berkurang saat Anda men-generate prompt infografis.
             </p>
 
             <div className="space-y-3">
-              <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-black text-slate-900">Kapasitas Generate Bulanan</h4>
-                  <p className="text-xs text-slate-500">Reset otomatis setiap awal bulan kalender</p>
+              {PROMPT_PACKAGES.map((pkg) => (
+                <div 
+                  key={pkg.id} 
+                  className={`p-4 rounded-2xl border transition-all ${
+                    pkg.popular
+                      ? 'bg-gradient-to-r from-indigo-50/90 to-blue-50/80 border-indigo-200 shadow-2xs'
+                      : 'bg-slate-50/70 border-slate-200/80'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black text-slate-900">{pkg.name}</h4>
+                        {pkg.badge && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-600 text-white tracking-wider uppercase">
+                            {pkg.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{pkg.description}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-base font-black text-[#3b49df]">{pkg.priceLabel}</span>
+                      <span className="text-[11px] font-bold text-amber-700 block">{pkg.prompts} Prompt</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xl font-black text-indigo-700">100</span>
-                  <span className="text-xs font-bold text-indigo-500 block">generate / bln</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">Batas 100 generate/bulan</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">20 Gaya Visual Lengkap</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">Semua Format Layout</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">Prioritas Generate AI</span>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* Catatan Sesuai Ketentuan User: Tanpa Payment Gateway */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-1">
-              <div className="flex items-center gap-1.5 font-bold">
-                <Info className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>Status Pengembangan STIVIA 3.1:</span>
+            {/* Petunjuk Aktivasi */}
+            <div className="p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-[#3b49df]">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>Cara Top-Up Saldo Prompt:</span>
               </div>
-              <p className="leading-relaxed text-[11px] text-amber-800">
-                Sistem pembayaran otomatis/payment gateway sedang dipersiapkan. Untuk keperluan pengujian limit paket saat ini, Anda dapat beralih antara paket Free (10 generate) dan Pro (100 generate) langsung di menu <strong>Profil Saya</strong>.
+              <p className="leading-relaxed text-[11px] text-indigo-900/80">
+                Hubungi <strong>Administrator STIVIA</strong> dengan menyebutkan email akun dan paket pilihan Anda. Saldo prompt akan langsung ditambahkan ke akun Anda dan aktif selamanya.
               </p>
             </div>
 
@@ -1006,7 +1015,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 }}
                 className="px-5 py-2.5 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
               >
-                Buka Profil Saya & Kelola Paket
+                Lihat Status di Profil Saya
               </button>
               <button
                 type="button"

@@ -17,12 +17,13 @@ import {
   Check,
   Zap,
   Crown,
-  Info
+  Info,
+  Coins
 } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
-import { NavigationTab, SupabaseUserProfile, SubscriptionSummary, SubscriptionPlan, UserRole, SUBSCRIPTION_PLANS } from '../../types';
+import { NavigationTab, SupabaseUserProfile, SubscriptionSummary, SubscriptionPlan, UserRole, SUBSCRIPTION_PLANS, PROMPT_PACKAGES } from '../../types';
 import { getUserProfile, updateUserProfile, ProfileSaveError, SupabaseDetailedError } from '../../services/authService';
-import { updateUserPlan, updateUserRole } from '../../services/subscriptionService';
+import { updateUserPlan, updateUserRole, topUpPromptBalance } from '../../services/subscriptionService';
 
 // Pilihan avatar preset pendidik khas STIVIA (fallback ramah visual)
 const AVATAR_PRESETS = [
@@ -268,6 +269,23 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
       showToast('Gagal mengubah role.');
     } finally {
       setIsSwitchingRole(false);
+    }
+  };
+
+  const handleTopUpPrompts = async (amount: number) => {
+    if (!userId) return;
+    setIsSwitchingPlan(true);
+    try {
+      await topUpPromptBalance(userId, amount);
+      showToast(`Berhasil menambahkan +${amount} Saldo Prompt!`);
+      if (onRefreshSubscription) {
+        onRefreshSubscription();
+      }
+    } catch (err) {
+      console.error('[ProfilSaya] Gagal top-up saldo prompt:', err);
+      showToast('Gagal menambahkan saldo prompt.');
+    } finally {
+      setIsSwitchingPlan(false);
     }
   };
 
@@ -743,14 +761,14 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                      <Zap className="w-4 h-4" />
+                      <Coins className="w-4 h-4" />
                     </div>
                     <h3 className="text-base font-bold text-slate-900">
-                      Paket Akun & Limit Penggunaan
+                      Paket Akun & Saldo Prompt
                     </h3>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Kapasitas generate bulanan berdasarkan paket akun STIVIA Anda
+                    Sistem saldo token prompt aktif selamanya tanpa batas kedaluwarsa bulanan
                   </p>
                 </div>
 
@@ -758,111 +776,94 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                   {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
                     <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide border bg-purple-50 text-purple-800 border-purple-200 flex items-center gap-1.5 shadow-xs">
                       <Crown className="w-3.5 h-3.5 text-purple-600" />
-                      <span>ADMIN • UNLIMITED</span>
+                      <span>ADMIN PERMANEN • UNLIMITED</span>
                     </span>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide border ${
-                      (subscriptionSummary?.plan || userProfile?.plan) === 'pro'
-                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      (subscriptionSummary?.promptBalance ?? 0) > 0
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-rose-50 text-rose-800 border-rose-200'
                     }`}>
-                      Paket {((subscriptionSummary?.plan || userProfile?.plan) || 'Free').toUpperCase()}
+                      Saldo: {subscriptionSummary?.promptBalance ?? 0} Prompt
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Rincian Status Kuota */}
+              {/* Rincian Status Saldo Prompt */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
                   <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                    Paket Anda
+                    Peran & Hak Akses
                   </span>
                   <span className="text-xl font-black text-slate-900 mt-1 block uppercase">
                     {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'Admin'
-                      : (subscriptionSummary?.plan || userProfile?.plan) || 'Free'}
+                      ? 'Admin Permanen'
+                      : 'Pengguna Reguler'}
                   </span>
                   <span className={`text-[11px] font-semibold mt-0.5 block ${
                     subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                       ? 'text-purple-600'
-                      : subscriptionSummary?.isExpired
-                      ? 'text-rose-600'
                       : 'text-emerald-600'
                   }`}>
                     {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'Hak Akses: Unlimited (Tanpa Batas)'
-                      : subscriptionSummary?.isExpired
-                      ? 'Kedaluwarsa (Perlu Perpanjangan)'
-                      : (subscriptionSummary?.plan || userProfile?.plan) === 'pro' && subscriptionSummary?.daysRemaining !== undefined && subscriptionSummary.daysRemaining !== null
-                      ? `Aktif (${subscriptionSummary.daysRemaining} hari lagi)`
-                      : 'Status: Aktif ✓'}
-                  </span>
-                  {(subscriptionSummary?.plan || userProfile?.plan) === 'pro' && subscriptionSummary?.endDate && (
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">
-                      s/d {new Date(subscriptionSummary.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                    Penggunaan Periode Ini
-                  </span>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-xl font-black text-slate-900">
-                      {subscriptionSummary?.usedThisMonth ?? 0}
-                    </span>
-                    <span className="text-xs font-bold text-slate-400">
-                      / {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                        ? 'Unlimited (∞)'
-                        : `${subscriptionSummary?.monthlyLimit ?? 10} generate`}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-medium text-slate-500 mt-0.5 block">
-                    Periode {subscriptionSummary?.periodLabel || 'Bulan Ini'}
+                      ? 'Hak Akses: Penuh (Unlimited ∞)'
+                      : 'Status: Aktif Selamanya ✓'}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
                   <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                    Sisa Kuota
+                    Saldo Prompt Tersisa
                   </span>
                   <span className={`text-xl font-black mt-1 block ${
                     subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                       ? 'text-purple-600'
-                      : subscriptionSummary?.isLimitReached
+                      : (subscriptionSummary?.promptBalance ?? 0) <= 0
                       ? 'text-rose-600'
                       : 'text-slate-900'
                   }`}>
                     {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                       ? 'Unlimited (∞)'
-                      : `${subscriptionSummary?.remaining ?? 10} generate`}
+                      : `${subscriptionSummary?.promptBalance ?? 0} Prompt`}
                   </span>
-                  <span className={`text-[11px] font-semibold mt-0.5 block ${
+                  <span className={`text-[11px] font-medium mt-0.5 block ${
                     subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                       ? 'text-purple-600'
-                      : subscriptionSummary?.isLimitReached
-                      ? 'text-rose-600'
+                      : (subscriptionSummary?.promptBalance ?? 0) <= 0
+                      ? 'text-rose-600 font-semibold'
                       : 'text-slate-500'
                   }`}>
                     {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                       ? 'Bebas generate kapan pun'
-                      : subscriptionSummary?.isLimitReached
-                      ? 'Batas tercapai'
-                      : 'Tersedia untuk digunakan'}
+                      : (subscriptionSummary?.promptBalance ?? 0) <= 0
+                      ? 'Saldo habis (perlu top-up)'
+                      : `Total didapat: ${subscriptionSummary?.totalGranted ?? 10} prompt`}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    Riwayat Penggunaan
+                  </span>
+                  <span className="text-xl font-black text-slate-900 mt-1 block">
+                    {subscriptionSummary?.usedTotal ?? 0}
+                    <span className="text-xs font-bold text-slate-400 ml-1">prompt</span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-emerald-600 mt-0.5 block">
+                    Masa Aktif: Tidak Pernah Hangus
                   </span>
                 </div>
               </div>
 
-              {/* Progress Bar Kuota */}
+              {/* Progress Bar Saldo / Kapasitas */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-600">Progres Penggunaan Bulanan</span>
+                  <span className="font-semibold text-slate-600">Ketersediaan Saldo Akun</span>
                   <span className="font-bold text-slate-800">
                     {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                       ? 'Unlimited (Bypass Kuota)'
-                      : `${subscriptionSummary?.usagePercentage ?? 0}%`}
+                      : `${subscriptionSummary?.promptBalance ?? 0} / ${subscriptionSummary?.totalGranted ?? 10} Prompt`}
                   </span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
@@ -870,27 +871,27 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                     className={`h-full rounded-full transition-all duration-500 ${
                       subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                         ? 'bg-gradient-to-r from-purple-500 to-indigo-600 w-full'
-                        : subscriptionSummary?.isLimitReached
-                        ? 'bg-rose-500'
-                        : (subscriptionSummary?.usagePercentage ?? 0) > 80
+                        : (subscriptionSummary?.promptBalance ?? 0) <= 0
+                        ? 'bg-rose-500 w-full'
+                        : (subscriptionSummary?.promptBalance ?? 0) < 5
                         ? 'bg-amber-500'
                         : 'bg-[#3b49df]'
                     }`}
                     style={{
                       width: subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
                         ? '100%'
-                        : `${subscriptionSummary?.usagePercentage ?? 0}%`
+                        : `${Math.min(100, Math.max(5, ((subscriptionSummary?.promptBalance ?? 0) / Math.max(1, subscriptionSummary?.totalGranted ?? 10)) * 100))}%`
                     }}
                   />
                 </div>
                 <p className="text-[11px] text-slate-400">
                   {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                    ? '* Akun Administrator tidak memiliki batasan kuota bulanan.'
-                    : '* Kuota generate akan direset otomatis pada tanggal 1 setiap bulannya.'}
+                    ? '* Akun Administrator permanen memiliki akses tanpa batas (Unlimited) untuk seluruh pembuatan prompt infografis.'
+                    : '* Saldo prompt aktif selamanya tanpa batas waktu dan hanya berkurang saat Anda men-generate prompt infografis baru.'}
                 </p>
               </div>
 
-              {/* Panel Kontrol Paket & Langganan */}
+              {/* Panel Kontrol Paket & Saldo Prompt */}
               {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
                 /* Panel Uji Coba HANYA untuk Administrator */
                 <div className="pt-3 border-t border-purple-100 bg-purple-50/50 -mx-6 -mb-6 p-6 rounded-b-3xl space-y-3">
@@ -901,37 +902,38 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                           KHUSUS ADMIN
                         </span>
                         <h4 className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                          <span>Simulasi Tampilan Paket & Hak Akses</span>
+                          <Crown className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Simulasi Saldo Prompt & Hak Akses Admin</span>
                         </h4>
                       </div>
                       <p className="text-[11px] text-purple-700 mt-1">
-                        Alat bantu internal admin untuk menguji tampilan antarmuka saat dilihat sebagai Free ({SUBSCRIPTION_PLANS.free.monthlyLimit}/bln), Pro ({SUBSCRIPTION_PLANS.pro.monthlyLimit}/bln), atau Admin (Unlimited). Panel ini tidak terlihat oleh pengguna umum.
+                        Alat bantu internal admin untuk menguji model saldo prompt dan hak akses permanen. Panel ini tersembunyi bagi pengguna umum.
                       </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {/* Switcher Free / Pro untuk Pengujian Admin */}
-                      {(subscriptionSummary?.plan || userProfile?.plan) === 'pro' ? (
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePlan('free')}
-                          disabled={isSwitchingPlan}
-                          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          {isSwitchingPlan ? 'Mengubah...' : `Uji Free (${SUBSCRIPTION_PLANS.free.monthlyLimit}/bln)`}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePlan('pro')}
-                          disabled={isSwitchingPlan}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-sm shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          <Zap className="w-3.5 h-3.5 text-amber-200" />
-                          <span>{isSwitchingPlan ? 'Mengubah...' : `Uji Pro (${SUBSCRIPTION_PLANS.pro.monthlyLimit}/bln)`}</span>
-                        </button>
-                      )}
+                      {/* Top-up Simulasi Cepat */}
+                      <button
+                        type="button"
+                        onClick={() => handleTopUpPrompts(20)}
+                        disabled={isSwitchingPlan}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                        title="Tambah 20 saldo prompt untuk pengujian"
+                      >
+                        <Coins className="w-3.5 h-3.5 text-amber-500" />
+                        <span>+20 Prompt</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTopUpPrompts(50)}
+                        disabled={isSwitchingPlan}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                        title="Tambah 50 saldo prompt untuk pengujian"
+                      >
+                        <Coins className="w-3.5 h-3.5 text-amber-500" />
+                        <span>+50 Prompt</span>
+                      </button>
 
                       {/* Switcher Role User / Admin */}
                       {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
@@ -940,9 +942,9 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                           onClick={() => handleToggleRole('user')}
                           disabled={isSwitchingRole}
                           className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                          title="Kembali ke peran pengguna biasa"
+                          title="Simulasikan tampilan sebagai pengguna biasa (kuota terbatas)"
                         >
-                          {isSwitchingRole ? 'Mengubah...' : 'Ubah ke Pengguna Biasa'}
+                          {isSwitchingRole ? 'Mengubah...' : 'Uji Akun Pengguna'}
                         </button>
                       ) : (
                         <button
@@ -950,10 +952,10 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                           onClick={() => handleToggleRole('admin')}
                           disabled={isSwitchingRole}
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-purple-600/20 transition-all cursor-pointer disabled:opacity-50"
-                          title="Jadikan akun Administrator dengan kuota Unlimited"
+                          title="Kembalikan akun ke Administrator Permanen"
                         >
                           <Crown className="w-3.5 h-3.5 text-purple-200" />
-                          <span>{isSwitchingRole ? 'Mengubah...' : 'Uji Admin (Unlimited)'}</span>
+                          <span>{isSwitchingRole ? 'Mengubah...' : 'Aktifkan Admin (Permanen)'}</span>
                         </button>
                       )}
 
@@ -962,27 +964,21 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                         onClick={() => setShowProModal(true)}
                         className="px-3 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer"
                       >
-                        Info Paket & Harga
+                        Pilihan Top-Up
                       </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                /* Untuk PENGGUNA BIASA (Free atau Pro non-admin) — Tidak ada tombol uji coba / manipulasi */
+                /* Untuk PENGGUNA BIASA — Tombol Top-Up Saldo Prompt */
                 <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#3b49df]" />
-                      <span>
-                        {(subscriptionSummary?.plan || userProfile?.plan) === 'pro'
-                          ? 'Status Paket STIVIA Pro'
-                          : 'Tingkatkan ke Paket STIVIA Pro'}
-                      </span>
+                      <Coins className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Isi Ulang Saldo Prompt STIVIA</span>
                     </h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      {(subscriptionSummary?.plan || userProfile?.plan) === 'pro'
-                        ? `Kapasitas kuota ${SUBSCRIPTION_PLANS.pro.monthlyLimit} generate/bulan aktif untuk mendukung pembuatan materi ajar visual Anda.`
-                        : `Dapatkan kapasitas 10x lipat (${SUBSCRIPTION_PLANS.pro.monthlyLimit} generate/bulan) dan prioritas layanan visual STIVIA.`}
+                      Beli paket saldo prompt sesuai kebutuhan mengajar Anda. Saldo aktif selamanya dan tidak pernah hangus.
                     </p>
                   </div>
 
@@ -990,18 +986,10 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowProModal(true)}
-                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm ${
-                        (subscriptionSummary?.plan || userProfile?.plan) === 'pro'
-                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                          : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-amber-500/20'
-                      }`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm bg-gradient-to-r from-[#3b49df] to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-white shadow-indigo-600/20"
                     >
-                      <Zap className="w-3.5 h-3.5 text-amber-200" />
-                      <span>
-                        {(subscriptionSummary?.plan || userProfile?.plan) === 'pro'
-                          ? 'Rincian Paket & Perpanjangan'
-                          : 'Upgrade ke Paket Pro'}
-                      </span>
+                      <Coins className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Pilihan Paket Saldo Prompt</span>
                     </button>
                   </div>
                 </div>
@@ -1015,28 +1003,28 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                 <span>Keamanan & Kepemilikan Data Terproteksi</span>
               </div>
               <p className="leading-relaxed">
-                Profil Anda diamankan dengan mekanisme <strong>Row Level Security (RLS)</strong> Supabase. Hanya Anda yang memiliki hak akses untuk membaca dan memperbarui data profil ini.
+                Profil dan saldo prompt Anda diamankan dengan mekanisme <strong>Row Level Security (RLS)</strong> Supabase. Hanya Anda dan sistem STIVIA yang berhak mengakses data ini.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL INFO PAKET PRO */}
+      {/* MODAL PILIHAN PAKET TOP-UP SALDO PROMPT */}
       {showProModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 animate-scale-up">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <Zap className="w-6 h-6" />
+                  <Coins className="w-6 h-6" />
                 </div>
                 <div>
                   <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-600 block">
-                    Informasi Langganan
+                    Model Saldo Prompt
                   </span>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    Paket STIVIA Pro
+                    Paket Saldo Prompt STIVIA
                   </h3>
                 </div>
               </div>
@@ -1050,60 +1038,66 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
             </div>
 
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Paket Pro disiapkan untuk mendukung guru dan dosen yang menyusun materi ajar visual secara rutin setiap pekan.
+              STIVIA menggunakan sistem <strong>Saldo Prompt</strong> yang fleksibel. Saldo tidak pernah kedaluwarsa atau hangus di akhir bulan, sangat cocok untuk pendidik saat libur semester maupun saat sibuk mengajar.
             </p>
 
             <div className="space-y-3">
-              {/* Info Harga Paket Pro */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/90 to-blue-50/80 border border-indigo-100 flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-black text-slate-900">Biaya Langganan Pro</h4>
-                  <p className="text-xs text-slate-500">Harga resmi (dikonfigurasi di SUBSCRIPTION_PLANS)</p>
+              {PROMPT_PACKAGES.map((pkg) => (
+                <div 
+                  key={pkg.id}
+                  className={`p-4 rounded-2xl border transition-all ${
+                    pkg.popular
+                      ? 'bg-gradient-to-br from-indigo-50/90 to-blue-50/80 border-indigo-200 shadow-2xs'
+                      : 'bg-slate-50/70 border-slate-200/80'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black text-slate-900">{pkg.name}</h4>
+                        {pkg.badge && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-600 text-white tracking-wider uppercase">
+                            {pkg.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{pkg.description}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-base font-black text-[#3b49df]">{pkg.priceLabel}</span>
+                      <span className="text-[11px] font-bold text-amber-700 block">+{pkg.prompts} Prompt</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xl font-black text-[#3b49df]">{SUBSCRIPTION_PLANS.pro.priceLabel}</span>
-                  <span className="text-[10px] font-bold text-emerald-600 block">Kapasitas {SUBSCRIPTION_PLANS.pro.monthlyLimit} generate / bln</span>
-                </div>
-              </div>
+              ))}
+            </div>
 
-              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-100 flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-black text-slate-900">Batas Kuota Bulanan</h4>
-                  <p className="text-xs text-slate-500">Kapasitas 10x lipat dari paket Free</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-xl font-black text-amber-700">{SUBSCRIPTION_PLANS.pro.monthlyLimit}</span>
-                  <span className="text-xs font-bold text-amber-600 block">generate / bln</span>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-slate-700 font-medium">Aktif Selamanya (Tanpa Batas Waktu)</span>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">Batas {SUBSCRIPTION_PLANS.pro.monthlyLimit} generate/bulan</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">20 Gaya Visual Lengkap</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">Format Portrait, Square, Landscape</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-slate-700 font-medium">Reset Otomatis Bulanan</span>
-                </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-slate-700 font-medium">Tidak Pernah Hangus</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-slate-700 font-medium">20 Gaya Visual Lengkap</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-slate-700 font-medium">Format Portrait, Square, Landscape</span>
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-[#3b49df]">
                 <Info className="w-4 h-4 shrink-0" />
-                <span>Cara Berlangganan & Aktivasi Paket Pro:</span>
+                <span>Petunjuk Pembelian & Top-Up:</span>
               </div>
               <p className="leading-relaxed text-[11px] text-indigo-900/80">
-                Untuk berlangganan atau memperpanjang paket Pro, silakan hubungi <strong>Administrator STIVIA</strong> dengan menyebutkan alamat email akun Anda. Administrator akan langsung mengaktifkan kuota 100 generate/bulan pada akun Anda.
+                Untuk menambah saldo prompt, hubungi <strong>Administrator STIVIA</strong> dengan menyebutkan email akun Anda ({userProfile?.email || session?.user?.email || 'email Anda'}) dan paket yang dipilih. Saldo akan ditambahkan secara instan ke akun Anda.
               </p>
             </div>
 

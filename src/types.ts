@@ -657,37 +657,84 @@ export type UserRole = 'user' | 'admin';
 export type SubscriptionPlan = 'free' | 'pro';
 export type SubscriptionStatus = 'active' | 'inactive' | 'expired';
 
+export interface PromptPackage {
+  id: string;
+  name: string;
+  prompts: number;
+  price: number;
+  priceLabel: string;
+  badge?: string;
+  description: string;
+  popular?: boolean;
+}
+
+/**
+ * Daftar Pilihan Paket Top-Up Saldo Prompt (Aktif Selamanya / Tidak Pernah Hangus)
+ */
+export const PROMPT_PACKAGES: PromptPackage[] = [
+  {
+    id: 'starter',
+    name: 'Paket Pemula',
+    prompts: 20,
+    price: 20000,
+    priceLabel: 'Rp 20.000',
+    description: 'Cocok untuk tugas bulanan dan modul ajar berkala',
+  },
+  {
+    id: 'kreatif',
+    name: 'Paket Guru Kreatif',
+    prompts: 50,
+    price: 45000,
+    priceLabel: 'Rp 45.000',
+    description: 'Paling diminati pendidik untuk infografis satu semester penuh',
+    popular: true,
+    badge: 'PALING POPULER',
+  },
+  {
+    id: 'intensif',
+    name: 'Paket Pendidik Aktif',
+    prompts: 120,
+    price: 90000,
+    priceLabel: 'Rp 90.000',
+    description: 'Hemat maksimal untuk guru produktif, MGMP, atau tim pengajar',
+  },
+];
+
 export interface PlanConfig {
   id: SubscriptionPlan;
   name: string;
   description: string;
-  monthlyLimit: number;
-  priceMonthly: number;     // Harga dalam Rupiah (0 untuk Free, misal 49000 untuk Pro)
-  priceLabel: string;       // Label harga ramah pengguna (misal "Gratis" atau "Rp 49.000 / bulan")
+  initialPrompts: number;   // Saldo prompt bawaan
+  monthlyLimit: number;     // Alias kompatibilitas
+  priceMonthly: number;
+  priceLabel: string;
   badgeColor: string;
 }
 
 /**
- * Single Source of Truth untuk Konfigurasi Paket STIVIA 3.1
- * Harga dan limit bulanan dapat diubah langsung di sini tanpa merombak kode lainnya.
+ * Konfigurasi Model Saldo Prompt STIVIA 3.1
+ * Pengguna menggunakan sistem saldo prompt (aktif selamanya sampai habis).
+ * Admin memiliki hak akses permanen Unlimited (∞).
  */
 export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanConfig> = {
   free: {
     id: 'free',
-    name: 'Free',
-    description: 'Paket Dasar Pendidik',
+    name: 'Free (Saldo Awal)',
+    description: 'Saldo Awal Gratis Pendidik Baru',
+    initialPrompts: 3,
     monthlyLimit: 3,
     priceMonthly: 0,
-    priceLabel: 'Gratis',
+    priceLabel: 'Gratis (3 Prompt Awal)',
     badgeColor: 'emerald',
   },
   pro: {
     id: 'pro',
-    name: 'Pro',
-    description: 'Paket Pendidik Kreatif & Pro',
-    monthlyLimit: 20,
-    priceMonthly: 30000,
-    priceLabel: 'Rp 30.000 / bulan',
+    name: 'Pro (Isi Ulang Saldo)',
+    description: 'Saldo Prompt Tambahan (Aktif Selamanya)',
+    initialPrompts: 50,
+    monthlyLimit: 50,
+    priceMonthly: 45000,
+    priceLabel: 'Mulai Rp 20.000 (Aktif Selamanya)',
     badgeColor: 'indigo',
   },
 };
@@ -697,8 +744,11 @@ export interface UserSubscription {
   plan: SubscriptionPlan;
   role: UserRole;
   status: SubscriptionStatus;
+  promptBalance: number;    // Saldo prompt tersisa (misal: 10, 50, 120)
+  totalGranted: number;     // Total kuota prompt yang pernah didapatkan
+  usedCount: number;        // Total prompt yang telah dibuat
   startDate: string;
-  endDate?: string | null;
+  endDate?: string | null;  // Null untuk saldo tanpa batas waktu / Admin permanen
   updatedAt: string;
 }
 
@@ -714,18 +764,21 @@ export interface SubscriptionSummary {
   planName: string;
   role: UserRole;
   status: SubscriptionStatus;
-  period: string;       // "2026-09"
-  periodLabel: string;  // "September 2026"
-  monthlyLimit: number; // Angka limit (atau Infinity jika Admin)
-  usedThisMonth: number;
-  remaining: number;    // Sisa kuota (atau Infinity jika Admin)
-  isLimitReached: boolean;
+  period: string;           // "2026-09"
+  periodLabel: string;      // "Aktif Selamanya (Tanpa Batas Waktu)"
+  promptBalance: number;    // Saldo prompt saat ini (Infinity jika Admin)
+  totalGranted: number;     // Total kuota prompt yang pernah didapatkan
+  usedTotal: number;        // Total prompt yang telah digenerate
+  monthlyLimit: number;     // Alias kompatibilitas
+  usedThisMonth: number;    // Alias kompatibilitas
+  remaining: number;        // Alias kompatibilitas (= promptBalance)
+  isLimitReached: boolean;  // True jika promptBalance <= 0 dan bukan Admin
   usagePercentage?: number;
   startDate?: string;
   endDate?: string | null;
   daysRemaining?: number | null;
   isExpired?: boolean;
-  isAdmin: boolean;
+  isAdmin: boolean;         // True jika Admin Permanen
   isPro: boolean;
 }
 

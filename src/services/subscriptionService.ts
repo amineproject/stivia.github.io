@@ -78,13 +78,32 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
     }
 
     if (data) {
+      const isAdmin = data.role === 'admin';
+      const role: UserRole = isAdmin ? 'admin' : 'user';
+
+      // Baca saldo prompt dari Supabase (atau fallback berdasarkan plan)
+      const promptBalance = typeof data.prompt_balance === 'number'
+        ? data.prompt_balance
+        : (data.plan === 'pro' ? 50 : 10);
+
+      const totalGranted = typeof data.total_granted === 'number'
+        ? data.total_granted
+        : Math.max(promptBalance, data.plan === 'pro' ? 50 : 10);
+
+      const usedCount = typeof data.used_count === 'number'
+        ? data.used_count
+        : Math.max(0, totalGranted - promptBalance);
+
       const sub: UserSubscription = {
         userId: data.user_id || userId,
         plan: (data.plan as SubscriptionPlan) || 'free',
-        role: (data.role as UserRole) || 'user',
+        role,
         status: (data.status as SubscriptionStatus) || 'active',
+        promptBalance,
+        totalGranted,
+        usedCount,
         startDate: data.start_date || data.created_at || new Date().toISOString(),
-        endDate: data.end_date || null,
+        endDate: isAdmin ? null : (data.end_date || null), // Admin permanen tanpa tanggal kedaluwarsa
         updatedAt: data.updated_at || new Date().toISOString(),
       };
 
@@ -96,7 +115,7 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
       return sub;
     }
 
-    // 3. Jika record belum ada di Supabase, buat entri awal default Free
+    // 3. Jika record belum ada di Supabase, buat entri awal default Free (10 Saldo Prompt Awal)
     const defaultSub = createDefaultSubscription(userId);
     try {
       const { error: insertErr } = await supabase
@@ -106,6 +125,9 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
           plan: defaultSub.plan,
           role: defaultSub.role,
           status: defaultSub.status,
+          prompt_balance: defaultSub.promptBalance,
+          total_granted: defaultSub.totalGranted,
+          used_count: defaultSub.usedCount,
           start_date: defaultSub.startDate,
           end_date: defaultSub.endDate,
         });
@@ -179,61 +201,53 @@ export async function getMonthlyUsage(userId: string, period = getCurrentBilling
 }
 
 /**
- * Mengambil ringkasan lengkap subscription & penggunaan saat ini untuk UI
+ * Mengambil ringkasan lengkap subscription & saldo prompt saat ini untuk UI
  */
 export async function getSubscriptionSummary(userId: string): Promise<SubscriptionSummary> {
   const period = getCurrentBillingPeriod();
-  const periodLabel = formatPeriodLabel(period);
+  const periodLabel = 'Aktif Selamanya (Tanpa Kedaluwarsa)';
 
   const sub = await getUserSubscription(userId);
-  const usedThisMonth = await getMonthlyUsage(userId, period);
-
   const isAdmin = sub.role === 'admin';
 
-  // Periksa kedaluwarsa masa aktif paket bulanan Pro
-  let isExpired = false;
-  let daysRemaining: number | null = null;
+  // Admin mendapatkan saldo prompt tak terbatas (Infinity) secara permanen
+  const promptBalance = isAdmin ? Infinity : Math.max(0, sub.promptBalance ?? 10);
+  const totalGranted = isAdmin ? Infinity : Math.max(promptBalance, sub.totalGranted ?? promptBalance);
+  const usedTotal = sub.usedCount ?? 0;
 
-  if (sub.plan === 'pro' && sub.endDate) {
-    const endMs = new Date(sub.endDate).getTime();
-    const nowMs = Date.now();
-    if (nowMs > endMs) {
-      isExpired = true;
-    } else {
-      daysRemaining = Math.max(0, Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)));
-    }
-  }
-
-  // Jika paket Pro sudah kedaluwarsa dan bukan admin, gunakan konfigurasi batas paket Free
-  const effectivePlan = (sub.plan === 'pro' && isExpired && !isAdmin) ? 'free' : sub.plan;
-  const planConfig = SUBSCRIPTION_PLANS[effectivePlan] || SUBSCRIPTION_PLANS.free;
-
-  // Akun Admin memiliki hak akses Unlimited (tanpa batas kuota bulanan)
-  const monthlyLimit = isAdmin ? Infinity : planConfig.monthlyLimit;
-  const remaining = isAdmin ? Infinity : Math.max(0, monthlyLimit - usedThisMonth);
-  const isLimitReached = isAdmin ? false : usedThisMonth >= monthlyLimit;
+  const isLimitReached = isAdmin ? false : promptBalance <= 0;
   const usagePercentage = isAdmin
     ? 0
-    : Math.min(100, Math.round((usedThisMonth / (monthlyLimit || 1)) * 100));
+    : totalGranted > 0
+    ? Math.min(100, Math.round((usedTotal / totalGranted) * 100))
+    : 100;
 
-  const effectiveStatus: SubscriptionStatus = isExpired ? 'expired' : sub.status;
+  const planName = isAdmin
+    ? 'Admin (Permanen Unlimited)'
+    : sub.plan === 'pro'
+    ? 'Pro (Saldo Prompt)'
+    : 'Free (Saldo Awal)';
 
   return {
     plan: sub.plan,
-    planName: isAdmin ? 'Admin (Unlimited)' : planConfig.name,
+    planName,
     role: sub.role,
-    status: effectiveStatus,
+    status: sub.status,
     period,
     periodLabel,
-    monthlyLimit,
-    usedThisMonth,
-    remaining,
+    promptBalance,
+    totalGranted,
+    usedTotal,
+    // Kompatibilitas alias untuk tampilan yang sudah ada
+    monthlyLimit: totalGranted,
+    usedThisMonth: usedTotal,
+    remaining: promptBalance,
     isLimitReached,
     usagePercentage,
     startDate: sub.startDate,
-    endDate: sub.endDate,
-    daysRemaining,
-    isExpired,
+    endDate: isAdmin ? null : sub.endDate,
+    daysRemaining: null, // Saldo prompt tidak memiliki batas tanggal kadaluwarsa
+    isExpired: false,    // Saldo prompt tidak pernah hangus!
     isAdmin,
     isPro: sub.plan === 'pro',
   };
@@ -241,7 +255,7 @@ export async function getSubscriptionSummary(userId: string): Promise<Subscripti
 
 /**
  * Validasi apakah pengguna diizinkan untuk melakukan Generate Prompt Infografis
- * Alur: User Login? -> Check Admin (Unlimited bypass) -> Check Monthly Expiry -> Check Limit
+ * Alur: User Login? -> Check Admin (Unlimited bypass) -> Check Saldo Prompt
  */
 export async function checkCanGenerate(
   userId: string
@@ -257,7 +271,7 @@ export async function checkCanGenerate(
 
   const summary = await getSubscriptionSummary(userId);
 
-  // 1. Akun Admin memiliki hak akses Unlimited secara otomatis
+  // 1. Akun Admin memiliki hak akses Unlimited Permanen
   if (summary.isAdmin) {
     return {
       allowed: true,
@@ -265,32 +279,20 @@ export async function checkCanGenerate(
     };
   }
 
-  // 2. Cek apakah paket bulanan Pro telah kedaluwarsa
-  if (summary.isExpired) {
-    // Jika paket Pro kedaluwarsa, cek apakah penggunaan bulan ini melebihi limit Free dasar
-    if (summary.usedThisMonth >= SUBSCRIPTION_PLANS.free.monthlyLimit) {
-      return {
-        allowed: false,
-        reason: 'Masa aktif langganan paket Pro bulanan Anda telah berakhir dan batas kuota Free bulan ini telah terpakai. Silakan perpanjang paket Pro Anda.',
-        summary,
-      };
-    }
-  }
-
-  // 3. Cek status akun reguler
+  // 2. Cek status akun reguler
   if (summary.status === 'inactive') {
     return {
       allowed: false,
-      reason: `Status langganan akun Anda saat ini tidak aktif (${summary.status}).`,
+      reason: `Status akun Anda saat ini tidak aktif (${summary.status}).`,
       summary,
     };
   }
 
-  // 4. Cek batas kuota bulanan reguler (Free 10, Pro 100)
-  if (summary.isLimitReached) {
+  // 3. Cek Saldo Prompt
+  if (summary.promptBalance <= 0) {
     return {
       allowed: false,
-      reason: `Batas generate bulan ini telah tercapai (${summary.usedThisMonth}/${summary.monthlyLimit} generate).`,
+      reason: 'Saldo kuota prompt Anda telah habis (0 prompt tersisa). Silakan lakukan isi ulang saldo prompt Anda untuk melanjutkan pembuatan prompt.',
       summary,
     };
   }
@@ -302,29 +304,40 @@ export async function checkCanGenerate(
 }
 
 /**
- * Mencatat penggunaan (+1 generate) setelah generator berhasil menghasilkan prompt.
- * Memastikan data tersimpan aman di Supabase dan disinkronkan ke cache lokal.
+ * Mencatat penggunaan (-1 saldo prompt) setelah generator berhasil menghasilkan prompt.
+ * Memastikan saldo tersimpan aman di Supabase dan disinkronkan ke cache lokal.
  */
 export async function recordGenerateUsage(userId: string): Promise<SubscriptionSummary> {
   if (!userId) {
     return createFallbackSummary('guest');
   }
 
+  const sub = await getUserSubscription(userId);
+  const isAdmin = sub.role === 'admin';
   const period = getCurrentBillingPeriod();
-  const cacheKey = `stivia_usage_${userId}_${period}`;
 
-  // 1. Perbarui nilai lokal
-  let newCount = 1;
+  // Kurangi saldo prompt sebanyak 1 jika bukan admin
+  const currentBalance = sub.promptBalance ?? 10;
+  const newBalance = isAdmin ? Infinity : Math.max(0, currentBalance - 1);
+  const newUsedCount = (sub.usedCount ?? 0) + 1;
+
+  const updatedSub: UserSubscription = {
+    ...sub,
+    promptBalance: isAdmin ? currentBalance : newBalance,
+    usedCount: newUsedCount,
+    updatedAt: new Date().toISOString(),
+  };
+
   try {
-    const raw = localStorage.getItem(cacheKey);
-    const prev = raw ? parseInt(raw, 10) || 0 : 0;
-    newCount = prev + 1;
-    localStorage.setItem(cacheKey, String(newCount));
+    localStorage.setItem(`stivia_sub_${userId}`, JSON.stringify(updatedSub));
+    // Simpan juga ke cache usage periodik
+    const cacheKey = `stivia_usage_${userId}_${period}`;
+    localStorage.setItem(cacheKey, String(newUsedCount));
   } catch {
     // ignore
   }
 
-  // 2. Simpan record log ke Supabase tabel usage_logs jika Supabase aktif
+  // Simpan record log ke Supabase tabel usage_logs jika Supabase aktif
   if (isSupabaseConfigured) {
     try {
       await supabase.from('usage_logs').insert({
@@ -336,13 +349,95 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
     } catch (err) {
       console.warn('[STIVIA Subscription] Catatan simpan log penggunaan Supabase:', err);
     }
+
+    // Perbarui saldo prompt di user_subscriptions
+    if (!isAdmin) {
+      try {
+        await supabase
+          .from('user_subscriptions')
+          .update({
+            prompt_balance: newBalance,
+            used_count: newUsedCount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+      } catch (err) {
+        console.warn('[STIVIA Subscription] Catatan update saldo prompt Supabase:', err);
+      }
+    }
   }
 
-  // 3. Beri notifikasi ke listener event di UI
+  // Beri notifikasi ke listener event di UI
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('stivia_usage_updated', {
-        detail: { userId, period, newCount },
+        detail: { userId, remaining: newBalance, usedCount: newUsedCount },
+      })
+    );
+  }
+
+  return await getSubscriptionSummary(userId);
+}
+
+/**
+ * Menambahkan Saldo Prompt (Top-Up Token) ke Akun Pengguna
+ * Digunakan saat pengguna membeli paket (20, 50, 120 prompt) atau via admin.
+ * Saldo otomatis bertambah dan aktif selamanya (tidak pernah hangus).
+ */
+export async function topUpPromptBalance(
+  userId: string,
+  addedPrompts: number
+): Promise<SubscriptionSummary> {
+  if (!userId || addedPrompts <= 0) {
+    return createFallbackSummary(userId || 'guest');
+  }
+
+  const existingSub = await getUserSubscription(userId);
+  const now = new Date();
+  const currentBalance = existingSub.promptBalance ?? 0;
+  const newBalance = currentBalance + addedPrompts;
+  const newTotalGranted = (existingSub.totalGranted ?? currentBalance) + addedPrompts;
+
+  const updatedSub: UserSubscription = {
+    ...existingSub,
+    plan: 'pro',
+    status: 'active',
+    promptBalance: newBalance,
+    totalGranted: newTotalGranted,
+    endDate: null, // Tanpa batas waktu (aktif selamanya)
+    updatedAt: now.toISOString(),
+  };
+
+  try {
+    localStorage.setItem(`stivia_sub_${userId}`, JSON.stringify(updatedSub));
+  } catch {
+    // ignore
+  }
+
+  if (isSupabaseConfigured) {
+    try {
+      await supabase
+        .from('user_subscriptions')
+        .upsert({
+          user_id: userId,
+          plan: 'pro',
+          role: updatedSub.role,
+          status: 'active',
+          prompt_balance: newBalance,
+          total_granted: newTotalGranted,
+          used_count: updatedSub.usedCount,
+          end_date: null,
+          updated_at: now.toISOString(),
+        });
+    } catch (err) {
+      console.warn('[STIVIA Subscription] Top up saldo prompt Supabase:', err);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('stivia_subscription_updated', {
+        detail: { userId, plan: 'pro', promptBalance: newBalance },
       })
     );
   }
@@ -352,7 +447,6 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
 
 /**
  * Utilitas Pengujian Manual: Mengubah paket pengguna antara Free dan Pro
- * (Disediakan khusus untuk tahap pengujian sesuai instruksi spesifikasi tanpa payment gateway)
  */
 export async function setTestingPlan(
   userId: string,
@@ -365,16 +459,16 @@ export async function setTestingPlan(
   const existingSub = await getUserSubscription(userId);
   const now = new Date();
   const isPro = newPlan === 'pro';
-  // Jika beralih ke Pro, berikan masa aktif 30 hari (1 bulan kalender)
-  const startDate = isPro ? now.toISOString() : (existingSub.startDate || now.toISOString());
-  const endDate = isPro ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() : null;
+  const targetPrompts = isPro ? 50 : 10;
 
   const updatedSub: UserSubscription = {
     ...existingSub,
     plan: newPlan,
-    startDate,
-    endDate,
+    promptBalance: targetPrompts,
+    totalGranted: targetPrompts,
+    usedCount: 0,
     status: 'active',
+    endDate: null,
     updatedAt: now.toISOString(),
   };
 
@@ -393,8 +487,10 @@ export async function setTestingPlan(
           plan: newPlan,
           role: updatedSub.role,
           status: 'active',
-          start_date: startDate,
-          end_date: endDate,
+          prompt_balance: targetPrompts,
+          total_granted: targetPrompts,
+          used_count: 0,
+          end_date: null,
           updated_at: now.toISOString(),
         });
     } catch (err) {
@@ -416,8 +512,8 @@ export async function setTestingPlan(
 export const updateUserPlan = setTestingPlan;
 
 /**
- * Utilitas Pengujian / Administrasi: Mengubah Role Pengguna (user <-> admin)
- * Akun admin secara otomatis memperoleh kuota Unlimited.
+ * Utilitas Administrasi: Mengubah Role Pengguna (user <-> admin)
+ * Pengguna yang dijadikan admin menjadi ADMINISTRATOR PERMANEN dengan kuota Unlimited (∞).
  */
 export async function updateUserRole(
   userId: string,
@@ -428,9 +524,11 @@ export async function updateUserRole(
   }
 
   const existingSub = await getUserSubscription(userId);
+  const isAdmin = newRole === 'admin';
   const updatedSub: UserSubscription = {
     ...existingSub,
     role: newRole,
+    endDate: isAdmin ? null : existingSub.endDate, // Admin permanen tanpa batas waktu
     updatedAt: new Date().toISOString(),
   };
 
@@ -448,9 +546,13 @@ export async function updateUserRole(
           user_id: userId,
           plan: updatedSub.plan,
           role: newRole,
-          status: updatedSub.status,
+          status: 'active',
+          prompt_balance: updatedSub.promptBalance,
+          total_granted: updatedSub.totalGranted,
+          end_date: null, // Permanen
           updated_at: new Date().toISOString(),
         });
+
       // Sinkronkan juga ke tabel profiles jika ada kolom role
       await supabase
         .from('profiles')
@@ -473,7 +575,7 @@ export async function updateUserRole(
 }
 
 /**
- * Helper internal untuk membuat record subscription default
+ * Helper internal untuk membuat record subscription default (10 Saldo Prompt Gratis Awal)
  */
 function createDefaultSubscription(userId: string): UserSubscription {
   return {
@@ -481,8 +583,11 @@ function createDefaultSubscription(userId: string): UserSubscription {
     plan: 'free',
     role: 'user',
     status: 'active',
+    promptBalance: 10,
+    totalGranted: 10,
+    usedCount: 0,
     startDate: new Date().toISOString(),
-    endDate: null,
+    endDate: null, // Tanpa kedaluwarsa (aktif selamanya)
     updatedAt: new Date().toISOString(),
   };
 }
@@ -499,10 +604,13 @@ function createFallbackSummary(userId: string): SubscriptionSummary {
     role: 'user',
     status: 'active',
     period,
-    periodLabel: formatPeriodLabel(period),
-    monthlyLimit: freeConfig.monthlyLimit,
+    periodLabel: 'Aktif Selamanya (Tanpa Kedaluwarsa)',
+    promptBalance: 10,
+    totalGranted: 10,
+    usedTotal: 0,
+    monthlyLimit: 10,
     usedThisMonth: 0,
-    remaining: freeConfig.monthlyLimit,
+    remaining: 10,
     isLimitReached: false,
     isAdmin: false,
     isPro: false,
