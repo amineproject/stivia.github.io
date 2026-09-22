@@ -25,7 +25,7 @@ import { Session } from '@supabase/supabase-js';
 import { NavigationTab, SupabaseUserProfile, SubscriptionSummary, SubscriptionPlan, UserRole, SUBSCRIPTION_PLANS, PROMPT_PACKAGES } from '../../types';
 import { getUserProfile, updateUserProfile, ProfileSaveError, SupabaseDetailedError } from '../../services/authService';
 import { updateUserPlan, updateUserRole, topUpPromptBalance } from '../../services/subscriptionService';
-import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
+import { getWhatsAppTopUpUrl, getAdminWhatsAppNumber, setAdminWhatsAppNumber } from '../../lib/whatsapp';
 
 // Pilihan avatar preset pendidik khas STIVIA (fallback ramah visual)
 const AVATAR_PRESETS = [

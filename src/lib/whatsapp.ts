@@ -3,7 +3,7 @@
  * Memudahkan guru dan pendidik menghubungi Administrator untuk pembelian saldo secara instan.
  */
 
-// Nomor WhatsApp default Admin STIVIA (Dapat disesuaikan via variabel lingkungan atau di sini)
+// Nomor WhatsApp bawaan Admin STIVIA jika belum diatur
 export const DEFAULT_ADMIN_WHATSAPP = '6281234567890';
 
 export interface WhatsAppTopUpOptions {
@@ -15,13 +15,59 @@ export interface WhatsAppTopUpOptions {
 }
 
 /**
- * Menghasilkan URL tautan chat WhatsApp dengan pesan pesan template otomatis yang rapi dan sopan.
+ * Membersihkan dan memformat nomor WhatsApp ke standar internasional (contoh: 0812... -> 62812...)
+ */
+export function formatWhatsAppNumber(phone: string): string {
+  let cleaned = phone.replace(/[^0-9]/g, '');
+  if (cleaned.startsWith('0')) {
+    cleaned = '62' + cleaned.substring(1);
+  }
+  return cleaned;
+}
+
+/**
+ * Mengambil nomor WhatsApp Admin aktif (prioritas: Pengaturan LocalStorage Admin > ENV > Default)
+ */
+export function getAdminWhatsAppNumber(): string {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('stivia_admin_whatsapp_number');
+      if (stored && stored.trim().length >= 8) {
+        return formatWhatsAppNumber(stored.trim());
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const envNumber = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_ADMIN_WHATSAPP_NUMBER : '';
+  if (envNumber && envNumber.trim().length >= 8) {
+    return formatWhatsAppNumber(envNumber.trim());
+  }
+
+  return DEFAULT_ADMIN_WHATSAPP;
+}
+
+/**
+ * Menyimpan nomor WhatsApp Admin baru (dapat diubah langsung dari UI oleh Admin)
+ */
+export function setAdminWhatsAppNumber(phoneNumber: string): string {
+  const formatted = formatWhatsAppNumber(phoneNumber);
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('stivia_admin_whatsapp_number', formatted);
+    } catch {
+      // ignore
+    }
+  }
+  return formatted;
+}
+
+/**
+ * Menghasilkan URL tautan chat WhatsApp dengan pesan template otomatis yang rapi dan sopan.
  */
 export function getWhatsAppTopUpUrl(options?: WhatsAppTopUpOptions): string {
-  // Ambil nomor dari environment jika ada, jika tidak gunakan default
-  const rawNumber = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_WHATSAPP_NUMBER) || DEFAULT_ADMIN_WHATSAPP;
-  // Bersihkan karakter non-numerik
-  const cleanNumber = rawNumber.replace(/[^0-9]/g, '');
+  const cleanNumber = getAdminWhatsAppNumber();
 
   const email = options?.userEmail || 'Email belum diisi';
   const name = options?.userName ? ` (${options.userName})` : '';
