@@ -10,17 +10,44 @@ export interface VersionItem {
   bugFixes: string[];
 }
 
-export const APP_CURRENT_VERSION = '3.1';
+export const APP_CURRENT_VERSION = '3.2';
 export const APP_VERSION_LABEL = `v${APP_CURRENT_VERSION}`;
 export const APP_FULL_VERSION_LABEL = `STIVIA Versi ${APP_CURRENT_VERSION}`;
-export const APP_UPDATE_NAME = 'AI EXPERT INFOGRAPHIC GENERATOR & EXTENSION SISTEM';
+export const APP_UPDATE_NAME = 'GENERATOR POSTER LKPD, KENDALI PERTEMUAN KURIKULUM & INTEGRASI SUBSCRIPTION AMAN';
 export const APP_TAGLINE = 'Belajar Lebih Visual, Mengajar Lebih Mudah';
 
 export const STIVIA_VERSION_HISTORY: VersionItem[] = [
   {
+    version: '3.2',
+    updateName: 'GENERATOR POSTER LKPD, KENDALI PERTEMUAN KURIKULUM & INTEGRASI SUBSCRIPTION AMAN',
+    status: 'Rilis Terbaru',
+    tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
+    releaseDate: 'September 2026',
+    description: 'Pembaruan akbar STIVIA 3.2 menghadirkan perluasan inovatif Kerangka Berpikir 7 Tahap untuk Generator Poster LKPD Pembelajaran siap cetak, fitur Kendali Pertemuan Kurikulum otomatis tanpa repetisi materi dasar, integrasi keamanan database Supabase Row Level Security (RLS) ketat dengan Server-Side RPC untuk kuota prompt, serta antarmuka edukasi terpadu yang semakin responsif dan ramah bagi pendidik di Indonesia.',
+    newFeatures: [
+      'Generator Poster LKPD Pembelajaran: Analisis 7 Tahap Kerangka Berpikir STIVIA kini diperluas untuk menghasilkan naskah lembar kerja peserta didik (LKPD) komprehensif sekaligus prompt poster visual edukatif siap cetak resolusi tinggi (A4/A3).',
+      'Kendali Pertemuan Kurikulum (Curriculum Meeting Controller): Pembatasan materi terarah per nomor pertemuan belajar tanpa pengulangan materi pengantar, menjaga kontinuitas dan target silabus kelas.',
+      'Model Prompt Poster Visual Edukatif Terstruktur: Output prompt poster mencakup instruksi aktivitas eksplorasi siswa, studi kasus terarah, tugas penemuan mandiri/kelompok, rubrik refleksi singkat, dan hierarki tata letak visual.',
+      'Sistem Keamanan Subscription Supabase RLS Ketat: Penerapan Row Level Security pada tabel user_subscriptions dan usage_logs, mencabut izin manipulasi client-side dan memindahkan otorisasi ke database level.',
+      'Inisialisasi Otomatis & Server-Side RPC: Pendaftaran dan sinkronisasi kuota ditangani otomatis via trigger database auth.users serta fungsi RPC SECURITY DEFINER (ensure_user_subscription, record_prompt_usage, admin_topup_prompts).',
+      'Sistem Deduplikasi & In-Memory Caching: Optimasi pembacaan profil subscription dengan deduplikasi in-flight request dan local in-memory TTL caching untuk mencegah query berulang pada render UI.'
+    ],
+    improvements: [
+      'Penyelarasan Nilai Edukatif pada Panel Login: Menghilangkan teks teknis ekspor lama dan menyajikan 3 pilar edukatif STIVIA (Transformasi Media Visual, Efisiensi Perencanaan Mengajar, Penyelarasan Kurikulum & Pedagogi).',
+      'Penyempurnaan Form Buat Infografis: Antarmuka intuitif untuk pemilihan jenis luaran media (Infografis Materi vs Poster LKPD) dan kendali nomor pertemuan pembelajaran.',
+      'Peningkatan Kecepatan & Responsivitas Antarmuka: Transisi antar-tab mulus, isolasi render komponen berat, dan proteksi sesi login saat refresh halaman.',
+      'Pusat Informasi & Riwayat Rilis Versi 3.2: Tampilan ringkasan pembaruan interaktif di menu Pengaturan dengan detail fitur baru, peningkatan sistem, dan perbaikan stabilitas.'
+    ],
+    bugFixes: [
+      'Pencegahan error "permission denied for table user_subscriptions" dari role anon/unauthenticated dengan verifikasi sesi aktif sebelum eksekusi.',
+      'Pencegahan pemanggilan ganda (duplicate requests) ke Supabase saat komponen dirender ulang dengan in-flight promise deduplication.',
+      'Pembersihan menyeluruh cache subscription in-memory saat keluar (logout) untuk menjaga privasi pada perangkat bersama.'
+    ]
+  },
+  {
     version: '3.1',
     updateName: 'AI EXPERT INFOGRAPHIC GENERATOR & EXTENSION SISTEM',
-    status: 'Rilis Terbaru',
+    status: 'Versi Sebelumnya',
     tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
     releaseDate: 'September 2026',
     description: 'Pembaruan akbar STIVIA 3.1 sebagai AI Expert Infographic Generator terpadu. Memperkuat perancangan kerangka, komponen, struktur materi, dan panduan visual dengan 5 Gaya Layout Utama (Timeline, Balanced Grid 4-6 Poin, Comparison, Anatomy, Mind Map), Adaptasi Tingkat Kelas (SD vs SMP/Menengah), Penyesuaian Visual Rumpun Mapel, Aturan Ketat 4–6 Poin dengan Rangkuman Wajib (Footer Summary), serta Modul Validasi Konten 4 Pilar dengan jaminan backward-compatibility penuh terhadap seluruh modul STIVIA yang sudah ada.',

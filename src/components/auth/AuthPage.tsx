@@ -14,7 +14,9 @@ import {
   Loader2,
   BookOpen,
   Palette,
-  Layers
+  Layers,
+  FileText,
+  GraduationCap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -223,18 +225,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <p className="text-sm text-indigo-100 mt-2 font-medium leading-relaxed">
               Belajar Lebih Visual, Mengajar Lebih Mudah
             </p>
+            <p className="text-xs text-indigo-100/80 mt-2.5 leading-relaxed">
+              Platform pendamping cerdas bagi guru dan pendidik untuk merancang media pembelajaran visual, infografis ajar, dan lembar kerja peserta didik secara praktis dan terstruktur.
+            </p>
           </div>
 
           {/* Value Highlights */}
           <div className="relative z-10 space-y-6 my-auto py-8">
             <div className="flex items-start gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-indigo-200 shrink-0 border border-white/10">
-                <Palette className="w-5 h-5 text-white" />
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Prompt Infografis Edukatif</h3>
+                <h3 className="text-sm font-bold text-white">Transformasi Media Visual</h3>
                 <p className="text-xs text-indigo-100/80 mt-1 leading-relaxed">
-                  Analisis 7 Tahap Kerangka Berpikir STIVIA menghasilkan prompt visual terstruktur dengan panduan tata letak dan hierarki materi siap pakai di berbagai AI.
+                  Mengubah materi pelajaran dan materi ajar menjadi sajian visual interaktif yang memikat dan mempercepat pemahaman peserta didik di kelas.
                 </p>
               </div>
             </div>
@@ -244,21 +249,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Kendali Pertemuan Kurikulum</h3>
+                <h3 className="text-sm font-bold text-white">Efisiensi Perencanaan Mengajar</h3>
                 <p className="text-xs text-indigo-100/80 mt-1 leading-relaxed">
-                  Batas materi presisi per pertemuan tanpa pengulangan materi dasar.
+                  Meringankan beban persiapan guru dengan pembuatan kerangka alur materi per pertemuan, media presentasi, dan instrumen ajar secara terintegrasi.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-indigo-200 shrink-0 border border-white/10">
-                <Layers className="w-5 h-5 text-white" />
+                <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Ekspor Kualitas Tinggi</h3>
+                <h3 className="text-sm font-bold text-white">Penyelarasan Kurikulum & Pedagogi</h3>
                 <p className="text-xs text-indigo-100/80 mt-1 leading-relaxed">
-                  Simpan hasil desain dalam format PNG, JPG High-DPI, dan dokumen pembelajaran.
+                  Disusun selaras dengan capaian pembelajaran dan prinsip pedagogis modern agar setiap proses belajar mengajar berjalan terarah dan bermakna.
                 </p>
               </div>
             </div>
@@ -266,8 +271,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
           {/* Footer Badge */}
           <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-indigo-200/90">
-            <span>Dirancang khusus untuk guru & pendidik</span>
-            <span className="font-semibold text-white">Supabase Auth</span>
+            <span>Solusi Cerdas Pendidik Indonesia</span>
+            <span className="font-semibold text-white">Platform Edukasi Terpadu</span>
           </div>
         </div>
 

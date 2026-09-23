@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { NavigationTab, SupabaseUserProfile, SubscriptionSummary, SubscriptionPlan, UserRole, SUBSCRIPTION_PLANS, PROMPT_PACKAGES } from '../../types';
+import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
 import { getUserProfile, updateUserProfile, ProfileSaveError, SupabaseDetailedError } from '../../services/authService';
 import { updateUserPlan, updateUserRole, topUpPromptBalance } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl, getAdminWhatsAppNumber, setAdminWhatsAppNumber } from '../../lib/whatsapp';
@@ -322,7 +323,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-[#3b49df] border border-indigo-100 mb-1.5">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Profil Pengguna • STIVIA 3.1A</span>
+              <span>Profil Pengguna • STIVIA {APP_CURRENT_VERSION}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Profil Saya

@@ -46,7 +46,7 @@ export const PanduanPage: React.FC<PanduanPageProps> = ({ onNavigate }) => {
       number: 4,
       title: 'Generate Prompt Infografis',
       subtitle: 'Sistem menganalisis data & menghasilkan Prompt Infografis siap pakai',
-      desc: 'Setelah mengisi data materi pada menu "Buat Prompt", klik tombol "GENERATE PROMPT". Sistem STIVIA 3.1 akan menganalisis data pembelajaran melalui 7 Tahap Kerangka Berpikir dan langsung menghasilkan Prompt Infografis yang siap digunakan.',
+      desc: 'Setelah mengisi data materi pada menu "Buat Prompt", klik tombol "GENERATE PROMPT". Sistem STIVIA 3.2 akan menganalisis data pembelajaran melalui 7 Tahap Kerangka Berpikir dan langsung menghasilkan Prompt Infografis yang siap digunakan.',
       tips: 'Gunakan tombol "Salin Prompt" untuk langsung menempelkan prompt universal ke AI pilihan Anda (ChatGPT, Claude, Gemini, dll).',
     },
     {

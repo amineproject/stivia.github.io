@@ -2,7 +2,7 @@ import { findStyleByNameOrId, InfographicStyleItem } from '../data/infographicSt
 
 /**
  * ===================================================================
- * SYSTEM ROLE & OBJECTIVE — STIVIA 3.1 ENHANCED
+ * SYSTEM ROLE & OBJECTIVE — STIVIA 3.2 ENHANCED
  * AI Perancang Infografis Pembelajaran (Expert Infographic Generator)
  * 
  * Prinsip Utama:
@@ -29,7 +29,7 @@ export type MaterialCharacterType =
   | 'Naratif';
 
 /**
- * 10 Pilihan Struktur Tata Letak Infografis Resmi STIVIA 3.1
+ * 10 Pilihan Struktur Tata Letak Infografis Resmi STIVIA 3.2
  */
 export type InfographicLayoutStrategy =
   | '1. Timeline / Step-by-Step'
@@ -119,7 +119,7 @@ export interface InfographicContentSection {
 }
 
 /**
- * Hasil 7 Tahap Kerangka Berpikir STIVIA 3.1 Enhanced
+ * Hasil 7 Tahap Kerangka Berpikir STIVIA 3.2 Enhanced
  */
 export interface StiviaThinkingResult {
   // Active Content Context Lock
@@ -207,7 +207,7 @@ export interface StiviaThinkingResult {
     isCleanAndContaminationFree: boolean;
   };
 
-  // Output Prompt Akhir Berstandar Resmi STIVIA 3.1 (Section H)
+  // Output Prompt Akhir Berstandar Resmi STIVIA 3.2 (Section H)
   stage7_FinalPrompt: string;
   fullAnalysisReport?: string;
 }
@@ -645,7 +645,7 @@ function determineInfographicStructure(
     strategy: '6. Grid / Cards',
     layoutDescription: 'Struktur kartu kisi (grid) modular simetris berisi 4–6 blok informasi seragam dan mudah dipindai (scannable).',
     readingFlow: 'Alur Grid Seimbang: Header Judul → 4–6 Kartu Modul Utama (Atas ke Bawah) → Footer Summary.',
-    rationale: 'Standar baku STIVIA 3.1 untuk mengelompokkan materi ke dalam 4–6 poin esensial, mencegah beban kognitif berlebih bagi siswa.'
+    rationale: 'Standar baku STIVIA 3.2 untuk mengelompokkan materi ke dalam 4–6 poin esensial, mencegah beban kognitif berlebih bagi siswa.'
   };
 }
 
@@ -786,7 +786,7 @@ export function analyzeMaterialBoundaries(input: StiviaThinkingInput): StiviaMat
 }
 
 /**
- * FUNGSI UTAMA: MENJALANKAN KERANGKA BERPIKIR STIVIA 3.1 ENHANCED
+ * FUNGSI UTAMA: MENJALANKAN KERANGKA BERPIKIR STIVIA 3.2 ENHANCED
  * Menerapkan Content Context Lock, Contamination Prevention, 7-Stage Analysis,
  * dan menghasilkan output rancangan infografis lengkap sesuai Section H.
  */
@@ -1045,7 +1045,7 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
   };
 
   // ===================================================================
-  // FORMAT OUTPUT RESMI STIVIA 3.1 ENHANCED (MEMATUHI SECTION H)
+  // FORMAT OUTPUT RESMI STIVIA 3.2 ENHANCED (MEMATUHI SECTION H)
   // ===================================================================
   const sectionsFormattedText = contentSections.map(s => `BAGIAN ${s.bagianNumber}
 * Judul: ${s.judul}

@@ -8,7 +8,10 @@ import {
   X, 
   ShieldCheck,
   ArrowRight,
-  Code2
+  Code2,
+  FileText,
+  BookOpen,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserSettings, ResponsiveViewMode, NavigationTab, SupabaseUserProfile } from '../../types';
@@ -192,48 +195,132 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
       {/* ================================================== */}
       {/* INFORMASI SISTEM & APLIKASI (TENTANG STIVIA)       */}
       {/* ================================================== */}
-      <div className="space-y-3">
-        <div className="px-1">
+      <div className="space-y-4">
+        <div className="px-1 flex items-center justify-between">
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Informasi Sistem & Aplikasi
+            Informasi Sistem & Pembaruan Aplikasi
           </h2>
+          <span className="text-[11px] font-bold text-[#3b49df] bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+            Versi Aktif: v{APP_CURRENT_VERSION}
+          </span>
         </div>
 
+        {/* KARTU SOROTAN PENGEMBANGAN VERSI 3.2 */}
+        <div className="bg-gradient-to-br from-indigo-900 via-[#1e2b8f] to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-lg shadow-indigo-950/15 border border-indigo-800/40 relative overflow-hidden">
+          <div className="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute right-8 bottom-0 w-32 h-32 bg-blue-500/10 rounded-full blur-xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-white/15 text-white backdrop-blur-xs border border-white/20">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>STIVIA v{APP_CURRENT_VERSION}</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Rilis Terbaru</span>
+                </span>
+              </div>
+              <span className="text-xs text-indigo-200/80 font-medium">
+                Pembaruan September 2026
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                Catatan Pengembangan STIVIA 3.2
+              </h3>
+              <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed font-normal">
+                Pembaruan terpadu STIVIA 3.2 memperluas Analisis 7 Tahap Kerangka Berpikir untuk pembuatan media ajar yang semakin lengkap, mencakup modul Generator Poster LKPD Pembelajaran, Kendali Pertemuan Kurikulum otomatis, serta penguatan keamanan database Supabase Row Level Security (RLS) dan Server-Side RPC.
+              </p>
+            </div>
+
+            {/* 3 Pilar Pengembangan v3.2 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+              <div className="p-3.5 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs space-y-1.5">
+                <div className="flex items-center gap-2 text-indigo-200">
+                  <FileText className="w-4 h-4 text-amber-300" />
+                  <span className="text-xs font-bold text-white">Poster LKPD Edukatif</span>
+                </div>
+                <p className="text-[11px] text-indigo-100/80 leading-relaxed">
+                  Menghasilkan naskah lembar kerja peserta didik terstruktur dan prompt poster visual siap cetak (A4/A3) untuk aktivitas penemuan bermakna.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs space-y-1.5">
+                <div className="flex items-center gap-2 text-indigo-200">
+                  <BookOpen className="w-4 h-4 text-emerald-300" />
+                  <span className="text-xs font-bold text-white">Kendali Pertemuan Silabus</span>
+                </div>
+                <p className="text-[11px] text-indigo-100/80 leading-relaxed">
+                  Batas materi presisi per pertemuan kelas tanpa pengulangan materi pengantar, menjaga kontinuitas dan target kurikulum pembelajaran.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs space-y-1.5">
+                <div className="flex items-center gap-2 text-indigo-200">
+                  <ShieldCheck className="w-4 h-4 text-cyan-300" />
+                  <span className="text-xs font-bold text-white">Keamanan Supabase RLS</span>
+                </div>
+                <p className="text-[11px] text-indigo-100/80 leading-relaxed">
+                  Perlindungan saldo prompt dengan Row Level Security ketat, RPC server-side atomik, dan in-memory cache deduplikasi bebas query berulang.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/10">
+              <span className="text-xs text-indigo-200/90 font-medium">
+                Developer: <span className="text-white font-bold">Amin Wahyudi, S.Pd.</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => handleOpenModal('tentang')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white text-[#3b49df] hover:bg-indigo-50 font-bold text-xs shadow-md transition-all cursor-pointer hover:scale-[1.02] shrink-0"
+              >
+                <span>Lihat Seluruh Catatan Rilis & Riwayat Versi</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* KARTU MENU TENTANG STIVIA RINGKAS */}
         <div
           id="card-menu-tentang"
           role="button"
           tabIndex={0}
           onClick={() => handleOpenModal('tentang')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenModal('tentang'); }}
-          className="group bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 hover:border-indigo-300 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-left cursor-pointer transform hover:-translate-y-0.5 relative overflow-hidden"
+          className="group bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 hover:border-indigo-300 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left cursor-pointer transform hover:-translate-y-0.5 relative overflow-hidden"
         >
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#edf2fe] group-hover:bg-[#3b49df] text-[#3b49df] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs shrink-0">
-              <Info className="w-6 h-6" />
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#edf2fe] group-hover:bg-[#3b49df] text-[#3b49df] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs shrink-0">
+              <Info className="w-5 h-5" />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#3b49df] transition-colors">
-                  Tentang STIVIA
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#3b49df] transition-colors">
+                  Tentang STIVIA & Profil Pendidik
                 </h3>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-[#3b49df] border border-indigo-200/60">
-                  <Sparkles className="w-3 h-3 text-amber-500" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-[#3b49df] border border-indigo-200/60">
+                  <Sparkles className="w-2.5 h-2.5 text-amber-500" />
                   <span>v{APP_CURRENT_VERSION}</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed font-medium max-w-2xl">
-                Informasi platform AI, identitas rilis, catatan pembaruan sistem, dan profil pengembang media pembelajaran STIVIA.
+              <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                Informasi platform, lisensi edukasi, profil pengembang, dan log rilis versi terdahulu (v3.1, v3.0, v2.2e).
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto pt-2 sm:pt-0">
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
             <span className="text-xs font-bold text-[#3b49df] group-hover:text-indigo-800">
-              Lihat Detail & Riwayat Rilis
+              Detail Lengkap
             </span>
-            <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] text-[#3b49df] flex items-center justify-center transition-all group-hover:translate-x-1">
-              <ChevronRight className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] text-[#3b49df] flex items-center justify-center transition-all group-hover:translate-x-1">
+              <ChevronRight className="w-3.5 h-3.5" />
             </div>
           </div>
         </div>
