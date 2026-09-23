@@ -295,11 +295,11 @@ BEGIN
     SELECT role INTO caller_role FROM public.user_subscriptions WHERE user_id = auth.uid();
     SELECT email INTO caller_email FROM auth.users WHERE id = auth.uid();
 
-    IF caller_role != 'admin' AND caller_email != 'aminexplore@gmail.com' THEN
+    IF caller_role != 'admin' AND LOWER(TRIM(COALESCE(caller_email, ''))) != 'aminexplore@gmail.com' THEN
         RAISE EXCEPTION 'Akses ditolak: Hanya Administrator yang berwenang mengubah peran pengguna';
     END IF;
 
-    -- Terapkan perubahan
+    -- Terapkan perubahan pada user_subscriptions
     UPDATE public.user_subscriptions
     SET 
         role = new_role,
@@ -308,6 +308,15 @@ BEGIN
         total_granted = CASE WHEN new_role = 'admin' THEN 999999 ELSE LEAST(total_granted, 3) END,
         updated_at = NOW()
     WHERE user_id = target_user_id;
+
+    -- Sinkronisasi juga ke tabel profiles jika kolom role tersedia
+    BEGIN
+        UPDATE public.profiles
+        SET role = new_role
+        WHERE id = target_user_id;
+    EXCEPTION WHEN OTHERS THEN
+        -- Abaikan jika kolom role belum ada di profiles
+    END;
 
     RETURN jsonb_build_object('success', true, 'target_user_id', target_user_id, 'new_role', new_role);
 END;

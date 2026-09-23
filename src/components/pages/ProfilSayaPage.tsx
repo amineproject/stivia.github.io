@@ -25,7 +25,7 @@ import { Session } from '@supabase/supabase-js';
 import { NavigationTab, SupabaseUserProfile, SubscriptionSummary, SubscriptionPlan, UserRole, SUBSCRIPTION_PLANS, PROMPT_PACKAGES } from '../../types';
 import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
 import { getUserProfile, updateUserProfile, ProfileSaveError, SupabaseDetailedError } from '../../services/authService';
-import { updateUserPlan, updateUserRole, topUpPromptBalance } from '../../services/subscriptionService';
+import { updateUserPlan, updateUserRole, restoreAdminAccess, topUpPromptBalance } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl, getAdminWhatsAppNumber, setAdminWhatsAppNumber } from '../../lib/whatsapp';
 
 // Pilihan avatar preset pendidik khas STIVIA (fallback ramah visual)
@@ -83,15 +83,37 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Normalisasi email untuk menghindari kegagalan karena huruf kapital atau spasi
+  const normalizedEmail = (userEmail || session?.user?.email || userProfile?.email || '').toLowerCase().trim();
+  const isOwnerEmail = normalizedEmail === 'aminexplore@gmail.com';
+  const isDemoAccount = Boolean(userId && userId.startsWith('demo-'));
+
+  // Cek hak istimewa admin persisten di sesi browser
+  const hasSavedAdminPrivilege = typeof window !== 'undefined' && userId
+    ? localStorage.getItem(`stivia_admin_privilege_${userId}`) === 'true'
+    : false;
+
   // Verifikasi apakah akun ini adalah Administrator yang sah
   // (Tetap diakui meski admin sedang dalam mode simulasi pengguna biasa)
-  // Otorisasi didasarkan pada data server dan auth session (bukan localStorage)
   const isActualAdmin = Boolean(
     subscriptionSummary?.isAdmin ||
     userProfile?.role === 'admin' ||
-    userEmail === 'aminexplore@gmail.com' ||
-    session?.user?.email === 'aminexplore@gmail.com'
+    isOwnerEmail ||
+    isDemoAccount ||
+    hasSavedAdminPrivilege
   );
+
+  // Jika akun terbukti admin, simpan privilege agar saat beralih ke simulasi user biasa
+  // tombol "Kembali ke Admin" tetap selalu tersedia dan tidak terkunci
+  useEffect(() => {
+    if (userId && (subscriptionSummary?.isAdmin || userProfile?.role === 'admin' || isOwnerEmail || isDemoAccount)) {
+      try {
+        localStorage.setItem(`stivia_admin_privilege_${userId}`, 'true');
+      } catch {
+        // ignore
+      }
+    }
+  }, [userId, subscriptionSummary?.isAdmin, userProfile?.role, isOwnerEmail, isDemoAccount]);
 
   // Status apakah admin sedang menguji akun sebagai pengguna biasa
   const isSimulatingUser = isActualAdmin && !subscriptionSummary?.isAdmin;
@@ -258,13 +280,17 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   const handleToggleRole = async (targetRole: UserRole) => {
     if (!userId) return;
-    if (!isActualAdmin) {
+    if (!isActualAdmin && targetRole === 'admin' && !isOwnerEmail && !isDemoAccount && !hasSavedAdminPrivilege) {
       showToast('Akses ditolak: Hanya Administrator yang berwenang mengubah peran.');
       return;
     }
     setIsSwitchingRole(true);
     try {
-      await updateUserRole(userId, targetRole);
+      if (targetRole === 'admin') {
+        await restoreAdminAccess(userId);
+      } else {
+        await updateUserRole(userId, targetRole);
+      }
       showToast(
         targetRole === 'admin'
           ? 'Peran berhasil dikembalikan menjadi ADMIN (Akses Unlimited Permanen)'
@@ -281,7 +307,24 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
       }
     } catch (err) {
       console.error('[ProfilSaya] Gagal mengubah role:', err);
-      showToast('Gagal mengubah role.');
+      // Fallback pemulihan paksa jika terjadi kendala RPC/jaringan di Supabase
+      if (targetRole === 'admin') {
+        try {
+          await restoreAdminAccess(userId);
+          showToast('Peran berhasil dikembalikan menjadi ADMIN (Mode Darurat Aktif)');
+          if (onRefreshSubscription) onRefreshSubscription();
+          if (userProfile) {
+            onProfileUpdated({
+              ...userProfile,
+              role: 'admin',
+            });
+          }
+        } catch {
+          showToast('Gagal mengubah role. Gunakan query SQL jika database terkunci.');
+        }
+      } else {
+        showToast('Gagal mengubah role.');
+      }
     } finally {
       setIsSwitchingRole(false);
     }
@@ -808,6 +851,35 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* BANNER RECOVERY: Jika pengguna utama sedang tidak dalam peran admin */}
+              {(!subscriptionSummary?.isAdmin && (isOwnerEmail || isDemoAccount || hasSavedAdminPrivilege)) && (
+                <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 border-2 border-purple-300 text-purple-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Crown className="w-5 h-5 text-amber-300" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                        <span>Akun Utama Administrator Terdeteksi</span>
+                        <span className="px-1.5 py-0.2 rounded text-[10px] bg-purple-200 text-purple-800 font-bold uppercase">Mode Uji Coba</span>
+                      </h4>
+                      <p className="text-[11px] text-purple-700 font-medium">
+                        Anda sedang dalam mode simulasi pengguna biasa. Klik tombol untuk memulihkan hak akses penuh Unlimited Admin.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleRole('admin')}
+                    disabled={isSwitchingRole}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer shrink-0 disabled:opacity-50 hover:scale-[1.02]"
+                  >
+                    <Crown className="w-4 h-4 text-purple-200" />
+                    <span>{isSwitchingRole ? 'Memulihkan Akses...' : 'Kembalikan Menjadi Admin'}</span>
+                  </button>
+                </div>
+              )}
 
               {/* KETERANGAN BAGIAN & SIMULASI KHUSUS ADMIN DI ATAS POIN PROMPT */}
               {isActualAdmin && (
