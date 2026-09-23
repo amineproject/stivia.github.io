@@ -1,12 +1,16 @@
 /**
  * LKPD ENGINE — STIVIA v3.2
- * Sistem Analisis & Generator Universal Prompt Lembar Kerja Peserta Didik (LKPD)
+ * Sistem Analisis 7 Tahap & Generator Universal Prompt Poster LKPD Otomatis
  * 
- * Menerapkan:
- * 1. Single Source of Truth (Data Materi Pembelajaran STIVIA)
- * 2. Kerangka Berpikir 7 Tahap Khusus LKPD
- * 3. Content Context Lock (Tanpa kontaminasi materi/sesi lain)
- * 4. Content First -> Activity Second -> Format Third
+ * Prinsip Utama:
+ * 1. "UPDATE, DON'T REBUILD"
+ * 2. SATU KALI INPUT -> SATU KALI ANALISIS -> SATU KALI GENERATE
+ * 3. Output 5 Bagian Terstruktur:
+ *    A. HASIL ANALISIS
+ *    B. LKPD LENGKAP
+ *    C. KONSEP VISUAL LKPD
+ *    D. PROMPT POSTER LKPD (Dimulai dengan: "BUAT POSTER LKPD PEMBELAJARAN...")
+ *    E. NEGATIVE / QUALITY INSTRUCTION
  */
 
 export type LkpdActivityType = 
@@ -47,12 +51,26 @@ export type LkpdStudentOutput =
   | 'Presentasi' 
   | 'Kombinasi';
 
+export type LkpdPaperSize = 'A4' | 'A3';
+
+export type LkpdOrientation = 'Portrait' | 'Landscape';
+
+export type LkpdVisualStyle = 
+  | 'Modern Edukatif' 
+  | 'Infografis Saintifik' 
+  | 'Ilustratif Ceria' 
+  | 'Minimalis Bersih' 
+  | 'Modul Klasik';
+
 export interface LkpdSettings {
   activityType: LkpdActivityType;
   formatType: LkpdFormatType;
   difficulty: LkpdDifficulty;
   timeAllocation: LkpdTimeAllocation;
   studentOutput: LkpdStudentOutput;
+  pageSize?: LkpdPaperSize;
+  orientation?: LkpdOrientation;
+  visualStyle?: LkpdVisualStyle;
   additionalInstructions?: string;
 }
 
@@ -77,6 +95,7 @@ export interface LkpdThinkingResult {
     pertemuan: string;
     bab?: string;
     tema?: string;
+    karakteristikSiswa: string;
     konteks: string;
   };
   stage2_TujuanPembelajaran: string[];
@@ -84,6 +103,7 @@ export interface LkpdThinkingResult {
     konsepUtama: string;
     konsepPendukung: string[];
     contohDanFakta: string;
+    konteksKehidupanNyata: string;
   };
   stage4_DesainAktivitas: {
     jenisAktivitas: LkpdActivityType;
@@ -93,12 +113,26 @@ export interface LkpdThinkingResult {
     bentukHasil: LkpdStudentOutput;
     rincianAktivitas: string;
   };
-  stage5_StrukturLkpd: string[];
+  stage5_KontenLkpd: {
+    judulLkpd: string;
+    identitasPesertaDidik: string;
+    petunjukPengerjaan: string[];
+    stimulusMateri: string;
+    langkahKerja: string[];
+    tugasDanPertanyaan: string[];
+    ruangJawabanDeskripsi: string;
+    refleksiPembelajaran: string[];
+  };
   stage6_DesainVisualPoster: {
-    orientasi: string;
-    komposisiLayout: string;
-    hierarkiVisual: string;
+    ukuran: LkpdPaperSize;
+    orientasi: LkpdOrientation;
+    gayaVisual: LkpdVisualStyle;
+    tataLetak: string;
+    tipografi: string;
     paletWarna: string;
+    ilustrasi: string;
+    hierarkiInformasi: string;
+    keseimbanganRuang: string;
   };
   stage7_ValidasiDanFinalisasi: {
     kriteriaTerpenuhi: string[];
@@ -108,7 +142,8 @@ export interface LkpdThinkingResult {
 }
 
 /**
- * Jalankan 7 Tahap Analisis Universal Prompt LKPD STIVIA
+ * Jalankan Analisis 7 Tahap Universal Prompt LKPD STIVIA
+ * Memproses data pembelajaran satu kali dan menghasilkan LKPD terstruktur, konsep visual, serta Prompt Poster LKPD otomatis.
  */
 export function runLkpdThinkingFramework(
   material: LkpdMaterialInput,
@@ -123,11 +158,30 @@ export function runLkpdThinkingFramework(
   const cleanTema = material.temaKegiatan?.trim() || '';
   const cleanPertemuan = material.pertemuan?.trim() || 'Pertemuan 1';
 
+  const pageSize: LkpdPaperSize = settings.pageSize || 'A4';
+  const orientation: LkpdOrientation = settings.orientation || 'Portrait';
+  const visualStyle: LkpdVisualStyle = settings.visualStyle || 'Modern Edukatif';
+
   // Ekstrak butir cakupan materi sebagai Single Source of Truth
   const scopePoints = cleanScope
     .split(/\r?\n/)
     .map(line => line.replace(/^[-*•\d.)\s]+/, '').trim())
     .filter(Boolean);
+
+  const scopeSummary = scopePoints.length > 0 
+    ? scopePoints.join(', ') 
+    : cleanScope || cleanTopic;
+
+  // Analisis karakteristik perkembangan kognitif peserta didik berdasarkan jenjang
+  let karakteristikSiswa = 'Peserta didik berada pada tahap berpikir operasional konkret menuju abstrak, membutuhkan panduan visual yang rapi dan ruang kerja yang jelas.';
+  const lvlLower = cleanLevel.toLowerCase();
+  if (lvlLower.includes('sd') || lvlLower.includes('dasar')) {
+    karakteristikSiswa = 'Peserta didik jenjang pendidikan dasar (SD), membutuhkan instruksi ringkas dengan bahasa sederhana, visual menarik, font ramah anak, dan ruang tulis yang lapang.';
+  } else if (lvlLower.includes('smp')) {
+    karakteristikSiswa = 'Peserta didik jenjang SMP (remaja awal), mampu berpikir logis dengan bantuan stimulus kontekstual, senang berkolaborasi, dan membutuhkan tugas analisis bertahap.';
+  } else if (lvlLower.includes('sma') || lvlLower.includes('smk')) {
+    karakteristikSiswa = 'Peserta didik jenjang SMA/SMK (remaja akhir), mampu berpikir analitis, kritis, dan sintesis mandiri dalam menyelesaikan studi kasus dan pemecahan masalah kontekstual.';
+  }
 
   // TAHAP 1 — IDENTITAS DAN KONTEKS PEMBELAJARAN
   const stage1 = {
@@ -138,27 +192,29 @@ export function runLkpdThinkingFramework(
     pertemuan: cleanPertemuan,
     bab: cleanBab,
     tema: cleanTema,
-    konteks: `Pembelajaran ${cleanSubject} jenjang ${cleanLevel} (${cleanGrade}) untuk ${cleanPertemuan}, dirancang sesuai karakteristik kognitif dan minat peserta didik.`,
+    karakteristikSiswa,
+    konteks: `Pembelajaran ${cleanSubject} jenjang ${cleanLevel} (${cleanGrade}) pada ${cleanPertemuan}, dirancang sesuai tingkat perkembangan kognitif peserta didik untuk menstimulasi keaktifan belajar.`,
   };
 
   // TAHAP 2 — TUJUAN PEMBELAJARAN
   const stage2_Objectives: string[] = [];
   if (scopePoints.length > 0) {
-    stage2_Objectives.push(`Peserta didik mampu mengidentifikasi dan memahami konsep kunci ${cleanTopic} (${scopePoints[0]}).`);
+    stage2_Objectives.push(`Peserta didik mampu mengidentifikasi dan memahami konsep inti ${cleanTopic} (${scopePoints[0]}).`);
     if (scopePoints.length > 1) {
-      stage2_Objectives.push(`Peserta didik mampu menganalisis dan mendiskusikan mekanisme/prinsip ${scopePoints.slice(1, 3).join(' serta ')} melalui aktivitas ${settings.activityType.toLowerCase()}.`);
+      stage2_Objectives.push(`Peserta didik mampu menganalisis hubungan konsep ${scopePoints.slice(1, 3).join(' dan ')} melalui aktivitas kerja ${settings.activityType.toLowerCase()}.`);
     }
   } else {
-    stage2_Objectives.push(`Peserta didik mampu memahami esensi dan konsep utama ${cleanTopic}.`);
-    stage2_Objectives.push(`Peserta didik mampu menerapkan konsep ${cleanTopic} dalam pemecahan masalah kontekstual.`);
+    stage2_Objectives.push(`Peserta didik mampu memahami konsep utama dan prinsip esensial dari ${cleanTopic}.`);
+    stage2_Objectives.push(`Peserta didik mampu menganalisis penerapan konsep ${cleanTopic} dalam pemecahan masalah kontekstual.`);
   }
-  stage2_Objectives.push(`Peserta didik mampu menyajikan hasil kerja dalam bentuk ${settings.studentOutput.toLowerCase()} secara sistematis dan menarik.`);
+  stage2_Objectives.push(`Peserta didik mampu menyajikan hasil pemahaman dalam bentuk ${settings.studentOutput.toLowerCase()} secara sistematis, mandiri/kolaboratif, dan percaya diri.`);
 
-  // TAHAP 3 — ANALISIS MATERI
+  // TAHAP 3 — ANALISIS MATERI (CONTENT CONTEXT LOCK)
   const stage3 = {
     konsepUtama: cleanTopic,
-    konsepPendukung: scopePoints.length > 0 ? scopePoints : [cleanScope],
-    contohDanFakta: `Penerapan riil topik "${cleanTopic}" pada kehidupan nyata yang relevan dengan peserta didik ${cleanLevel} ${cleanGrade}.`,
+    konsepPendukung: scopePoints.length > 0 ? scopePoints : [cleanScope || cleanTopic],
+    contohDanFakta: `Studi kasus dan contoh faktual penerapan ${cleanTopic} pada kehidupan nyata peserta didik ${cleanLevel} ${cleanGrade}.`,
+    konteksKehidupanNyata: `Kontekstualisasi ${cleanTopic} dalam lingkungan sekitar peserta didik agar bermakna dan mempermudah pemahaman konsep.`,
   };
 
   // TAHAP 4 — DESAIN AKTIVITAS PESERTA DIDIK
@@ -168,45 +224,67 @@ export function runLkpdThinkingFramework(
     tingkatKesulitan: settings.difficulty,
     alokasiWaktu: settings.timeAllocation,
     bentukHasil: settings.studentOutput,
-    rincianAktivitas: `Aktivitas ${settings.activityType.toLowerCase()} dengan pendekatan ${settings.formatType.toLowerCase()} berdurasi ${settings.timeAllocation}. Siswa dipandu mengamati stimulus, berdiskusi memecahkan tantangan bertingkat (${settings.difficulty}), dan mendokumentasikan hasil dalam bentuk ${settings.studentOutput.toLowerCase()}.`,
+    rincianAktivitas: `Aktivitas ${settings.activityType.toLowerCase()} dengan pendekatan ${settings.formatType.toLowerCase()} selama ${settings.timeAllocation}. Peserta didik diajak mengamati stimulus konsep, menjalankan instruksi terstruktur bertingkat (${settings.difficulty}), dan menyajikan bukti belajar dalam bentuk ${settings.studentOutput.toLowerCase()}.`,
   };
 
-  // TAHAP 5 — STRUKTUR LKPD
-  const stage5_Structure = [
-    '1. Judul LKPD & Identitas Peserta Didik (Nama, Kelas, Kelompok/Anggota, Tanggal)',
-    '2. Tujuan Pembelajaran & Capaian Aktivitas',
-    '3. Petunjuk Pengerjaan yang Jelas dan Mudah Dipahami',
-    '4. Stimulus / Informasi Pemantik (Berbasis Fakta & Konsep Utama)',
-    '5. Aktivitas / Tantangan Utama Siswa',
-    '6. Langkah Kerja Sistematis Berurutan',
-    `7. Pertanyaan & Tugas Eksplorasi (Bentuk Hasil: ${settings.studentOutput})`,
-    '8. Ruang Jawaban / Kolom Pengerjaan Siswa yang Proporsional',
-    '9. Analisis, Sintesis & Penarikan Kesimpulan',
-    '10. Refleksi Pembelajaran Peserta Didik'
-  ];
-
-  // TAHAP 6 — DESAIN VISUAL POSTER LKPD
-  const stage6_Visual = {
-    orientasi: 'Poster Vertikal (Portrait A4 / Standar Lembar Kerja Edukasi)',
-    komposisiLayout: 'Hierarki visual seimbang: 25% Stimulus & Petunjuk, 35% Aktivitas/Tugas, 25% Ruang Kerja Siswa, 15% Header & Refleksi',
-    hierarkiVisual: 'Heading tegas, pembagian kotak modular konsisten, ikon tematik, tipografi sans-serif edukatif mudah dibaca, kontras tinggi',
-    paletWarna: 'Modern Edukatif (Clean white background, slate-800 text, indigo/emerald accent lines, eye-safe contrast)'
+  // TAHAP 5 — PENYUSUNAN KONTEN LKPD LENGKAP
+  const judulLkpd = `LEMBAR KERJA PESERTA DIDIK (LKPD): ${cleanTopic.toUpperCase()}`;
+  const stage5: LkpdThinkingResult['stage5_KontenLkpd'] = {
+    judulLkpd,
+    identitasPesertaDidik: `Nama Peserta Didik / Anggota Kelompok: [ ................................................ ] | Kelas: ${cleanGrade} | Tanggal: [ .................... ] | Nilai / Catatan Guru: [ .......... ]`,
+    petunjukPengerjaan: [
+      'Berdoalah sebelum memulai kegiatan pembelajaran.',
+      'Bacalah ringkasan materi dan stimulus informasi yang disajikan secara seksama.',
+      `Kerjakan aktivitas secara ${settings.activityType.toLowerCase()} sesuai instruksi pada tiap tahapan langkah kerja.`,
+      `Tuliskan hasil diskusi atau pengerjaan pada ruang kerja/kolom ${settings.studentOutput.toLowerCase()} yang disediakan dengan rapi dan teliti.`,
+      'Lakukan refleksi diri di akhir lembar kerja dan periksakan hasil kepada guru pengampu.'
+    ],
+    stimulusMateri: `Materi "${cleanTopic}" memuat pemahaman penting meliputi: ${scopeSummary}. Amati bagaimana konsep ini bekerja pada lingkungan sekitar Anda untuk menyelesaikan tantangan pembelajaran di bawah ini.`,
+    langkahKerja: [
+      `Langkah 1: Identifikasi fakta atau konsep kunci ${cleanTopic} berdasarkan stimulus materi di atas.`,
+      `Langkah 2: Diskusikan bersama anggota ${settings.activityType.toLowerCase()} untuk merumuskan jawaban/solusi atas masalah yang diberikan.`,
+      `Langkah 3: Tuangkan hasil analisis ke dalam format ${settings.studentOutput.toLowerCase()} pada ruang kerja yang tersedia.`,
+      `Langkah 4: Tarik kesimpulan ringkas mengenai intisari pembelajaran hari ini.`
+    ],
+    tugasDanPertanyaan: [
+      `Tugas 1 (Pemahaman Konsep): Jelaskan pengertian dan karakteristik utama dari ${cleanTopic} dengan kalimat Anda sendiri!`,
+      `Tugas 2 (Analisis & Eksplorasi): Mengapa ${scopePoints[0] || cleanTopic} penting dipelajari? Berikan 1 contoh nyata di lingkungan Anda!`,
+      `Tugas 3 (Aplikasi & Sintesis): Berdasarkan hasil pengamatan Anda, susunlah rangkuman ${settings.studentOutput.toLowerCase()} yang menunjukkan keterkaitan antarkonsep materi!`
+    ],
+    ruangJawabanDeskripsi: `Area kerja lapang berbentuk ${settings.studentOutput.toUpperCase()} berpagar modul rapi dengan garis pandu / grid halus yang nyaman untuk penulisan jawaban tangan siswa.`,
+    refleksiPembelajaran: [
+      `1. Apa konsep terpenting yang berhasil saya kuasai dari materi ${cleanTopic} hari ini?`,
+      `2. Bagian mana dari aktivitas ini yang paling menantang dan bagaimana saya mengatasinya?`
+    ]
   };
 
-  // TAHAP 7 — VALIDASI DAN FINALISASI (12 Kriteria Pemeriksaan)
+  // TAHAP 6 — DESAIN VISUAL LKPD
+  const stage6: LkpdThinkingResult['stage6_DesainVisualPoster'] = {
+    ukuran: pageSize,
+    orientasi: orientation,
+    gayaVisual: visualStyle,
+    tataLetak: `Tata letak modular vertikal/horizontal seimbang (${pageSize} - ${orientation}). Pembagian proporsional: 15% Header & Identitas, 20% Tujuan & Stimulus Konsep, 35% Aktivitas & Tugas, 20% Ruang Jawaban Siswa, 10% Refleksi & Penilaian Guru.`,
+    tipografi: 'Hierarki tipografi sans-serif modern yang tajam dan ramah anak/remaja. Judul Display Bold yang tegas, subjudul semi-bold jelas, teks tubuh instruksi berjarak baca nyaman (line-height 1.6).',
+    paletWarna: 'Palet edukatif harmonis kontras tinggi (Background putih bersih #FFFFFF, teks primer slate-900 #0F172A, garis pemisah halus slate-200 #E2E8F0, aksen modul edukatif biru royal #2563EB dan hijau zamrud #059669).',
+    ilustrasi: `Ilustrasi vektor datar (flat vector) edukatif minimalis yang merepresentasikan materi "${cleanTopic}", dilengkapi ikon instruksi (buku, pensil tulis, diskusi tim, lampu ide) yang relevan dan tidak mendominasi lembar kerja.`,
+    hierarkiInformasi: 'Alur baca teratur dari atas ke bawah (Header Identitas -> Tujuan -> Stimulus -> Tugas/Aktivitas -> Ruang Jawaban -> Refleksi).',
+    keseimbanganRuang: 'Keseimbangan ruang kosong (negative space) 25% untuk memastikan lembar kerja tidak sesak, mudah dibaca, dan memberikan ruang menulis yang luas bagi peserta didik.'
+  };
+
+  // TAHAP 7 — VALIDASI DAN FINALISASI
   const validationCriteria = [
-    '1. Kesesuaian Jenjang & Kelas (Lolos)',
-    '2. Kesesuaian dengan Tujuan Pembelajaran (Lolos)',
-    '3. Keakuratan Materi (Lolos)',
-    '4. Kemudahan Pemahaman Instruksi (Lolos)',
-    '5. Keterlaksanaan Aktivitas oleh Siswa (Lolos)',
-    '6. Kesesuaian Tingkat Kesulitan (Lolos)',
-    '7. Kecukupan Ruang Mengerjakan Tugas (Lolos)',
-    '8. Kelengkapan Struktur LKPD (Lolos)',
-    '9. Dukungan Visual terhadap Pembelajaran (Lolos)',
+    '1. Kesesuaian Jenjang & Karakteristik Kelas (Lolos)',
+    '2. Kesesuaian Aktivitas dengan Tujuan Pembelajaran (Lolos)',
+    '3. Keakuratan & Keamanan Materi Pokok (Lolos)',
+    '4. Kejelasan Petunjuk & Langkah Kerja (Lolos)',
+    '5. Keterlaksanaan Aktivitas dalam Alokasi Waktu (Lolos)',
+    '6. Kesesuaian Tingkat Kesulitan Aktivitas (Lolos)',
+    '7. Kecukupan Ruang Jawaban Siswa (Lolos)',
+    '8. Kelengkapan 10 Struktur LKPD Terstandar (Lolos)',
+    '9. Kejelasan Visual & Tipografi Mudah Dibaca (Lolos)',
     '10. Kesiapan Cetak (Print-Ready) (Lolos)',
-    '11. Kerapian Teks & Tidak Terlalu Padat (Lolos)',
-    '12. Keterhubungan Logis Antarbagian (Lolos)'
+    '11. Bebas Teks Acak & Ornamen Mengganggu (Lolos)',
+    '12. Keterhubungan Logis Seluruh Bagian LKPD (Lolos)'
   ];
 
   const stage7 = {
@@ -214,155 +292,234 @@ export function runLkpdThinkingFramework(
     isLolosValidasi: true
   };
 
-  // PERAKITAN UNIVERSAL PROMPT LKPD STIVIA SESUAI STANDAR
-  const finalPrompt = buildUniversalLkpdPrompt(material, settings, stage1, stage2_Objectives, stage3, stage4, stage5_Structure, stage6_Visual);
+  // MERAKIT OUTPUT 5 BAGIAN SESUAI SPESIFIKASI WAJIB
+  const finalPrompt = assembleCompleteUniversalLkpdOutput(
+    material,
+    settings,
+    stage1,
+    stage2_Objectives,
+    stage3,
+    stage4,
+    stage5,
+    stage6,
+    stage7
+  );
 
   return {
     stage1_IdentitasKonteks: stage1,
     stage2_TujuanPembelajaran: stage2_Objectives,
     stage3_AnalisisMateri: stage3,
     stage4_DesainAktivitas: stage4,
-    stage5_StrukturLkpd: stage5_Structure,
-    stage6_DesainVisualPoster: stage6_Visual,
+    stage5_KontenLkpd: stage5,
+    stage6_DesainVisualPoster: stage6,
     stage7_ValidasiDanFinalisasi: stage7,
     stage7_FinalPrompt: finalPrompt,
   };
 }
 
 /**
- * Merakit Universal Prompt LKPD STIVIA Lengkap (A, B, C, D, E)
+ * Merakit Output Sistem Universal Prompt LKPD STIVIA
+ * Memastikan 5 Bagian Terstruktur Sesuai Panduan:
+ * ## A. HASIL ANALISIS
+ * ## B. LKPD
+ * ## C. KONSEP VISUAL LKPD
+ * ## D. PROMPT POSTER LKPD (Diawali dengan "BUAT POSTER LKPD PEMBELAJARAN...")
+ * ## E. NEGATIVE / QUALITY INSTRUCTION
  */
-function buildUniversalLkpdPrompt(
+function assembleCompleteUniversalLkpdOutput(
   material: LkpdMaterialInput,
   settings: LkpdSettings,
   stage1: LkpdThinkingResult['stage1_IdentitasKonteks'],
   objectives: string[],
   stage3: LkpdThinkingResult['stage3_AnalisisMateri'],
   stage4: LkpdThinkingResult['stage4_DesainAktivitas'],
-  structure: string[],
-  visual: LkpdThinkingResult['stage6_DesainVisualPoster']
+  stage5: LkpdThinkingResult['stage5_KontenLkpd'],
+  stage6: LkpdThinkingResult['stage6_DesainVisualPoster'],
+  stage7: LkpdThinkingResult['stage7_ValidasiDanFinalisasi']
 ): string {
-  const cleanTopic = material.materiDiajarkan.trim();
-  const cleanSubject = material.subject.trim();
-  const cleanLevelGrade = `${material.educationLevel} ${material.grade}`.trim();
-  const cleanScope = material.scope.trim();
-  const notes = [
-    material.userNotes?.trim() ? `Catatan Pengajar: ${material.userNotes.trim()}` : '',
-    settings.additionalInstructions?.trim() ? `Instruksi Tambahan: ${settings.additionalInstructions.trim()}` : ''
-  ].filter(Boolean).join(' | ');
+  const cleanTopic = material.materiDiajarkan.trim() || 'Materi Pembelajaran';
+  const cleanSubject = material.subject.trim() || 'Mata Pelajaran';
+  const cleanLevel = material.educationLevel.trim() || 'Sekolah Menengah';
+  const cleanGrade = material.grade.trim() || 'Kelas';
+  const cleanLevelGrade = `${cleanLevel} ${cleanGrade}`.trim();
+  const cleanBab = material.bab?.trim() || '';
+  const cleanTema = material.temaKegiatan?.trim() || '';
+  const cleanPertemuan = material.pertemuan?.trim() || 'Pertemuan 1';
+  const userNotes = material.userNotes?.trim();
+  const extraInstr = settings.additionalInstructions?.trim();
 
-  return `=== UNIVERSAL PROMPT LKPD STIVIA (ANALISIS 7 TAHAP) ===
+  // Susunan Bagian D: PROMPT POSTER LKPD yang siap disalin ke AI image generator
+  const posterPromptText = `BUAT POSTER LKPD PEMBELAJARAN untuk siswa ${cleanLevel} kelas ${cleanGrade}, mata pelajaran ${cleanSubject}, dengan judul "${stage5.judulLkpd}".
 
-PERAN SISTEM:
-Anda adalah "Stivia", AI Expert LKPD Generator yang merupakan bagian dari sistem STIVIA.
-Tugas utama Anda adalah merancang Lembar Kerja Peserta Didik (LKPD) pembelajaran yang:
-- sesuai dengan jenjang dan kelas peserta didik;
-- sesuai dengan tujuan pembelajaran;
-- aktif dan berpusat pada peserta didik;
-- memiliki aktivitas yang jelas;
-- mendorong berpikir, menganalisis, dan memecahkan masalah;
-- menggunakan bahasa yang mudah dipahami;
-- memiliki struktur LKPD yang sistematis;
-- dapat divisualisasikan sebagai poster LKPD;
-- siap digunakan guru dan peserta didik.
+Tujuan pembelajaran:
+"${objectives.map(o => o.replace(/Peserta didik mampu\s*/i, '')).join('; ')}."
 
-============================================================
-PRINSIP DESAIN:
-"MUDAH DIBACA, MUDAH DIPAHAMI, MUDAH DIKERJAKAN, MENARIK DILIHAT, SIAP DIGUNAKAN"
-Keseimbangan: MATERI + AKTIVITAS + VISUAL + RUANG KERJA.
-============================================================
+Materi:
+"${cleanTopic} — Konsep inti meliputi: ${stage3.konsepPendukung.join(', ')}."
 
-============================================================
-A. ANALISIS LKPD
-============================================================
-1. IDENTITAS DAN KONTEKS PEMBELAJARAN (TAHAP 1):
-   - Judul Materi       : ${cleanTopic}
-   - Mata Pelajaran     : ${cleanSubject}
-   - Jenjang & Kelas    : ${cleanLevelGrade}
-   - Pertemuan          : ${stage1.pertemuan}
-   ${stage1.bab ? `- Bab / Unit          : ${stage1.bab}\n   ` : ''}${stage1.tema ? `- Tema Pembelajaran  : ${stage1.tema}\n   ` : ''}- Konteks            : ${stage1.konteks}
+Aktivitas utama:
+"Aktivitas ${settings.activityType.toLowerCase()} bertema ${settings.formatType.toLowerCase()} dengan tingkat kesulitan ${settings.difficulty.toLowerCase()} berdurasi ${settings.timeAllocation}, menghasilkan output berupa ${settings.studentOutput.toLowerCase()}."
 
-2. TUJUAN PEMBELAJARAN (TAHAP 2):
-${objectives.map((obj, i) => `   ${i + 1}. ${obj}`).join('\n')}
+Susun poster dengan struktur:
+1. Header Judul Lembar Kerja & Kotak Identitas Siswa (Nama, Kelas, Tanggal, Kolom Nilai)
+2. Panel Tujuan Pembelajaran & Ikon Petunjuk Pengerjaan
+3. Modul Stimulus Informasi & Ilustrasi Konsep Terkait Materi
+4. Kotak Langkah Kerja & Pertanyaan/Tugas Eksplorasi Terstruktur
+5. Area Ruang Jawaban Siswa (${settings.studentOutput.toUpperCase()}) yang Luas dan Bersih
+6. Bagian Bawah Refleksi Diri & Kolom Tanda Tangan Guru
 
-3. ANALISIS MATERI (TAHAP 3 — CONTENT CONTEXT LOCK):
-   - Konsep Utama       : ${stage3.konsepUtama}
-   - Cakupan Materi Pokok:
+Tampilkan:
+- Petunjuk: ${stage5.petunjukPengerjaan.slice(1, 4).join('; ')}
+- Tugas: ${stage5.tugasDanPertanyaan.join(' ')}
+- Pertanyaan: Pertanyaan pemantik dan analisis pemecahan masalah sesuai materi
+- Ruang Jawaban: Kolom pengerjaan ${settings.studentOutput.toLowerCase()} bergaris rapi yang lapang untuk ditulisi tangan oleh peserta didik
+- Refleksi: Kotak refleksi singkat pembelajaran di bagian bawah
+
+Gunakan ukuran ${stage6.ukuran} dengan orientasi ${stage6.orientasi}.
+
+Gunakan gaya visual ${stage6.gayaVisual}.
+
+Tata letak: ${stage6.tataLetak}
+
+Tipografi: ${stage6.tipografi}
+
+Warna: ${stage6.paletWarna}
+
+Ilustrasi: ${stage6.ilustrasi}
+
+Hierarki informasi: ${stage6.hierarkiInformasi}
+
+Keterbacaan: Teks berbahasa Indonesia jelas, proporsional, berkontras tinggi, mudah dipahami siswa, tanpa dekorasi berlebihan.
+
+Kesiapan untuk dicetak: Desain siap cetak (print-ready) beresolusi tinggi dengan margin kertas yang aman.
+
+Buat desain yang modern, edukatif, menarik, bersih, profesional, sesuai usia peserta didik, dan mudah dibaca.
+
+Pastikan seluruh teks menggunakan Bahasa Indonesia yang benar.
+
+Pastikan terdapat ruang yang cukup bagi siswa untuk menulis jawaban.
+
+Jangan membuat desain seperti poster promosi atau infografis biasa.
+
+Desain harus terlihat dan berfungsi sebagai LEMBAR KERJA PESERTA DIDIK VISUAL.
+
+Jangan menggunakan teks acak, lorem ipsum, atau tulisan yang tidak bermakna.
+
+Pastikan seluruh informasi utama berasal dari data dan LKPD yang telah dibuat sebelumnya.`;
+
+  return `=== UNIVERSAL PROMPT LKPD STIVIA ===
+=== ANALISIS 7 TAHAP + GENERATOR POSTER LKPD OTOMATIS ===
+
+## A. HASIL ANALISIS
+
+Ringkasan Analisis Pembelajaran Berdasarkan Data Materi:
+1. Identitas & Karakteristik Peserta Didik (Tahap 1):
+   - Mata Pelajaran      : ${cleanSubject}
+   - Jenjang & Kelas     : ${cleanLevelGrade}
+   - Pertemuan           : ${cleanPertemuan}${cleanBab ? ` | Bab: ${cleanBab}` : ''}${cleanTema ? ` | Tema: ${cleanTema}` : ''}
+   - Karakteristik Siswa : ${stage1.karakteristikSiswa}
+   - Konteks             : ${stage1.konteks}
+
+2. Tujuan Pembelajaran (Tahap 2):
+${objectives.map((o, idx) => `   ${idx + 1}. ${o}`).join('\n')}
+
+3. Analisis Materi Pokok (Tahap 3 — Content Context Lock):
+   - Konsep Utama        : ${stage3.konsepUtama}
+   - Konsep Pendukung    :
 ${stage3.konsepPendukung.map(item => `     • ${item}`).join('\n')}
-   - Konteks Nyata      : ${stage3.contohDanFakta}
-   ${notes ? `- Catatan Khusus    : ${notes}\n` : ''}
-4. DESAIN AKTIVITAS PESERTA DIDIK (TAHAP 4):
-   - Jenis Aktivitas    : ${settings.activityType}
-   - Bentuk LKPD        : ${settings.formatType}
-   - Tingkat Kesulitan  : ${settings.difficulty}
-   - Alokasi Waktu      : ${settings.timeAllocation}
-   - Bentuk Hasil Siswa : ${settings.studentOutput}
-   - Ringkasan Desain   : ${stage4.rincianAktivitas}
+   - Konteks Kehidupan   : ${stage3.contohDanFakta}
+   ${userNotes ? `- Catatan Pengajar    : ${userNotes}\n` : ''}${extraInstr ? `- Instruksi Tambahan  : ${extraInstr}\n` : ''}
+4. Desain Aktivitas Pembelajaran (Tahap 4):
+   - Jenis Aktivitas     : ${settings.activityType}
+   - Bentuk LKPD         : ${settings.formatType}
+   - Tingkat Kesulitan   : ${settings.difficulty}
+   - Alokasi Waktu       : ${settings.timeAllocation}
+   - Bentuk Hasil Siswa  : ${settings.studentOutput}
+   - Ringkasan Desain    : ${stage4.rincianAktivitas}
 
-============================================================
-B. STRUKTUR LKPD (TAHAP 5)
-============================================================
-Susunan komponen LKPD secara terstandar:
-${structure.map(s => `   ${s}`).join('\n')}
+---
 
-============================================================
-C. KONTEN LKPD LENGKAP (SIAP DIGUNAKAN)
-============================================================
-1. HEADER & IDENTITAS:
-   - Judul Poster LKPD : LEMBAR KERJA PESERTA DIDIK: ${cleanTopic.toUpperCase()}
-   - Mapel & Kelas     : ${cleanSubject} | ${cleanLevelGrade}
-   - Alokasi Waktu     : ${settings.timeAllocation}
-   - Kolom Pengisian   : Nama Peserta Didik / Anggota Kelompok [ .................... ], Tanggal [ ............ ], Nilai [ ...... ]
+## B. LKPD
 
-2. PETUNJUK PENGERJAAN:
-   - Bacalah ringkasan informasi pengantar dengan cermat.
-   - Diskusikan bersama rekan Anda untuk menyelesaikan tiap tahapan aktivitas.
-   - Isikan jawaban pada ruang kerja (${settings.studentOutput.toLowerCase()}) yang disediakan dengan rapi dan teliti.
+${stage5.judulLkpd}
+${'='.repeat(stage5.judulLkpd.length)}
 
-3. STIMULUS PEMBELAJARAN (MATERI INTI):
-   ${cleanTopic} merupakan materi inti yang mencakup konsep penting:
-   ${stage3.konsepPendukung.slice(0, 3).map((item, idx) => `   (${String.fromCharCode(97 + idx)}) ${item}`).join(';\n   ')}.
-   Amati fenomena di sekitar Anda yang memanfaatkan prinsip ini dalam kehidupan sehari-hari.
+IDENTITAS PESERTA DIDIK:
+${stage5.identitasPesertaDidik}
 
-4. AKTIVITAS & TANTANGAN SISWA:
-   - Tugas 1 (Pemahaman Dasar): Identifikasi dan jelaskan prinsip dasar dari ${cleanTopic} berdasarkan stimulus materi di atas.
-   - Tugas 2 (Eksplorasi & Analisis): Analisislah studi kasus kontekstual terkait materi pokok dan tentukan solusinya.
-   - Tugas 3 (Aplikasi & Sintesis): Tuangkan kesimpulan hasil temuan Anda dalam bentuk ${settings.studentOutput.toLowerCase()} terstruktur.
+MATA PELAJARAN : ${cleanSubject}
+KELAS / SEMESTER: ${cleanLevelGrade}
+ALOKASI WAKTU   : ${settings.timeAllocation}
+JENIS AKTIVITAS : ${settings.activityType} (${settings.formatType})
 
-5. RUANG LEMBAR KERJA SISWA:
-   [Disediakan area pengerjaan berbentuk ${settings.studentOutput.toUpperCase()} dengan garis panduan yang bersih, luas, dan mudah ditulisi oleh peserta didik].
+I. TUJUAN PEMBELAJARAN
+${objectives.map((o, idx) => `${idx + 1}. ${o}`).join('\n')}
 
-6. REFLEKSI & KESIMPULAN:
-   - "Apa wawasan terpenting yang saya pahami dari pembelajaran ${cleanTopic} hari ini?"
-   - "Bagaimana saya dapat menerapkan konsep ini pada situasi lain?"
+II. PETUNJUK PENGERJAAN
+${stage5.petunjukPengerjaan.map((p, idx) => `${idx + 1}. ${p}`).join('\n')}
 
-============================================================
-D. KONSEP VISUAL POSTER LKPD (TAHAP 6)
-============================================================
-- Format & Dimensi : ${visual.orientasi}
-- Komposisi Spasial: ${visual.komposisiLayout}
-- Tipografi        : Font display sans-serif berkarakter modern untuk judul (Bold, tracking rapi), font body sans-serif bersih dengan line-height 1.6 untuk instruksi.
-- Skema Warna      : Palet profesional edukatif (Latar bersih #FFFFFF, teks kontras tinggi #0F172A, aksen modul #2563EB / #059669).
-- Ruang Jawaban    : Diberikan kotak kerja dengan border tipis dan grid/garis pandu penulisan yang proporsional.
-- Elemen Grafis    : Ikon instruksi minimalis (pensil, grup diskusi, lampu ide), diagram konsep bersih, tanpa ornamen dekoratif berlebihan.
+III. STIMULUS PEMBELAJARAN
+${stage5.stimulusMateri}
 
-============================================================
-E. PROMPT FINAL GENERATOR POSTER LKPD
-============================================================
-Salin teks prompt di bawah ini ke AI Image Generator / AI Desain (Ideogram, Midjourney, DALL-E 3, Flux, ChatGPT, atau Canva AI):
+IV. LANGKAH KERJA
+${stage5.langkahKerja.join('\n')}
 
-"""
-A professional, high-resolution educational student worksheet poster (LKPD) in portrait orientation (A4 aspect ratio 3:4). 
-Subject: ${cleanSubject}, Topic: "${cleanTopic}", Target Grade: ${cleanLevelGrade}.
-Designed in a modern, clean Indonesian educational graphic style. 
-Top section features a bold title header reading "LEMBAR KERJA PESERTA DIDIK: ${cleanTopic.toUpperCase()}" with clean fill-in boxes for Student Name, Class, and Date. 
-The layout is logically divided into modular panels:
-1. "Tujuan & Petunjuk" with clean numbered bullet points and minimal icons.
-2. "Stimulus Materi" presenting concise educational text and flat vector conceptual illustration related to ${cleanTopic}.
-3. "Aktivitas Siswa" featuring structured numbered tasks for ${settings.activityType.toLowerCase()} work.
-4. "Ruang Jawaban" with a spacious, neatly bordered blank ${settings.studentOutput.toLowerCase()} work area ready for handwritten student responses.
-5. Bottom reflection and evaluation strip with clean rating stars and teacher signature box.
-Clean white paper background, sharp dark navy typography, vibrant teal and indigo educational accent colors. 
-High contrast, perfectly legible Indonesian text, well-balanced negative space, no cluttered decorations, print-ready 8K vector clarity.
-"""`;
+V. TUGAS DAN PERTANYAAN EKSPLORASI
+${stage5.tugasDanPertanyaan.map((t, idx) => `[Soal/Tugas ${idx + 1}]\n${t}`).join('\n\n')}
+
+VI. RUANG LEMBAR KERJA PESERTA DIDIK
+[ BENTUK HASIL: ${settings.studentOutput.toUpperCase()} ]
++-----------------------------------------------------------------------------------------+
+| ${stage5.ruangJawabanDeskripsi} |
+|                                                                                         |
+| ....................................................................................... |
+| ....................................................................................... |
+| ....................................................................................... |
+| ....................................................................................... |
+| ....................................................................................... |
++-----------------------------------------------------------------------------------------+
+
+VII. REFLEKSI PEMBELAJARAN
+${stage5.refleksiPembelajaran.join('\n')}
+
+Catatan Guru / Penilaian: [                                                   ]
+Tanda Tangan Guru: [                       ]  Tanggal: [                       ]
+
+---
+
+## C. KONSEP VISUAL LKPD
+
+Rancangan Visual Berdasarkan Isi LKPD:
+- Ukuran Kertas        : ${stage6.ukuran}
+- Orientasi            : ${stage6.orientasi}
+- Gaya Visual          : ${stage6.gayaVisual}
+- Tata Letak (Layout)  : ${stage6.tataLetak}
+- Tipografi            : ${stage6.tipografi}
+- Skema & Palet Warna  : ${stage6.paletWarna}
+- Kebutuhan Ilustrasi  : ${stage6.ilustrasi}
+- Hierarki Informasi   : ${stage6.hierarkiInformasi}
+- Keseimbangan Ruang   : ${stage6.keseimbanganRuang}
+
+---
+
+## D. PROMPT POSTER LKPD
+
+${posterPromptText}
+
+---
+
+## E. NEGATIVE / QUALITY INSTRUCTION
+
+- no random text;
+- no unreadable text;
+- no distorted typography;
+- no unnecessary decoration;
+- no irrelevant illustration;
+- no promotional advertisement style;
+- no cluttered background;
+- maintain clear worksheet structure;
+- maintain Indonesian language;
+- maintain sufficient answer spaces;
+- preserve all essential learning activities;
+- print-ready 8K vector clarity.`;
 }

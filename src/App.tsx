@@ -15,7 +15,7 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { AuthPage } from './components/auth/AuthPage';
 import { getUserProfile, signOutUser } from './services/authService';
-import { getSubscriptionSummary } from './services/subscriptionService';
+import { getSubscriptionSummary, invalidateSubscriptionCache } from './services/subscriptionService';
 import { 
   InfographicDraft, 
   NavigationTab, 
@@ -135,10 +135,12 @@ export default function App() {
   // Handler Keluar (Logout)
   const handleLogout = async () => {
     try {
+      invalidateSubscriptionCache();
       await signOutUser();
     } catch (err) {
       console.warn('Gagal memproses signOut:', err);
     } finally {
+      invalidateSubscriptionCache();
       setSession(null);
       setUserProfile(null);
       setSubscriptionSummary(null);

@@ -55,6 +55,9 @@ import {
   LkpdDifficulty, 
   LkpdTimeAllocation, 
   LkpdStudentOutput, 
+  LkpdPaperSize,
+  LkpdOrientation,
+  LkpdVisualStyle,
   LkpdThinkingResult, 
   runLkpdThinkingFramework 
 } from '../../services/lkpdEngine';
@@ -105,6 +108,16 @@ const LKPD_OUTPUT_OPTIONS: LkpdStudentOutput[] = [
   'Produk',
   'Presentasi',
   'Kombinasi'
+];
+
+const LKPD_PAGE_SIZE_OPTIONS: LkpdPaperSize[] = ['A4', 'A3'];
+const LKPD_ORIENTATION_OPTIONS: LkpdOrientation[] = ['Portrait', 'Landscape'];
+const LKPD_VISUAL_STYLE_OPTIONS: LkpdVisualStyle[] = [
+  'Modern Edukatif',
+  'Infografis Saintifik',
+  'Ilustratif Ceria',
+  'Minimalis Bersih',
+  'Modul Klasik'
 ];
 
 interface BuatInfografisPageProps {
@@ -173,6 +186,9 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [lkpdDifficulty, setLkpdDifficulty] = useState<LkpdDifficulty>('Sedang');
   const [lkpdTimeAllocation, setLkpdTimeAllocation] = useState<LkpdTimeAllocation>('45 menit');
   const [lkpdStudentOutput, setLkpdStudentOutput] = useState<LkpdStudentOutput>('Tabel');
+  const [lkpdPageSize, setLkpdPageSize] = useState<LkpdPaperSize>('A4');
+  const [lkpdOrientation, setLkpdOrientation] = useState<LkpdOrientation>('Portrait');
+  const [lkpdVisualStyle, setLkpdVisualStyle] = useState<LkpdVisualStyle>('Modern Edukatif');
   const [lkpdAdditionalInstructions, setLkpdAdditionalInstructions] = useState<string>('');
   const [lkpdThinkingResult, setLkpdThinkingResult] = useState<LkpdThinkingResult | null>(null);
 
@@ -364,6 +380,9 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             difficulty: lkpdDifficulty,
             timeAllocation: lkpdTimeAllocation,
             studentOutput: lkpdStudentOutput,
+            pageSize: lkpdPageSize,
+            orientation: lkpdOrientation,
+            visualStyle: lkpdVisualStyle,
             additionalInstructions: lkpdAdditionalInstructions.trim(),
           }
         );
@@ -979,7 +998,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                     ? 'text-indigo-700 font-medium'
                     : 'text-slate-500 group-hover:text-indigo-100'
                 }`}>
-                  {isGenerating && selectedPromptType === 'infografis' ? 'Sedang memproses prompt...' : 'Klik untuk langsung generate prompt'}
+                  {isGenerating && selectedPromptType === 'infografis' ? 'Sedang memproses prompt...' : 'Generate Prompt Infografis'}
                 </p>
               </div>
 
@@ -1044,7 +1063,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                     ? 'text-emerald-700 font-medium'
                     : 'text-slate-500'
                 }`}>
-                  {isGenerating && selectedPromptType === 'lkpd' ? 'Sedang memproses prompt...' : 'Klik untuk atur & buat prompt LKPD'}
+                  {isGenerating && selectedPromptType === 'lkpd' ? 'Sedang memproses prompt...' : 'Atur & Buat Prompt LKPD'}
                 </p>
               </div>
 
@@ -1198,11 +1217,76 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 </div>
               </div>
 
-              {/* F. Instruksi / Konteks Tambahan (Opsional) */}
+              {/* F. Pengaturan Visual Poster LKPD */}
+              <div className="space-y-2 pt-1 border-t border-slate-200/60">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>F. Pengaturan Visual Poster LKPD</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Ukuran Kertas */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold text-slate-600 block">Ukuran Kertas:</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {LKPD_PAGE_SIZE_OPTIONS.map((sz) => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => setLkpdPageSize(sz)}
+                          className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                            lkpdPageSize === sz
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Orientasi */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold text-slate-600 block">Orientasi:</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {LKPD_ORIENTATION_OPTIONS.map((ori) => (
+                        <button
+                          key={ori}
+                          type="button"
+                          onClick={() => setLkpdOrientation(ori)}
+                          className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                            lkpdOrientation === ori
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {ori}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gaya Visual */}
+                  <div className="space-y-1 sm:col-span-1">
+                    <span className="text-[11px] font-semibold text-slate-600 block">Gaya Visual:</span>
+                    <select
+                      value={lkpdVisualStyle}
+                      onChange={(e) => setLkpdVisualStyle(e.target.value as LkpdVisualStyle)}
+                      className="w-full py-2 px-3 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-emerald-500 cursor-pointer shadow-2xs"
+                    >
+                      {LKPD_VISUAL_STYLE_OPTIONS.map((sty) => (
+                        <option key={sty} value={sty}>{sty}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* G. Instruksi / Konteks Tambahan (Opsional) */}
               <div className="space-y-2">
                 <label htmlFor="lkpd-extra-instructions" className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                   <HelpCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>F. Instruksi/Konteks Tambahan <span className="text-slate-400 font-normal lowercase">(opsional)</span></span>
+                  <span>G. Instruksi/Konteks Tambahan <span className="text-slate-400 font-normal lowercase">(opsional)</span></span>
                 </label>
                 <textarea
                   id="lkpd-extra-instructions"
@@ -1277,7 +1361,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               <p className="text-xs text-slate-300">
                 {activeOutputType === 'lkpd' ? (
                   <>
-                    Materi: <span className="font-bold text-white">{materiDiajarkan.trim() || currentDraft.title || 'Materi Pembelajaran'}</span> • {isCustomSubject ? customSubject : subject} ({educationLevel} {grade}) • Aktivitas: {lkpdActivityType} ({lkpdFormatType}) • Waktu: {lkpdTimeAllocation}
+                    Materi: <span className="font-bold text-white">{materiDiajarkan.trim() || currentDraft.title || 'Materi Pembelajaran'}</span> • {isCustomSubject ? customSubject : subject} ({educationLevel} {grade}) • Aktivitas: {lkpdActivityType} ({lkpdFormatType}) • Waktu: {lkpdTimeAllocation} • Format: {lkpdPageSize} ({lkpdOrientation}) - {lkpdVisualStyle}
                   </>
                 ) : (
                   <>
@@ -1446,6 +1530,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                   <div><strong>Tingkat Kesulitan:</strong> {lkpdDifficulty}</div>
                   <div><strong>Alokasi Waktu:</strong> {lkpdTimeAllocation}</div>
                   <div><strong>Bentuk Hasil:</strong> {lkpdStudentOutput}</div>
+                  <div><strong>Format Desain:</strong> {lkpdPageSize} ({lkpdOrientation}) - {lkpdVisualStyle}</div>
                 </>
               )}
             </div>

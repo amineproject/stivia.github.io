@@ -24,7 +24,7 @@ WHERE s.plan = 'pro'
 ORDER BY s.end_date DESC;
 
 
--- 2. LIHAT SEMUA STATUS LANGGANAN (FREE, PRO, ADMIN)
+-- 2. LIHAT SEMUA STATUS LANGGANAN & SALDO PROMPT (FREE, PRO, ADMIN)
 SELECT 
     s.user_id,
     u.email,
@@ -32,6 +32,9 @@ SELECT
     s.plan,
     s.role,
     s.status,
+    s.prompt_balance AS sisa_saldo_prompt,
+    s.total_granted AS total_kuota_diberikan,
+    s.used_count AS jumlah_prompt_terpakai,
     s.start_date,
     s.end_date
 FROM public.user_subscriptions s
@@ -57,18 +60,24 @@ ORDER BY total_generate_bulan_ini DESC;
 
 
 -- 4. CARA MENJADIKAN USER TERTENTU SEBAGAI ADMIN (UNLIMITED)
--- Ganti 'alamat_email_user@gmail.com' dengan email yang dituju:
--- UPDATE public.user_subscriptions 
--- SET role = 'admin' 
--- WHERE user_id = (SELECT id FROM auth.users WHERE email = 'alamat_email_user@gmail.com');
-
-
--- 5. CARA MEMBERIKAN PAKET PRO BULANAN SECARA MANUAL (30 HARI)
+-- Eksekusi di Supabase SQL Editor:
 -- UPDATE public.user_subscriptions 
 -- SET 
+--     role = 'admin',
+--     plan = 'pro',
+--     prompt_balance = 999999,
+--     total_granted = 999999,
+--     end_date = NULL,
+--     updated_at = NOW()
+-- WHERE user_id = (SELECT id FROM auth.users WHERE email = 'aminexplore@gmail.com');
+
+
+-- 5. CARA TOP-UP KUOTA PROMPT MANUAL PENGGUNA (CONTOH: +50 PROMPT)
+-- UPDATE public.user_subscriptions 
+-- SET 
+--     prompt_balance = prompt_balance + 50,
+--     total_granted = total_granted + 50,
 --     plan = 'pro',
 --     status = 'active',
---     start_date = NOW(),
---     end_date = NOW() + INTERVAL '30 days',
 --     updated_at = NOW()
 -- WHERE user_id = (SELECT id FROM auth.users WHERE email = 'alamat_email_user@gmail.com');

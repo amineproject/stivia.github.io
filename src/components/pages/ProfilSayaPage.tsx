@@ -84,24 +84,13 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   // Verifikasi apakah akun ini adalah Administrator yang sah
   // (Tetap diakui meski admin sedang dalam mode simulasi pengguna biasa)
+  // Otorisasi didasarkan pada data server dan auth session (bukan localStorage)
   const isActualAdmin = Boolean(
     subscriptionSummary?.isAdmin ||
     userProfile?.role === 'admin' ||
-    (userId && typeof window !== 'undefined' && localStorage.getItem(`stivia_is_admin_user_${userId}`) === 'true') ||
     userEmail === 'aminexplore@gmail.com' ||
     session?.user?.email === 'aminexplore@gmail.com'
   );
-
-  // Simpan status otorisasi admin ke browser agar tidak terputus saat simulasi
-  useEffect(() => {
-    if (userId && (subscriptionSummary?.isAdmin || userProfile?.role === 'admin' || userEmail === 'aminexplore@gmail.com')) {
-      try {
-        localStorage.setItem(`stivia_is_admin_user_${userId}`, 'true');
-      } catch {
-        // ignore
-      }
-    }
-  }, [userId, subscriptionSummary?.isAdmin, userProfile?.role, userEmail]);
 
   // Status apakah admin sedang menguji akun sebagai pengguna biasa
   const isSimulatingUser = isActualAdmin && !subscriptionSummary?.isAdmin;
@@ -299,6 +288,10 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   const handleTopUpPrompts = async (amount: number) => {
     if (!userId) return;
+    if (!isActualAdmin) {
+      showToast('Akses ditolak: Hanya Administrator yang berwenang menambah saldo prompt.');
+      return;
+    }
     setIsSwitchingPlan(true);
     try {
       await topUpPromptBalance(userId, amount);
