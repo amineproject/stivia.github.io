@@ -82,24 +82,24 @@ export const PanduanPage: React.FC<PanduanPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* 6 Step Accordion / Cards */}
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         {steps.map((step) => {
           const isOpen = openStep === step.number;
           return (
             <div
               key={step.number}
-              className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden transition-all"
+              className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden transition-all hover:border-indigo-200"
             >
               <button
                 onClick={() => setOpenStep(isOpen ? 0 : step.number)}
-                className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors"
+                className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
                     0{step.number}
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900">
                       {step.title}
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -114,9 +114,9 @@ export const PanduanPage: React.FC<PanduanPageProps> = ({ onNavigate }) => {
               </button>
 
               {isOpen && (
-                <div className="px-6 pb-6 pt-2 space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                <div className="px-5 sm:px-6 pb-6 pt-2 space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100">
                   <p>{step.desc}</p>
-                  <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 flex items-start gap-2.5 text-amber-950">
+                  <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 flex items-start gap-2.5 text-amber-950">
                     <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <div className="text-xs">
                       <span className="font-bold">Tips Pendidik: </span>
@@ -131,7 +131,7 @@ export const PanduanPage: React.FC<PanduanPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* CTA Box */}
-      <div className="bg-gradient-to-r from-indigo-700 to-indigo-600 text-white rounded-3xl p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-700 text-white rounded-2xl p-6 sm:p-8 shadow-md flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center sm:text-left">
           <h3 className="text-lg font-bold">Siap menyusun infografis Anda?</h3>
           <p className="text-xs sm:text-sm text-indigo-100 max-w-md">
@@ -140,7 +140,7 @@ export const PanduanPage: React.FC<PanduanPageProps> = ({ onNavigate }) => {
         </div>
         <button
           onClick={() => onNavigate('buat')}
-          className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-900/30 transition-all shrink-0 cursor-pointer"
+          className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs sm:text-sm font-bold shadow-sm shadow-emerald-900/30 transition-all shrink-0 cursor-pointer"
         >
           Buat Infografis Sekarang
         </button>

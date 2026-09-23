@@ -663,10 +663,10 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
         /* ================================================== */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Kolom Kiri: Kartu Identitas Pendidik */}
-          <div className="lg:col-span-1 bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-sm flex flex-col items-center text-center">
+          <div className="lg:col-span-1 bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col items-center text-center">
             {/* Foto Avatar */}
             <div className="relative mb-4">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-indigo-700">
+              <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-indigo-50 to-indigo-100 border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-indigo-700">
                 {userProfile?.avatar_url ? (
                   <img 
                     src={userProfile.avatar_url} 
@@ -706,7 +706,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
             <button
               id="btn-edit-profil-card"
               onClick={handleStartEdit}
-              className="mt-6 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition-all cursor-pointer hover:scale-[1.01]"
+              className="mt-6 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#3b49df] hover:bg-indigo-700 text-white font-bold text-sm shadow-sm shadow-indigo-600/20 transition-all cursor-pointer hover:scale-[1.01]"
             >
               <Edit3 className="w-4 h-4" />
               <span>Edit Profil</span>
@@ -715,7 +715,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
           {/* Kolom Kanan: Rincian Informasi Akun */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
@@ -781,7 +781,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
             </div>
 
             {/* KARTU PAKET AKUN & LIMIT PENGGUNAAN (STIVIA 3.1) */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
                 <div>
                   <div className="flex items-center gap-2">
@@ -815,162 +815,47 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                 </div>
               </div>
 
-              {/* Rincian Status Saldo Prompt */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                    Peran & Hak Akses
-                  </span>
-                  <span className="text-xl font-black text-slate-900 mt-1 block uppercase">
-                    {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'Admin Permanen'
-                      : 'Pengguna Reguler'}
-                  </span>
-                  <span className={`text-[11px] font-semibold mt-0.5 block ${
-                    subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'text-purple-600'
-                      : 'text-emerald-600'
-                  }`}>
-                    {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'Hak Akses: Penuh (Unlimited ∞)'
-                      : 'Status: Aktif Selamanya ✓'}
-                  </span>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                    Saldo Prompt Tersisa
-                  </span>
-                  <span className={`text-xl font-black mt-1 block ${
-                    subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'text-purple-600'
-                      : (subscriptionSummary?.promptBalance ?? 0) <= 0
-                      ? 'text-rose-600'
-                      : 'text-slate-900'
-                  }`}>
-                    {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'Unlimited (∞)'
-                      : `${subscriptionSummary?.promptBalance ?? 0} Prompt`}
-                  </span>
-                  <span className={`text-[11px] font-medium mt-0.5 block ${
-                    subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'text-purple-600'
-                      : (subscriptionSummary?.promptBalance ?? 0) <= 0
-                      ? 'text-rose-600 font-semibold'
-                      : 'text-slate-500'
-                  }`}>
-                    {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'Bebas generate kapan pun'
-                      : (subscriptionSummary?.promptBalance ?? 0) <= 0
-                      ? 'Saldo habis (perlu top-up)'
-                      : `Total didapat: ${subscriptionSummary?.totalGranted ?? 10} prompt`}
-                  </span>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                    Riwayat Penggunaan
-                  </span>
-                  <span className="text-xl font-black text-slate-900 mt-1 block">
-                    {subscriptionSummary?.usedTotal ?? 0}
-                    <span className="text-xs font-bold text-slate-400 ml-1">prompt</span>
-                  </span>
-                  <span className="text-[11px] font-semibold text-emerald-600 mt-0.5 block">
-                    Masa Aktif: Tidak Pernah Hangus
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress Bar Saldo / Kapasitas */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-600">Ketersediaan Saldo Akun</span>
-                  <span className="font-bold text-slate-800">
-                    {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                      ? 'Unlimited (Bypass Kuota)'
-                      : `${subscriptionSummary?.promptBalance ?? 0} / ${subscriptionSummary?.totalGranted ?? 10} Prompt`}
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-600 w-full'
-                        : (subscriptionSummary?.promptBalance ?? 0) <= 0
-                        ? 'bg-rose-500 w-full'
-                        : (subscriptionSummary?.promptBalance ?? 0) < 5
-                        ? 'bg-amber-500'
-                        : 'bg-[#3b49df]'
-                    }`}
-                    style={{
-                      width: subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                        ? '100%'
-                        : `${Math.min(100, Math.max(5, ((subscriptionSummary?.promptBalance ?? 0) / Math.max(1, subscriptionSummary?.totalGranted ?? 10)) * 100))}%`
-                    }}
-                  />
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
-                    ? '* Akun Administrator permanen memiliki akses tanpa batas (Unlimited) untuk seluruh pembuatan prompt infografis.'
-                    : '* Saldo prompt aktif selamanya tanpa batas waktu dan hanya berkurang saat Anda men-generate prompt infografis baru.'}
-                </p>
-              </div>
-
-              {/* Panel Kontrol Paket & Saldo Prompt */}
-              {isActualAdmin ? (
-                /* Panel Uji Coba HANYA untuk Administrator (Tetap Muncul Meski Sedang Uji Akun Pengguna) */
-                <div className="pt-3 border-t border-purple-100 bg-purple-50/50 -mx-6 -mb-6 p-6 rounded-b-3xl space-y-3">
+              {/* KETERANGAN BAGIAN & SIMULASI KHUSUS ADMIN DI ATAS POIN PROMPT */}
+              {isActualAdmin && (
+                <div className="p-3 sm:p-3.5 rounded-xl bg-purple-50/70 border border-purple-200/90 space-y-2.5">
                   {isSimulatingUser && (
-                    <div className="p-3.5 rounded-2xl bg-amber-100/90 border border-amber-300 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
-                          <Sparkles className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-amber-950">
-                            Mode Uji Coba Pengguna Sedang Aktif
-                          </p>
-                          <p className="text-[11px] text-amber-800 mt-0.5">
-                            Anda sedang menguji sistem sebagai <strong>Pengguna Standar</strong> (Saldo: {subscriptionSummary?.promptBalance} Prompt).
-                          </p>
-                        </div>
+                    <div className="p-2.5 rounded-lg bg-amber-100/90 border border-amber-300 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-800 shrink-0" />
+                        <span className="text-xs text-amber-950 font-medium">
+                          Sedang menguji sebagai <strong>Pengguna Standar</strong> (Saldo: {subscriptionSummary?.promptBalance} Prompt).
+                        </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleToggleRole('admin')}
                         disabled={isSwitchingRole}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-purple-600/20 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-md bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 disabled:opacity-50"
                       >
                         <Crown className="w-3.5 h-3.5 text-purple-200" />
-                        <span>{isSwitchingRole ? 'Mengaktifkan...' : 'Kembali ke Admin (Permanen Unlimited)'}</span>
+                        <span>{isSwitchingRole ? 'Mengaktifkan...' : 'Kembali ke Admin'}</span>
                       </button>
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-purple-600 text-white tracking-wider">
-                          KHUSUS ADMIN
-                        </span>
-                        <h4 className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
-                          <Crown className="w-3.5 h-3.5 text-purple-600" />
-                          <span>Simulasi Saldo Prompt & Hak Akses Admin</span>
-                        </h4>
-                      </div>
-                      <p className="text-[11px] text-purple-700 mt-1">
-                        Alat bantu internal admin untuk menguji model saldo prompt dan hak akses permanen. Panel ini tersembunyi bagi pengguna umum.
-                      </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-purple-600 text-white tracking-wider">
+                        KHUSUS ADMIN
+                      </span>
+                      <span className="text-xs font-bold text-purple-950 flex items-center gap-1">
+                        <Crown className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Simulasi Pengujian:</span>
+                      </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {/* Top-up Simulasi Cepat */}
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => handleTopUpPrompts(20)}
                         disabled={isSwitchingPlan}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                        title="Tambah 20 saldo prompt untuk pengujian"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                        title="Tambah 20 saldo prompt"
                       >
                         <Coins className="w-3.5 h-3.5 text-amber-500" />
                         <span>+20 Prompt</span>
@@ -980,21 +865,19 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                         type="button"
                         onClick={() => handleTopUpPrompts(50)}
                         disabled={isSwitchingPlan}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                        title="Tambah 50 saldo prompt untuk pengujian"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                        title="Tambah 50 saldo prompt"
                       >
                         <Coins className="w-3.5 h-3.5 text-amber-500" />
                         <span>+50 Prompt</span>
                       </button>
 
-                      {/* Switcher Role User / Admin */}
                       {subscriptionSummary?.isAdmin ? (
                         <button
                           type="button"
                           onClick={() => handleToggleRole('user')}
                           disabled={isSwitchingRole}
-                          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                          title="Simulasikan tampilan sebagai pengguna biasa (kuota 3 prompt)"
+                          className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-purple-200 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
                         >
                           {isSwitchingRole ? 'Mengubah...' : 'Uji Akun Pengguna'}
                         </button>
@@ -1003,26 +886,142 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
                           type="button"
                           onClick={() => handleToggleRole('admin')}
                           disabled={isSwitchingRole}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-purple-600/20 transition-all cursor-pointer disabled:opacity-50"
-                          title="Kembalikan akun ke Administrator Permanen"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-50"
                         >
                           <Crown className="w-3.5 h-3.5 text-purple-200" />
-                          <span>{isSwitchingRole ? 'Mengubah...' : 'Kembali ke Admin (Permanen)'}</span>
+                          <span>{isSwitchingRole ? 'Mengubah...' : 'Kembali ke Admin'}</span>
                         </button>
                       )}
 
                       <button
                         type="button"
                         onClick={() => setShowProModal(true)}
-                        className="px-3 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-xs transition-colors cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-2xs transition-colors cursor-pointer"
                       >
                         Pilihan Top-Up
                       </button>
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Rincian Status Saldo & Poin Prompt */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    Peran Akun
+                  </span>
+                  <div className="my-1">
+                    <span className="text-lg font-black text-slate-900 block truncate">
+                      {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                        ? 'Administrator'
+                        : 'Pengguna Reguler'}
+                    </span>
+                  </div>
+                  <span className={`text-[11px] font-semibold flex items-center gap-1 ${
+                    subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                      ? 'text-purple-600'
+                      : 'text-emerald-600'
+                  }`}>
+                    <CheckCircle2 className="w-3 h-3 shrink-0" />
+                    <span>
+                      {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                        ? 'Hak Akses Penuh'
+                        : 'Akun Aktif Selamanya'}
+                    </span>
+                  </span>
+                </div>
+
+                <div className={`p-4 rounded-xl border flex flex-col justify-between ${
+                  subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                    ? 'bg-purple-50/40 border-purple-200/80'
+                    : (subscriptionSummary?.promptBalance ?? 0) <= 0
+                    ? 'bg-rose-50/40 border-rose-200/80'
+                    : 'bg-indigo-50/40 border-indigo-200/80'
+                }`}>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    Saldo Poin Prompt
+                  </span>
+                  <div className="my-1">
+                    <span className={`text-xl font-black block tracking-tight ${
+                      subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                        ? 'text-purple-700'
+                        : (subscriptionSummary?.promptBalance ?? 0) <= 0
+                        ? 'text-rose-600'
+                        : 'text-indigo-900'
+                    }`}>
+                      {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                        ? 'Unlimited (∞)'
+                        : `${subscriptionSummary?.promptBalance ?? 0} Poin`}
+                    </span>
+                  </div>
+                  <span className={`text-[11px] font-medium block truncate ${
+                    subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                      ? 'text-purple-600 font-semibold'
+                      : (subscriptionSummary?.promptBalance ?? 0) <= 0
+                      ? 'text-rose-600 font-semibold'
+                      : 'text-indigo-700'
+                  }`}>
+                    {subscriptionSummary?.isAdmin || userProfile?.role === 'admin'
+                      ? 'Bebas generate tanpa batas'
+                      : `Dari total ${subscriptionSummary?.totalGranted ?? 3} poin`}
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    Total Penggunaan
+                  </span>
+                  <div className="my-1">
+                    <span className="text-lg font-black text-slate-900 block">
+                      {subscriptionSummary?.usedTotal ?? 0}
+                      <span className="text-xs font-semibold text-slate-400 ml-1">Prompt</span>
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-500 block truncate">
+                    Telah berhasil dibuat
+                  </span>
+                </div>
+              </div>
+
+              {/* Indikator Kuota / Kapasitas */}
+              {subscriptionSummary?.isAdmin || userProfile?.role === 'admin' ? (
+                <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-200/80 text-xs text-purple-900 flex items-center gap-2.5">
+                  <Crown className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span>
+                    <strong>Akun Administrator:</strong> Anda memiliki hak akses penuh tanpa batasan poin (Unlimited) untuk seluruh pembuatan prompt infografis.
+                  </span>
+                </div>
               ) : (
-                /* Untuk PENGGUNA BIASA — Tombol Top-Up Saldo Prompt */
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Ketersediaan Poin Prompt</span>
+                    <span className="font-bold text-slate-800">
+                      {subscriptionSummary?.promptBalance ?? 0} / {subscriptionSummary?.totalGranted ?? 3} Poin
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        (subscriptionSummary?.promptBalance ?? 0) <= 0
+                          ? 'bg-rose-500 w-full'
+                          : (subscriptionSummary?.promptBalance ?? 0) < 3
+                          ? 'bg-amber-500'
+                          : 'bg-[#3b49df]'
+                      }`}
+                      style={{
+                        width: `${Math.min(100, Math.max(5, ((subscriptionSummary?.promptBalance ?? 0) / Math.max(1, subscriptionSummary?.totalGranted ?? 3)) * 100))}%`
+                      }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    * Poin prompt aktif selamanya tanpa batas waktu dan hanya berkurang saat Anda men-generate prompt infografis baru.
+                  </p>
+                </div>
+              )}
+
+              {/* Untuk PENGGUNA BIASA — Tombol Top-Up Saldo Prompt */}
+              {!isActualAdmin && (
                 <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">

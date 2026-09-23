@@ -64,7 +64,7 @@ export const InfografisSayaPage: React.FC<InfografisSayaPageProps> = ({
 
         <button
           onClick={() => onNavigate('buat')}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#4f46e5] hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all cursor-pointer shrink-0"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#3b49df] hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-sm shadow-indigo-600/20 transition-all cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Buat Infografis Baru</span>
@@ -133,7 +133,7 @@ export const InfografisSayaPage: React.FC<InfografisSayaPageProps> = ({
           {filteredProjects.map((project) => (
             <div
               key={project.id}
-              className="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group"
+              className="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-indigo-200 transition-all overflow-hidden flex flex-col justify-between group"
             >
               <div>
                 {/* Visual Thumbnail Header */}

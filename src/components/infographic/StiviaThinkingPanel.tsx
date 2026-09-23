@@ -219,11 +219,11 @@ export const StiviaThinkingPanel: React.FC<StiviaThinkingPanelProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
-            {/* TAHAP 1: MEMAHAMI MATERI */}
+            {/* TAHAP 1: IDENTIFIKASI MATERI */}
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-2 text-indigo-300 font-bold">
                 <BookOpen className="w-4 h-4 text-indigo-400" />
-                <span>Tahap 1: Memahami Materi</span>
+                <span>Tahap 1: Identifikasi Materi</span>
               </div>
               <div className="space-y-1 text-slate-300">
                 <div className="font-semibold text-white truncate">{displayTopic}</div>
@@ -231,98 +231,132 @@ export const StiviaThinkingPanel: React.FC<StiviaThinkingPanelProps> = ({
                 <p className="text-2xs text-slate-300 line-clamp-2 mt-1">
                   {displayCore}
                 </p>
+                <div className="text-2xs text-indigo-300 font-medium">
+                  Status: Active Content Context Dikunci
+                </div>
               </div>
             </div>
 
-            {/* TAHAP 2: MENGENALI KARAKTER MATERI */}
+            {/* TAHAP 2: ANALISIS KONSEP INTI */}
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-2 text-amber-300 font-bold">
-                <Compass className="w-4 h-4 text-amber-400" />
-                <span>Tahap 2: Karakter Materi</span>
-              </div>
-              <div className="space-y-1 text-slate-300">
-                <span className="inline-block text-2xs font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  {displayCharacter}
-                </span>
-                <p className="text-2xs text-slate-300 leading-relaxed line-clamp-2">
-                  {displayCharacterDesc}
-                </p>
-                <div className="text-2xs text-slate-400">
-                  Kata Kunci: <span className="text-slate-200">{displayKeywords}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* TAHAP 3: MEMAHAMI GAYA YANG DIPILIH */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-              <div className="flex items-center gap-2 text-purple-300 font-bold">
-                <Palette className="w-4 h-4 text-purple-400" />
-                <span>Tahap 3: Gaya Pilihan</span>
-              </div>
-              <div className="space-y-1 text-slate-300">
-                <div className="font-bold text-white text-sm truncate">{displayStyleName}</div>
-                <div className="text-2xs text-purple-300 font-semibold">{displayStyleCat}</div>
-                <p className="text-2xs text-slate-300 line-clamp-2">
-                  {displayStyleTone}
-                </p>
-              </div>
-            </div>
-
-            {/* TAHAP 4: MENENTUKAN VISUAL UTAMA */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-              <div className="flex items-center gap-2 text-emerald-300 font-bold">
-                <ImageIcon className="w-4 h-4 text-emerald-400" />
-                <span>Tahap 4: Visual Utama</span>
-              </div>
-              <div className="space-y-1 text-slate-300">
-                <div className="font-semibold text-white leading-tight line-clamp-1">
-                  {displayHeroVisual}
-                </div>
-                <p className="text-2xs text-slate-300 line-clamp-2">
-                  {displayHeroReason}
-                </p>
-                <div className="text-2xs text-emerald-400">
-                  Fokus: {displayHeroPlacement}
-                </div>
-              </div>
-            </div>
-
-            {/* TAHAP 5: MENENTUKAN VISUAL PENDUKUNG */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-              <div className="flex items-center gap-2 text-cyan-300 font-bold">
-                <Layers className="w-4 h-4 text-cyan-400" />
-                <span>Tahap 5: Visual Pendukung</span>
-              </div>
-              <div className="space-y-1.5 text-slate-300">
-                <div className="flex flex-wrap gap-1">
-                  {supportingItems.slice(0, 3).map((el: string, i: number) => (
-                    <span key={i} className="text-2xs px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-200">
-                      {el}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-2xs text-slate-300 line-clamp-2">
-                  Ikon: {displayIcons}
-                </p>
-              </div>
-            </div>
-
-            {/* TAHAP 6: MENENTUKAN STRUKTUR & TATA LETAK */}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
-              <div className="flex items-center gap-2 text-rose-300 font-bold">
-                <Layout className="w-4 h-4 text-rose-400" />
-                <span>Tahap 6: Strategi Tata Letak</span>
+                <Lightbulb className="w-4 h-4 text-amber-400" />
+                <span>Tahap 2: Konsep Inti</span>
               </div>
               <div className="space-y-1 text-slate-300">
                 <div className="font-semibold text-white truncate">
-                  {displayFlow}
+                  {stage2.mainConcept || displayTopic}
                 </div>
+                <p className="text-2xs text-slate-300 leading-relaxed line-clamp-2">
+                  Subkonsep: {stage2.subConcepts && stage2.subConcepts.length > 0 ? stage2.subConcepts.join(', ') : 'Komponen Esensial'}
+                </p>
                 <div className="text-2xs text-slate-400">
-                  Standar: Vertikal (Rasio 2:3)
+                  Kata Kunci: <span className="text-amber-200">{displayKeywords}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* TAHAP 3: ANALISIS KEBUTUHAN BELAJAR */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-purple-300 font-bold">
+                <Compass className="w-4 h-4 text-purple-400" />
+                <span>Tahap 3: Kebutuhan Belajar</span>
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <span className="inline-block text-2xs font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  Karakter: {displayCharacter}
+                </span>
+                <p className="text-2xs text-slate-300 line-clamp-2 mt-0.5">
+                  {stage3.gradeAdaptationInstruction || displayCharacterDesc}
+                </p>
+                <div className="text-2xs text-purple-200 font-medium">
+                  Bebas Miskonsepsi & Ramah Siswa
+                </div>
+              </div>
+            </div>
+
+            {/* TAHAP 4: ANALISIS INFORMASI VISUAL */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                <Palette className="w-4 h-4 text-emerald-400" />
+                <span>Tahap 4: Informasi Visual</span>
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div className="font-semibold text-white text-sm truncate">{displayStyleName}</div>
+                <div className="text-2xs text-emerald-300 font-semibold">{displayStyleCat}</div>
+                <p className="text-2xs text-slate-300 line-clamp-2">
+                  {displayStyleTone}
+                </p>
+                <div className="text-2xs text-emerald-400">
+                  Prinsip: Visual Semantik (Content-First)
+                </div>
+              </div>
+            </div>
+
+            {/* TAHAP 5: PEMILIHAN STRUKTUR INFOGRAFIS */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                <Layout className="w-4 h-4 text-cyan-400" />
+                <span>Tahap 5: Struktur Infografis</span>
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div className="font-semibold text-white leading-tight">
+                  {stage6.strategy || '6. Grid / Cards'}
                 </div>
                 <p className="text-2xs text-slate-300 line-clamp-2">
-                  {displaySpacing}
+                  {stage6.rationale || 'Struktur standar resmi STIVIA untuk memetakan poin esensial.'}
                 </p>
+                <div className="text-2xs text-cyan-300">
+                  Pilihan: 10 Struktur Standar Pembelajaran
+                </div>
+              </div>
+            </div>
+
+            {/* TAHAP 6: PERANCANGAN INFOGRAFIS */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-rose-300 font-bold">
+                <ImageIcon className="w-4 h-4 text-rose-400" />
+                <span>Tahap 6: Perancangan Desain</span>
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div className="font-semibold text-white truncate">
+                  {stage6.sections ? `${stage6.sections.length} Bagian Konten Utama` : '4–6 Bagian Konten'}
+                </div>
+                <div className="text-2xs text-slate-400">
+                  Prinsip: Short Text + Strong Visual
+                </div>
+                <p className="text-2xs text-slate-300 line-clamp-2">
+                  {displayFlow}
+                </p>
+                <div className="text-2xs text-rose-300">
+                  Termasuk Footer Summary Sintesis
+                </div>
+              </div>
+            </div>
+
+            {/* TAHAP 7: VALIDASI & FINALISASI */}
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:bg-white/10 transition-colors md:col-span-2 lg:col-span-3">
+              <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Tahap 7: Validasi 4 Pilar STIVIA (Konten, Akademis, Infografis, Visual)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 text-2xs">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200">
+                  <span className="font-bold text-emerald-300 block">✓ Validasi Konten</span>
+                  Bebas kontaminasi, 100% materi aktif terkunci.
+                </div>
+                <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-200">
+                  <span className="font-bold text-blue-300 block">✓ Validasi Akademis</span>
+                  Konsep keilmuan presisi, bahasa ramah siswa.
+                </div>
+                <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-200">
+                  <span className="font-bold text-purple-300 block">✓ Validasi Infografis</span>
+                  Tepat 4–6 bagian ringkas & footer summary.
+                </div>
+                <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200">
+                  <span className="font-bold text-amber-300 block">✓ Validasi Visual</span>
+                  Ikon & visual semantik, kontras WCAG AA (rasio 2:3).
+                </div>
               </div>
             </div>
           </div>

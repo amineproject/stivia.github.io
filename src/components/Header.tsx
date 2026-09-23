@@ -131,20 +131,20 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Breadcrumb matching exact screenshot reference */}
-        <nav className="flex items-center text-xs font-semibold text-slate-500">
+        <nav className="flex items-center text-xs font-semibold text-slate-500 overflow-x-auto max-w-[calc(100vw-140px)] sm:max-w-none py-1 scrollbar-none">
           {breadcrumbs.map((crumb, idx) => {
             const isLast = idx === breadcrumbs.length - 1;
             return (
               <React.Fragment key={idx}>
-                {idx > 0 && <span className="mx-2 text-slate-400 font-normal">›</span>}
+                {idx > 0 && <span className="mx-2 text-slate-300 font-normal shrink-0">›</span>}
                 {isLast ? (
-                  <span className="font-bold text-slate-900">
+                  <span className="font-bold text-slate-900 shrink-0">
                     {crumb.label}
                   </span>
                 ) : (
                   <button
                     onClick={() => onSelectTab(crumb.tab)}
-                    className="hover:text-[#3b49df] transition-colors cursor-pointer"
+                    className="hover:text-[#3b49df] transition-colors cursor-pointer shrink-0"
                   >
                     {crumb.label}
                   </button>
@@ -160,8 +160,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Search trigger */}
         <button
           onClick={() => setShowSearchModal(true)}
-          className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer"
+          className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
           title="Cari Infografis atau Materi"
+          aria-label="Cari Infografis atau Materi"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -170,8 +171,9 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer"
+            className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
             title="Notifikasi"
+            aria-label="Notifikasi Pembelajaran"
           >
             <Bell className="w-4 h-4" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
@@ -179,54 +181,68 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  Notifikasi Pembelajaran
-                </span>
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="text-slate-400 hover:text-slate-600 text-xs"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowNotifications(false)}
+              />
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Notifikasi Pembelajaran
+                  </span>
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+                    aria-label="Tutup notifikasi"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
-              <div className="divide-y divide-slate-100 mt-2">
-                {notifications.map((n) => (
-                  <div key={n.id} className="py-2.5 flex gap-2.5 items-start">
-                    <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-slate-800">{n.title}</p>
-                        <span className="text-[10px] text-slate-400">{n.time}</span>
+                <div className="divide-y divide-slate-100 mt-2">
+                  {notifications.map((n) => (
+                    <div key={n.id} className="py-2.5 flex gap-2.5 items-start">
+                      <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <Sparkles className="w-3.5 h-3.5" />
                       </div>
-                      <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                        {n.desc}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="text-xs font-semibold text-slate-800 truncate">{n.title}</p>
+                          <span className="text-[10px] text-slate-400 shrink-0">{n.time}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                          {n.desc}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
 
       {/* Quick Search Modal */}
       {showSearchModal && (
-        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-start justify-center pt-24 px-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-lg p-5 animate-in fade-in zoom-in-95">
+        <div 
+          className="fixed inset-0 bg-slate-900/40 z-50 flex items-start justify-center pt-24 px-4 backdrop-blur-xs"
+          onClick={() => setShowSearchModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-lg p-5 animate-in fade-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2 text-slate-700">
-                <Search className="w-4 h-4 text-indigo-600" />
+                <Search className="w-4 h-4 text-[#3b49df]" />
                 <span className="text-sm font-semibold">Cari Materi & Proyek</span>
               </div>
               <button
                 onClick={() => setShowSearchModal(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 cursor-pointer"
+                aria-label="Tutup pencarian"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -250,7 +266,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onSelectTab('buat');
                   setShowSearchModal(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-xs text-slate-700 flex items-center justify-between"
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-xs text-slate-700 flex items-center justify-between cursor-pointer"
               >
                 <span>Memahami Struktur Data Graph</span>
                 <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">Informatika</span>
@@ -260,7 +276,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onSelectTab('infografis_saya');
                   setShowSearchModal(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-xs text-slate-700 flex items-center justify-between"
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-xs text-slate-700 flex items-center justify-between cursor-pointer"
               >
                 <span>Sistem Peredaran Darah Manusia</span>
                 <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">IPA</span>
@@ -270,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onSelectTab('infografis_saya');
                   setShowSearchModal(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-xs text-slate-700 flex items-center justify-between"
+                className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-xs text-slate-700 flex items-center justify-between cursor-pointer"
               >
                 <span>Hukum Newton dan Penerapannya</span>
                 <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">Fisika</span>

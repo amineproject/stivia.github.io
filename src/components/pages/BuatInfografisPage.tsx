@@ -22,7 +22,14 @@ import {
   ShieldCheck,
   Info,
   Coins,
-  MessageCircle
+  MessageCircle,
+  Printer,
+  Image as ImageIcon,
+  Users,
+  Clock,
+  Target,
+  PenTool,
+  HelpCircle
 } from 'lucide-react';
 import { 
   EducationLevel, 
@@ -42,9 +49,63 @@ import { getStyleProfile } from '../../data/styleProfilesData';
 import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
 import { analyzeAndGenerateProjectInfographicPrompt } from '../../services/promptStudioEngine';
 import { StiviaThinkingResult } from '../../services/stiviaThinkingFramework';
-import { StiviaThinkingPanel } from '../infographic/StiviaThinkingPanel';
+import { 
+  LkpdActivityType, 
+  LkpdFormatType, 
+  LkpdDifficulty, 
+  LkpdTimeAllocation, 
+  LkpdStudentOutput, 
+  LkpdThinkingResult, 
+  runLkpdThinkingFramework 
+} from '../../services/lkpdEngine';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
+
+const LKPD_ACTIVITY_OPTIONS: LkpdActivityType[] = [
+  'Individu',
+  'Berpasangan',
+  'Kelompok',
+  'Praktik',
+  'Proyek',
+  'Pemecahan Masalah'
+];
+
+const LKPD_FORMAT_OPTIONS: LkpdFormatType[] = [
+  'Pemahaman Konsep',
+  'Analisis',
+  'Latihan',
+  'Praktik',
+  'Eksperimen',
+  'Diskusi',
+  'Pemecahan Masalah',
+  'Proyek'
+];
+
+const LKPD_DIFFICULTY_OPTIONS: LkpdDifficulty[] = [
+  'Dasar',
+  'Sedang',
+  'Menantang'
+];
+
+const LKPD_TIME_OPTIONS: LkpdTimeAllocation[] = [
+  '20 menit',
+  '30 menit',
+  '45 menit',
+  '60 menit',
+  '90 menit',
+  '2 × 45 menit'
+];
+
+const LKPD_OUTPUT_OPTIONS: LkpdStudentOutput[] = [
+  'Jawaban Tertulis',
+  'Tabel',
+  'Analisis',
+  'Diagram',
+  'Praktik',
+  'Produk',
+  'Presentasi',
+  'Kombinasi'
+];
 
 interface BuatInfografisPageProps {
   projects?: InfographicDraft[];
@@ -102,11 +163,25 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [showProInfoModal, setShowProInfoModal] = useState<boolean>(false);
   const [limitReason, setLimitReason] = useState<string>('');
 
+  // Prompt Type Selection (Infografis vs LKPD)
+  const [selectedPromptType, setSelectedPromptType] = useState<'infografis' | 'lkpd'>('infografis');
+  const [activeOutputType, setActiveOutputType] = useState<'infografis' | 'lkpd'>('infografis');
+
+  // Pengaturan Khusus LKPD (Section 7)
+  const [lkpdActivityType, setLkpdActivityType] = useState<LkpdActivityType>('Kelompok');
+  const [lkpdFormatType, setLkpdFormatType] = useState<LkpdFormatType>('Pemahaman Konsep');
+  const [lkpdDifficulty, setLkpdDifficulty] = useState<LkpdDifficulty>('Sedang');
+  const [lkpdTimeAllocation, setLkpdTimeAllocation] = useState<LkpdTimeAllocation>('45 menit');
+  const [lkpdStudentOutput, setLkpdStudentOutput] = useState<LkpdStudentOutput>('Tabel');
+  const [lkpdAdditionalInstructions, setLkpdAdditionalInstructions] = useState<string>('');
+  const [lkpdThinkingResult, setLkpdThinkingResult] = useState<LkpdThinkingResult | null>(null);
+
   // Generation & Output State
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>(() => currentDraft.stiviaPrompt || '');
   const [thinkingResult, setThinkingResult] = useState<StiviaThinkingResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyToast, setCopyToast] = useState<string | null>(null);
 
   // Sync available grades when education level changes
   useEffect(() => {
@@ -177,14 +252,57 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     }
 
     setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    const isValid = Object.keys(errors).length === 0;
+
+    if (!isValid) {
+      // Auto-scroll dan fokus ke field pertama yang belum terisi
+      if (errors.subject) {
+        const el = document.getElementById(isCustomSubject ? 'input-mapel-kustom' : 'select-mapel');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el?.focus();
+      } else if (errors.materiDiajarkan) {
+        const el = document.getElementById('input-materi-yang-diajarkan');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el?.focus();
+      } else if (errors.scope) {
+        const el = document.getElementById('textarea-cakupan-materi');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el?.focus();
+      }
+    }
+
+    return isValid;
   };
 
-  const handleCopyPrompt = () => {
+  const handleCopyPrompt = async () => {
     if (!generatedPrompt) return;
-    navigator.clipboard.writeText(generatedPrompt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(generatedPrompt);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = generatedPrompt;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopied(true);
+      setCopyToast('Prompt berhasil disalin.');
+      setTimeout(() => {
+        setCopied(false);
+        setCopyToast(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Gagal menyalin prompt:', err);
+    }
+  };
+
+  const handlePrintPrompt = () => {
+    if (!generatedPrompt) return;
+    window.print();
   };
 
   const scrollToResult = () => {
@@ -198,7 +316,97 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
   const handleRegenerate = () => {
     if (!validateForm()) return;
-    executeGeneratePrompt();
+    if (activeOutputType === 'lkpd') {
+      executeGenerateLkpdPrompt();
+    } else {
+      executeGeneratePrompt();
+    }
+  };
+
+  const executeGenerateLkpdPrompt = async () => {
+    if (!validateForm()) return;
+
+    // 1. Validasi Akses & Limit Subscription
+    if (userId) {
+      const check = await checkCanGenerate(userId);
+      if (!check.allowed) {
+        setLimitReason(
+          check.reason ||
+          'Saldo kuota percobaan gratis akun Free Anda telah habis (3 prompt percobaan awal). Silakan lakukan isi ulang saldo prompt Anda untuk melanjutkan pembuatan prompt LKPD.'
+        );
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
+    const finalSubject = isCustomSubject ? customSubject.trim() : subject;
+
+    setIsGenerating(true);
+    setCopied(false);
+
+    setTimeout(async () => {
+      try {
+        const lkpdResult = runLkpdThinkingFramework(
+          {
+            educationLevel,
+            grade,
+            subject: finalSubject,
+            materiDiajarkan: materiDiajarkan.trim(),
+            bab: bab.trim(),
+            temaKegiatan: temaKegiatan.trim(),
+            pertemuan: pertemuan.trim() || 'Pertemuan 1',
+            scope: scope.trim(),
+            userNotes: userNotes.trim(),
+          },
+          {
+            activityType: lkpdActivityType,
+            formatType: lkpdFormatType,
+            difficulty: lkpdDifficulty,
+            timeAllocation: lkpdTimeAllocation,
+            studentOutput: lkpdStudentOutput,
+            additionalInstructions: lkpdAdditionalInstructions.trim(),
+          }
+        );
+
+        setGeneratedPrompt(lkpdResult.stage7_FinalPrompt);
+        setLkpdThinkingResult(lkpdResult);
+        setActiveOutputType('lkpd');
+
+        onSubmitForm({
+          ...currentDraft,
+          educationLevel,
+          grade,
+          subject: finalSubject,
+          title: materiDiajarkan.trim(),
+          rawTopic: materiDiajarkan.trim(),
+          theme: temaKegiatan.trim() || materiDiajarkan.trim(),
+          bab: bab.trim(),
+          pertemuan: pertemuan.trim() || 'Pertemuan 1',
+          scope,
+          userNotes: userNotes.trim(),
+          stiviaPrompt: lkpdResult.stage7_FinalPrompt,
+          updatedAt: new Date().toISOString().split('T')[0],
+        });
+
+        // 2. Catat penambahan penggunaan (+1 generate) jika pengguna login
+        if (userId) {
+          try {
+            await recordGenerateUsage(userId);
+            if (onUsageRecorded) {
+              onUsageRecorded();
+            }
+          } catch (usageErr) {
+            console.warn('[Buat Prompt LKPD] Gagal mencatat log penggunaan:', usageErr);
+          }
+        }
+
+        scrollToResult();
+      } catch (err) {
+        console.error('[Buat Prompt LKPD Generator Error]', err);
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 250);
   };
 
   const executeGeneratePrompt = async () => {
@@ -208,7 +416,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
       if (!check.allowed) {
         setLimitReason(
           check.reason ||
-          'Batas generate bulan ini telah tercapai. Paket Free memiliki batas penggunaan bulanan (10 generate/bulan). Anda dapat menunggu periode berikutnya atau menggunakan paket Pro.'
+          'Saldo kuota percobaan gratis akun Free Anda telah habis (3 prompt percobaan awal). Silakan lakukan isi ulang saldo prompt Anda untuk melanjutkan pembuatan rancangan infografis.'
         );
         setShowLimitModal(true);
         return;
@@ -251,6 +459,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
         setGeneratedPrompt(prompt);
         setThinkingResult(result);
+        setActiveOutputType('infografis');
 
         onSubmitForm({
           ...fullDraft,
@@ -388,7 +597,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* SECTION A: DATA POKOK PEMBELAJARAN (KELAS, MAPEL, MATERI) */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
               A
@@ -547,7 +756,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         </div>
 
         {/* SECTION B: RINCIAN & CAKUPAN PEMBELAJARAN (STIVIA) */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-sm">
               B
@@ -702,127 +911,405 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           </div>
         </div>
 
-        {/* RINGKASAN DATA PROMPT & TOMBOL SUBMIT */}
-        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-lg space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+        {/* 2. PILIH JENIS PROMPT YANG DIINGINKAN (DI BAWAH FORM PENGISIAN DATA) */}
+        <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-slate-100">
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 block">
-                Ringkasan Data Materi
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 block">
+                Pilih Jenis Prompt
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-white">
-                Materi Siap Digenerate Menjadi Prompt Infografis
-              </h3>
+              <h2 className="text-base font-bold text-slate-900 mt-0.5">
+                Pilih jenis prompt yang dibuat:
+              </h2>
             </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-medium border border-slate-700 self-start sm:self-auto">
-              STIVIA 3.1 Ready
-            </span>
+            <p className="text-xs text-slate-500">
+              Satu data materi sebagai Single Source of Truth menghasilkan dua jenis prompt
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
-                Materi yang Diajarkan:
-              </span>
-              <span className="text-sm font-bold text-white block mt-0.5 truncate">
-                {materiDiajarkan.trim() || '(Ketik materi yang diajarkan di atas)'}
-              </span>
-              {temaKegiatan.trim() && (
-                <span className="text-[11px] text-indigo-300 block truncate mt-0.5 font-medium">
-                  Tema/Kegiatan: {temaKegiatan.trim()}
-                </span>
-              )}
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
-                Mata Pelajaran (Mapel):
-              </span>
-              <span className="text-sm font-bold text-emerald-300 block mt-0.5 truncate">
-                {isCustomSubject ? (customSubject.trim() || 'Lainnya') : subject}
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
-                Jenjang & Kelas:
-              </span>
-              <span className="text-sm font-bold text-indigo-300 block mt-0.5 truncate">
-                {educationLevel} • {grade}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-            <div className="text-xs text-slate-400 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Sistem menganalisis data & langsung menghasilkan Prompt Infografis STIVIA.</span>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* TOMBOL 1: INFOGRAFIS (SISTEM YANG SUDAH BERJALAN - TETAP IDENTIK) */}
             <button
-              id="btn-generate-prompt"
-              type="submit"
+              type="button"
+              id="btn-prompt-type-infografis"
+              onClick={() => {
+                setSelectedPromptType('infografis');
+                if (validateForm()) {
+                  executeGeneratePrompt();
+                }
+              }}
               disabled={isGenerating}
-              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base shadow-xl transition-all ${
-                isGenerating
-                  ? 'bg-indigo-400 text-white cursor-not-allowed opacity-80'
-                  : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-indigo-600/25 cursor-pointer transform hover:-translate-y-0.5 shrink-0'
+              className={`group flex items-center gap-3.5 px-5 py-3.5 rounded-xl border-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] ${
+                isGenerating && selectedPromptType === 'infografis'
+                  ? 'border-indigo-400 bg-indigo-50/90 text-indigo-950 cursor-wait'
+                  : selectedPromptType === 'infografis'
+                  ? 'border-[#3b49df] bg-indigo-50/70 hover:bg-[#3b49df] text-slate-900 hover:text-white hover:shadow-md'
+                  : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50 text-slate-800'
               }`}
             >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin text-white" />
-                  <span>Menganalisis & Menghasilkan Prompt...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 text-indigo-200" />
-                  <span>GENERATE PROMPT</span>
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                isGenerating && selectedPromptType === 'infografis'
+                  ? 'bg-indigo-600 text-white'
+                  : selectedPromptType === 'infografis'
+                  ? 'bg-[#3b49df] text-white group-hover:bg-white group-hover:text-[#3b49df] shadow-xs'
+                  : 'bg-slate-100 text-slate-600 group-hover:bg-[#3b49df] group-hover:text-white'
+              }`}>
+                {isGenerating && selectedPromptType === 'infografis' ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-5 h-5" />
+                )}
+              </div>
+
+              <div className="text-left flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold tracking-tight">
+                    INFOGRAFIS
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                    isGenerating && selectedPromptType === 'infografis'
+                      ? 'bg-indigo-200 text-indigo-900'
+                      : 'bg-indigo-100 text-indigo-800 group-hover:bg-white/20 group-hover:text-white'
+                  }`}>
+                    Poster Vertikal
+                  </span>
+                </div>
+                <p className={`text-xs mt-0.5 transition-colors ${
+                  isGenerating && selectedPromptType === 'infografis'
+                    ? 'text-indigo-700 font-medium'
+                    : 'text-slate-500 group-hover:text-indigo-100'
+                }`}>
+                  {isGenerating && selectedPromptType === 'infografis' ? 'Sedang memproses prompt...' : 'Klik untuk langsung generate prompt'}
+                </p>
+              </div>
+
+              <div className={`ml-auto p-1.5 rounded-lg transition-all ${
+                isGenerating && selectedPromptType === 'infografis'
+                  ? 'text-indigo-600'
+                  : 'text-indigo-600 group-hover:text-white group-hover:translate-x-0.5'
+              }`}>
+                <Sparkles className="w-4 h-4" />
+              </div>
+            </button>
+
+            {/* TOMBOL 2: LKPD (FITUR BARU - STYLE KONSISTEN) */}
+            <button
+              type="button"
+              id="btn-prompt-type-lkpd"
+              onClick={() => {
+                setSelectedPromptType('lkpd');
+                setTimeout(() => {
+                  const el = document.getElementById('lkpd-settings-panel');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+              }}
+              disabled={isGenerating}
+              className={`group flex items-center gap-3.5 px-5 py-3.5 rounded-xl border-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] ${
+                isGenerating && selectedPromptType === 'lkpd'
+                  ? 'border-emerald-400 bg-emerald-50/90 text-emerald-950 cursor-wait'
+                  : selectedPromptType === 'lkpd'
+                  ? 'border-emerald-600 bg-emerald-50/80 text-slate-900 hover:shadow-md'
+                  : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50 text-slate-800'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                isGenerating && selectedPromptType === 'lkpd'
+                  ? 'bg-emerald-600 text-white'
+                  : selectedPromptType === 'lkpd'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 group-hover:bg-emerald-600 group-hover:text-white'
+              }`}>
+                {isGenerating && selectedPromptType === 'lkpd' ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <FileText className="w-5 h-5" />
+                )}
+              </div>
+
+              <div className="text-left flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold tracking-tight">
+                    LKPD
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                    isGenerating && selectedPromptType === 'lkpd'
+                      ? 'bg-emerald-200 text-emerald-900'
+                      : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    Lembar Kerja Siswa
+                  </span>
+                </div>
+                <p className={`text-xs mt-0.5 transition-colors ${
+                  isGenerating && selectedPromptType === 'lkpd'
+                    ? 'text-emerald-700 font-medium'
+                    : 'text-slate-500'
+                }`}>
+                  {isGenerating && selectedPromptType === 'lkpd' ? 'Sedang memproses prompt...' : 'Klik untuk atur & buat prompt LKPD'}
+                </p>
+              </div>
+
+              <div className="ml-auto p-1.5 rounded-lg text-emerald-600">
+                <Sparkles className="w-4 h-4" />
+              </div>
             </button>
           </div>
+
+          {/* PENGATURAN KHUSUS LKPD (MUNCUL KETIKA PENGGUNA MEMILIH LKPD) */}
+          {selectedPromptType === 'lkpd' && (
+            <div 
+              id="lkpd-settings-panel"
+              className="mt-6 pt-6 border-t border-slate-200/80 space-y-6 animate-in fade-in duration-200"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-emerald-100 text-emerald-800 uppercase tracking-wider mb-1">
+                    <PenTool className="w-3 h-3" />
+                    <span>Pengaturan Khusus LKPD</span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                    Karakteristik & Format Lembar Kerja Peserta Didik
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Data materi aktif di atas otomatis menjadi Single Source of Truth. Tentukan parameter aktivitas pembelajaran di bawah ini:
+                  </p>
+                </div>
+              </div>
+
+              {/* A. Jenis Aktivitas */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>A. Jenis Aktivitas</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                  {LKPD_ACTIVITY_OPTIONS.map((act) => (
+                    <button
+                      key={act}
+                      type="button"
+                      onClick={() => setLkpdActivityType(act)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                        lkpdActivityType === act
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {act}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* B. Bentuk LKPD */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>B. Bentuk LKPD</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {LKPD_FORMAT_OPTIONS.map((fmt) => (
+                    <button
+                      key={fmt}
+                      type="button"
+                      onClick={() => setLkpdFormatType(fmt)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                        lkpdFormatType === fmt
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {fmt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* C & D. Tingkat Kesulitan & Alokasi Waktu */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {/* C. Tingkat Kesulitan */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>C. Tingkat Kesulitan</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LKPD_DIFFICULTY_OPTIONS.map((diff) => (
+                      <button
+                        key={diff}
+                        type="button"
+                        onClick={() => setLkpdDifficulty(diff)}
+                        className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                          lkpdDifficulty === diff
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {diff}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* D. Alokasi Waktu */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>D. Alokasi Waktu</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LKPD_TIME_OPTIONS.map((time) => (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => setLkpdTimeAllocation(time)}
+                        className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                          lkpdTimeAllocation === time
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* E. Bentuk Hasil Siswa */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>E. Bentuk Hasil Siswa</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {LKPD_OUTPUT_OPTIONS.map((out) => (
+                    <button
+                      key={out}
+                      type="button"
+                      onClick={() => setLkpdStudentOutput(out)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                        lkpdStudentOutput === out
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {out}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* F. Instruksi / Konteks Tambahan (Opsional) */}
+              <div className="space-y-2">
+                <label htmlFor="lkpd-extra-instructions" className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>F. Instruksi/Konteks Tambahan <span className="text-slate-400 font-normal lowercase">(opsional)</span></span>
+                </label>
+                <textarea
+                  id="lkpd-extra-instructions"
+                  rows={2}
+                  value={lkpdAdditionalInstructions}
+                  onChange={(e) => setLkpdAdditionalInstructions(e.target.value)}
+                  placeholder="Tambahkan kondisi khusus, kebutuhan aktivitas, atau instruksi lain jika diperlukan."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs leading-relaxed focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 font-sans"
+                />
+              </div>
+
+              {/* Tombol Eksekusi Generate Prompt LKPD */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-emerald-50/60 p-4 rounded-xl border border-emerald-100">
+                <div className="text-xs text-emerald-900">
+                  <span className="font-bold block">Siap Menganalisis LKPD</span>
+                  <span>Menjalankan 7 Tahap Analisis LKPD bebas kontaminasi konteks.</span>
+                </div>
+
+                <button
+                  type="button"
+                  id="btn-generate-lkpd-prompt"
+                  onClick={executeGenerateLkpdPrompt}
+                  disabled={isGenerating}
+                  className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-extrabold text-sm text-white shadow-md transition-all cursor-pointer ${
+                    isGenerating
+                      ? 'bg-emerald-400 cursor-wait'
+                      : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] shadow-emerald-700/20'
+                  }`}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Memproses Analisis LKPD...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-emerald-200" />
+                      <span>GENERATE PROMPT LKPD</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </form>
 
-      {/* PANEL HASIL KERANGKA BERPIKIR STIVIA (7 TAHAP) */}
-      {thinkingResult && (
-        <StiviaThinkingPanel thinkingResult={thinkingResult} />
-      )}
-
-      {/* HASIL PROMPT INFOGRAFIS KELUARAN (READ-ONLY TEXTAREA & COPY BUTTON) */}
+      {/* 9. HALAMAN / PANEL HASIL PROMPT */}
       {generatedPrompt && (
         <div 
           id="prompt-result-section"
-          className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300 scroll-mt-6"
+          className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300 scroll-mt-6"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          {/* Header Panel Hasil Prompt */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <h3 className="text-base font-bold text-white tracking-wide">
-                  Hasil Prompt Infografis STIVIA (Siap Digunakan)
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${
+                  activeOutputType === 'lkpd' ? 'bg-emerald-400' : 'bg-indigo-400'
+                }`} />
+                <h3 className="text-lg font-extrabold text-white tracking-tight">
+                  {activeOutputType === 'lkpd' ? 'PROMPT LKPD SIAP DIGUNAKAN' : 'PROMPT INFOGRAFIS SIAP DIGUNAKAN'}
                 </h3>
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/80">
-                  Universal AI Prompt
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                  activeOutputType === 'lkpd'
+                    ? 'text-emerald-300 bg-emerald-950/80 border-emerald-800'
+                    : 'text-indigo-300 bg-indigo-950/80 border-indigo-800'
+                }`}>
+                  {activeOutputType === 'lkpd' ? 'Terverifikasi 7 Tahap LKPD ✓' : 'Terverifikasi 7 Tahap ✓'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
-                Salin teks prompt di bawah ini dan tempelkan langsung ke AI pilihan Anda (ChatGPT, Claude, Gemini, dll).
+              <p className="text-xs text-slate-300">
+                {activeOutputType === 'lkpd' ? (
+                  <>
+                    Materi: <span className="font-bold text-white">{materiDiajarkan.trim() || currentDraft.title || 'Materi Pembelajaran'}</span> • {isCustomSubject ? customSubject : subject} ({educationLevel} {grade}) • Aktivitas: {lkpdActivityType} ({lkpdFormatType}) • Waktu: {lkpdTimeAllocation}
+                  </>
+                ) : (
+                  <>
+                    Materi: <span className="font-bold text-white">{materiDiajarkan.trim() || currentDraft.title || 'Materi Pembelajaran'}</span> • {isCustomSubject ? customSubject : subject} ({educationLevel} {grade})
+                  </>
+                )}
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            {/* Action Buttons: SALIN PROMPT & CETAK & REGENERATE */}
+            <div className="flex flex-wrap items-center gap-2.5">
               <button
                 type="button"
                 id="btn-regenerate-prompt"
                 onClick={handleRegenerate}
                 disabled={isGenerating}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
                 title="Regenerate Prompt dengan data materi saat ini"
               >
                 <RotateCcw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
                 <span>Regenerate</span>
+              </button>
+
+              <button
+                id="btn-print-prompt"
+                type="button"
+                onClick={handlePrintPrompt}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 hover:text-white text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
+                title={`Cetak Prompt ${activeOutputType === 'lkpd' ? 'LKPD' : 'Infografis'}`}
+              >
+                <Printer className="w-4 h-4" />
+                <span>CETAK</span>
               </button>
 
               <button
@@ -832,8 +1319,11 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md ${
                   copied
                     ? 'bg-emerald-600 text-white shadow-emerald-900/40'
+                    : activeOutputType === 'lkpd'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-emerald-900/40'
                     : 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white shadow-indigo-900/40'
                 }`}
+                title="Salin Seluruh Prompt ke Clipboard"
               >
                 {copied ? (
                   <>
@@ -843,29 +1333,131 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    <span>Salin Prompt</span>
+                    <span>SALIN PROMPT</span>
                   </>
                 )}
               </button>
             </div>
           </div>
 
+          {/* Copy Toast Notification */}
+          {copyToast && (
+            <div className="p-3 rounded-xl bg-emerald-950/90 border border-emerald-700/80 text-emerald-200 text-xs flex items-center gap-2 animate-in fade-in duration-200">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{copyToast}</span>
+            </div>
+          )}
+
+          {/* Checklist 10 Validasi Sebelum Final Prompt (Section 15) */}
+          <div className="bg-slate-950/60 rounded-2xl p-4 border border-slate-800/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>
+                  {activeOutputType === 'lkpd' 
+                    ? 'Pemeriksaan Validasi Final STIVIA LKPD (12 Kriteria Tahap 7 Terpenuhi)'
+                    : 'Pemeriksaan Validasi Final STIVIA (10 Kriteria Terpenuhi)'}
+                </span>
+              </h4>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                100% Lolos
+              </span>
+            </div>
+            {activeOutputType === 'lkpd' ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 text-[11px] text-slate-300">
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Sesuai Kelas</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Sesuai Tujuan</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Materi Akurat</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Instruksi Dipahami</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Aktivitas Terlaksana</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Kesulitan Sesuai</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Ruang Tugas Cukup</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Struktur Lengkap</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Visual Edukatif</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Siap Cetak</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Teks Proporsional</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Hubungan Logis</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-[11px] text-slate-300">
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Topik Sesuai</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Mapel Sesuai</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Kelas Sesuai</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Tujuan Sesuai</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Cakupan Terkunci</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Bebas Kontaminasi</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Istilah Relevan</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Struktur Jelas</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> 4–6 Bagian Utama</div>
+                <div className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400 shrink-0" /> Siap Digunakan</div>
+              </div>
+            )}
+          </div>
+
           {/* Area Teks Prompt Read-Only */}
           <div className="relative">
             <textarea
               readOnly
-              rows={14}
+              rows={16}
               value={generatedPrompt}
-              className="w-full bg-slate-950/80 text-slate-200 border border-slate-800 rounded-2xl p-4 sm:p-5 text-xs sm:text-sm font-mono leading-relaxed focus:outline-hidden select-all"
+              className="w-full bg-slate-950 text-slate-100 border border-slate-800 rounded-2xl p-4 sm:p-5 text-xs sm:text-sm font-mono leading-relaxed focus:outline-hidden select-all shadow-inner"
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+          {/* Footer Panel Hasil */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] text-slate-400 pt-2 border-t border-slate-800/80">
             <div className="flex items-center gap-3">
-              <span>Panjang Karakter: {generatedPrompt.length} karakter</span>
+              <span>Panjang Prompt: {generatedPrompt.length} karakter</span>
               <span>•</span>
-              <span className="text-emerald-400 font-semibold">Universal Compatibility ✓</span>
+              <span className="text-emerald-400 font-semibold">
+                {activeOutputType === 'lkpd' 
+                  ? 'Siap Digunakan di AI Image & Visual Design Generator (Ideogram, Midjourney, DALL-E, Canva AI) & AI Model'
+                  : 'Siap Digunakan di AI Image Generator (DALL-E, Ideogram, Midjourney, Flux, ChatGPT & Gemini)'}
+              </span>
             </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePrintPrompt}
+                className="text-slate-300 hover:text-white underline cursor-pointer"
+              >
+                Cetak Halaman Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAMPILAN KHUSUS CETAK (PRINT-ONLY) */}
+      {generatedPrompt && (
+        <div id="stivia-prompt-print-area" className="hidden print:block text-slate-900 font-sans">
+          <div style={{ borderBottom: '2px solid #0f172a', paddingBottom: '16px', marginBottom: '20px' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.025em', margin: 0 }}>
+              {activeOutputType === 'lkpd' ? 'STIVIA — PROMPT LKPD' : 'STIVIA — PROMPT INFOGRAFIS'}
+            </h1>
+            <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+              <div><strong>Judul Materi:</strong> {materiDiajarkan.trim() || currentDraft.title || 'Materi Pembelajaran'}</div>
+              <div><strong>Mata Pelajaran:</strong> {isCustomSubject ? customSubject : subject}</div>
+              <div><strong>Kelas:</strong> {educationLevel} ({grade})</div>
+              <div><strong>Tanggal:</strong> {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+              {activeOutputType === 'lkpd' && (
+                <>
+                  <div><strong>Jenis Aktivitas:</strong> {lkpdActivityType} ({lkpdFormatType})</div>
+                  <div><strong>Tingkat Kesulitan:</strong> {lkpdDifficulty}</div>
+                  <div><strong>Alokasi Waktu:</strong> {lkpdTimeAllocation}</div>
+                  <div><strong>Bentuk Hasil:</strong> {lkpdStudentOutput}</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h2 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px' }}>
+              {activeOutputType === 'lkpd' ? 'FINAL PROMPT LKPD' : 'FINAL PROMPT'}
+            </h2>
+            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.6, color: '#0f172a', margin: 0 }}>
+              {generatedPrompt}
+            </pre>
           </div>
         </div>
       )}

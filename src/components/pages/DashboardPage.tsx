@@ -84,35 +84,35 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <div className="max-w-6xl mx-auto pb-20 space-y-10">
       {/* Header Selamat Datang with Pill Badge */}
-      <div className="space-y-4 pt-2">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-[#3b49df] border border-slate-200/80 shadow-2xs">
+      <div className="space-y-3 pt-2">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white text-[#3b49df] border border-slate-200/80 shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-[#3b49df]" />
           <span>STIVIA — Belajar Lebih Visual, Mengajar Lebih Mudah</span>
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
             Selamat Datang di STIVIA
           </h1>
-          <p className="text-base sm:text-lg text-slate-600 max-w-2xl leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed">
             Buat materi pembelajaran, infografis, dan prompt dalam satu alur kerja yang mulus dan terintegrasi.
           </p>
         </div>
       </div>
 
       {/* KARTU HERO UTAMA (SESUAI ALUR BARU STIVIA 3.1) */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#3b49df] to-indigo-800 text-white rounded-[32px] p-8 sm:p-10 shadow-xl shadow-indigo-600/20 flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:shadow-2xl transition-all">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#3b49df] via-indigo-700 to-indigo-800 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-lg shadow-indigo-600/15 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-4 max-w-2xl relative z-10">
-          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white shadow-inner">
-            <Palette className="w-7 h-7" />
+          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white shadow-xs">
+            <Palette className="w-6 h-6" />
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
               <span>🎨</span>
               <span>Buat Prompt Infografis</span>
             </h2>
-            <p className="text-indigo-100/90 text-sm sm:text-base leading-relaxed">
+            <p className="text-indigo-100 text-xs sm:text-sm leading-relaxed">
               Input data pembelajaran, jalankan analisis 7 Tahap Kerangka Berpikir STIVIA, dan langsung hasilkan Prompt Infografis terstruktur siap pakai.
             </p>
           </div>
@@ -120,14 +120,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => onNavigate('buat')}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#34d399] hover:bg-[#2bd094] active:bg-[#20b881] text-slate-950 font-bold text-sm shadow-lg shadow-emerald-950/15 transition-all cursor-pointer transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#34d399] hover:bg-[#2bd094] active:bg-[#20b881] text-slate-950 font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/15 transition-all cursor-pointer transform hover:-translate-y-0.5"
             >
               <span>Mulai Buat Prompt</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={onLoadSample}
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs sm:text-sm border border-white/25 transition-all cursor-pointer backdrop-blur-xs"
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs sm:text-sm border border-white/25 transition-all cursor-pointer backdrop-blur-xs"
             >
               <Play className="w-3.5 h-3.5 fill-current text-white/90" />
               <span>Lihat Contoh Data</span>
@@ -137,56 +137,56 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       </div>
 
       {/* KARTU STATISTIK & PENGGUNAAN (DATA NYATA PENGGUNA & SUBSCRIPTION) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* STAT 1: TOTAL INFOGRAFIS */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex items-center gap-4 hover:shadow-xs transition-shadow">
-          <div className="w-12 h-12 rounded-2xl bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0">
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-200 transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               TOTAL INFOGRAFIS
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <span className="text-2xl font-black text-slate-900 tracking-tight">
               {userProjects.length}
             </span>
           </div>
         </div>
 
         {/* STAT 2: PROMPT TERSIMPAN */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex items-center gap-4 hover:shadow-xs transition-shadow">
-          <div className="w-12 h-12 rounded-2xl bg-[#dcfce7] text-[#16a34a] flex items-center justify-center shrink-0">
-            <Bookmark className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-emerald-200 transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-[#dcfce7] text-[#16a34a] flex items-center justify-center shrink-0">
+            <Bookmark className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               PROMPT TERSIMPAN
             </span>
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <span className="text-2xl font-black text-slate-900 tracking-tight">
               {promptCount}
             </span>
           </div>
         </div>
 
         {/* STAT 3: SALDO PROMPT (TOKEN BALANCE) */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex flex-col justify-between gap-3 hover:shadow-xs transition-shadow">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between gap-3 hover:border-amber-200 transition-colors">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
                 isAdmin 
                   ? 'bg-purple-50 text-purple-600'
                   : isLimitReached 
                   ? 'bg-rose-50 text-rose-600' 
                   : 'bg-amber-50 text-amber-600'
               }`}>
-                <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
+                <Zap className="w-5 h-5" />
               </div>
               <div>
                 <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   SALDO PROMPT
                 </span>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  <span className="text-xl font-black text-slate-900 tracking-tight">
                     {isAdmin ? 'Unlimited (∞)' : `${promptBalance} Prompt`}
                   </span>
                 </div>
@@ -195,7 +195,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           <div className="space-y-1.5 pt-1">
-            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all duration-500 ${
                   isAdmin
@@ -219,24 +219,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* STAT 4: PAKET & STATUS AKUN */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-100 shadow-2xs flex flex-col justify-between gap-3 hover:shadow-xs transition-shadow">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between gap-3 hover:border-purple-200 transition-colors">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
                 isAdmin
                   ? 'bg-purple-50 text-purple-700'
                   : plan === 'pro'
                   ? 'bg-indigo-50 text-indigo-700'
                   : 'bg-emerald-50 text-emerald-700'
               }`}>
-                {isAdmin ? <Crown className="w-5 h-5 sm:w-6 sm:h-6" /> : <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />}
+                {isAdmin ? <Crown className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
               </div>
               <div>
                 <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   {isAdmin ? 'PERAN AKUN' : 'PAKET ANDA'}
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
+                  <span className="text-xl font-black text-slate-900 uppercase tracking-tight">
                     {isAdmin ? 'ADMIN' : plan}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
@@ -255,7 +255,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </div>
 
-          <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50">
+          <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100">
             <span className="truncate">
               {isAdmin
                 ? 'Hak akses penuh tanpa kedaluwarsa'
@@ -314,7 +314,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 type="button"
                 id="btn-empty-buat-proyek"
                 onClick={() => onNavigate('buat')}
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#3b49df] hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer transform hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#3b49df] hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-sm shadow-indigo-600/20 transition-all cursor-pointer transform hover:-translate-y-0.5"
               >
                 <Plus className="w-4 h-4" />
                 <span>+ Buat Proyek Baru</span>
@@ -330,7 +330,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               return (
                 <div
                   key={project.id}
-                  className="bg-white rounded-3xl p-6 border border-slate-100 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group"
+                  className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-indigo-200 transition-all flex flex-col justify-between group"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
@@ -364,7 +364,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     </span>
                     <button
                       onClick={() => onSelectProject(project, isFinal ? 'preview' : 'buat')}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-50 hover:bg-[#3b49df] hover:text-white text-[#3b49df] font-bold text-xs transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-[#3b49df] hover:text-white text-[#3b49df] font-bold text-xs transition-all cursor-pointer"
                     >
                       <span>Buka Proyek</span>
                       <ArrowRight className="w-3.5 h-3.5" />

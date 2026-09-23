@@ -212,7 +212,8 @@ export async function getSubscriptionSummary(userId: string): Promise<Subscripti
   const isAdmin = sub.role === 'admin';
 
   // Admin mendapatkan saldo prompt tak terbatas (Infinity) secara permanen
-  const promptBalance = isAdmin ? Infinity : Math.max(0, sub.promptBalance ?? 10);
+  const freeDefault = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt Percobaan
+  const promptBalance = isAdmin ? Infinity : Math.max(0, sub.promptBalance ?? freeDefault);
   const totalGranted = isAdmin ? Infinity : Math.max(promptBalance, sub.totalGranted ?? promptBalance);
   const usedTotal = sub.usedCount ?? 0;
 
@@ -318,7 +319,8 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
   const period = getCurrentBillingPeriod();
 
   // Kurangi saldo prompt sebanyak 1 jika bukan admin
-  const currentBalance = sub.promptBalance ?? 10;
+  const freeDefault = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
+  const currentBalance = sub.promptBalance ?? freeDefault;
   const newBalance = isAdmin ? Infinity : Math.max(0, currentBalance - 1);
   const newUsedCount = (sub.usedCount ?? 0) + 1;
 

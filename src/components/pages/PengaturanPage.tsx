@@ -141,7 +141,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
       {/* ================================================== */}
       {/* KARTU RINGKASAN PROFIL & PREVIEW AKTIF */}
       {/* ================================================== */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
         {/* Dekorasi halus */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
         <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-blue-500/10 rounded-full blur-2xl pointer-events-none"></div>
@@ -179,7 +179,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                 type="button"
                 id="btn-open-profil-saya"
                 onClick={() => onNavigateTab('profil_saya')}
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-bold border border-white/15 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs font-bold border border-white/15 transition-all cursor-pointer flex items-center gap-2 shadow-2xs"
               >
                 <span>Edit Profil</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -194,7 +194,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
       {/* ================================================== */}
       <div className="space-y-3">
         <div className="px-1">
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Informasi Sistem & Aplikasi
           </h2>
         </div>
@@ -205,16 +205,16 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
           tabIndex={0}
           onClick={() => handleOpenModal('tentang')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenModal('tentang'); }}
-          className="group bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-left cursor-pointer transform hover:-translate-y-0.5 relative overflow-hidden"
+          className="group bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 hover:border-indigo-300 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-left cursor-pointer transform hover:-translate-y-0.5 relative overflow-hidden"
         >
-          <div className="flex items-start sm:items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-[#edf2fe] group-hover:bg-[#3b49df] text-[#3b49df] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs shrink-0">
-              <Info className="w-7 h-7" />
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#edf2fe] group-hover:bg-[#3b49df] text-[#3b49df] group-hover:text-white flex items-center justify-center transition-colors shadow-2xs shrink-0">
+              <Info className="w-6 h-6" />
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-[#3b49df] transition-colors">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#3b49df] transition-colors">
                   Tentang STIVIA
                 </h3>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-[#3b49df] border border-indigo-200/60">
@@ -222,17 +222,17 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                   <span>v{APP_CURRENT_VERSION}</span>
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium max-w-2xl">
+              <p className="text-xs text-slate-500 leading-relaxed font-medium max-w-2xl">
                 Informasi platform AI, identitas rilis, catatan pembaruan sistem, dan profil pengembang media pembelajaran STIVIA.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto pt-2 sm:pt-0">
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto pt-2 sm:pt-0">
             <span className="text-xs font-bold text-[#3b49df] group-hover:text-indigo-800">
               Lihat Detail & Riwayat Rilis
             </span>
-            <div className="w-9 h-9 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] text-[#3b49df] flex items-center justify-center transition-all group-hover:translate-x-1">
+            <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-[#edf2fe] text-[#3b49df] flex items-center justify-center transition-all group-hover:translate-x-1">
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>

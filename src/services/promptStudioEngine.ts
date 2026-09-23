@@ -21,78 +21,16 @@ function createFallbackThinkingResult(params: {
   scope: string;
   styleName?: string;
 }): StiviaThinkingResult {
-  const { title, topic, subject, educationLevel, grade, pertemuan = 'Pertemuan 1', scope, styleName } = params;
-  const resolvedTopic = topic || title || 'Materi Pembelajaran';
-  const resolvedStyle = styleName || 'Modern Edukatif';
-  const formattedPertemuan = typeof pertemuan === 'number' ? `Pertemuan ${pertemuan}` : (String(pertemuan).startsWith('Pertemuan') ? String(pertemuan) : `Pertemuan ${pertemuan}`);
-
-  return {
-    materialAnalysis: {
-      tahap1_MataPelajaran: subject || 'Mata Pelajaran',
-      tahap2_Kelas: grade || 'Semua Jenjang',
-      tahap3_MateriUtama: resolvedTopic,
-      tahap4_Pertemuan: formattedPertemuan,
-      tahap5_CakupanMateri: [scope || 'Cakupan materi esensial'],
-      tahap6_MateriBolehDibahas: [scope || 'Pembahasan terfokus sesuai cakupan'],
-      tahap7_MateriTidakPerluDiulang: ['Pengertian dasar lengkap di luar cakupan'],
-      boundaryRules: [
-        'Materi ini merupakan bagian dari rangkaian pembelajaran.',
-        'Fokuskan pembahasan hanya pada cakupan materi pertemuan saat ini.',
-        'Jangan secara otomatis mengulang pengertian, penjelasan dasar, atau pembahasan umum apabila tidak termasuk dalam cakupan materi.',
-        'Nomor pertemuan menunjukkan posisi materi dalam rangkaian pembelajaran.',
-        'Materi Utama hanya digunakan sebagai konteks umum, sedangkan Cakupan Materi menjadi batas utama pembahasan.',
-        'Jangan membuat setiap pertemuan terlihat seperti materi pertama.'
-      ]
-    },
-    stage1_Understanding: {
-      title: resolvedTopic,
-      subject: subject || 'Mata Pelajaran',
-      educationLevel: educationLevel || 'Semua Jenjang',
-      grade: grade || 'Lengkap',
-      pertemuan: formattedPertemuan,
-      learningObjective: `Peserta didik memahami konsep ${resolvedTopic} secara terstruktur dan mendalam.`,
-      scopeOverview: scope || 'Pembahasan materi esensial sesuai kurikulum.',
-      contentVolume: 'Sedang'
-    },
-    stage2_ImportantInfo: {
-      mainConcept: resolvedTopic,
-      subConcepts: ['Pengenalan Konsep', 'Prinsip Dasar', 'Penerapan Kontekstual'],
-      keywords: [resolvedTopic, 'Definisi', 'Karakteristik', 'Aplikasi'],
-      essentialInformation: [`Intisari utama konsep ${resolvedTopic}`],
-      informationRelationship: 'Hubungan sebab-akibat dan hierarki logis'
-    },
-    stage3_MaterialCharacters: {
-      detectedCharacters: ['Konsep'],
-      primaryCharacter: 'Konsep',
-      rationale: `Materi ${resolvedTopic} mengutamakan pemahaman konsep terstruktur dan aplikatif.`
-    },
-    stage4_StyleUnderstanding: {
-      selectedStyle: findStyleByNameOrId(resolvedStyle),
-      visualTone: 'Edukatif, profesional, rapi, dan mudah dipelajari',
-      compositionRule: 'Hierarki vertikal berimbang dengan kartu materi proporsional',
-      elementShape: 'Kartu modul bergaris tegas dengan radius halus',
-      typographyRule: 'Sains modern sans-serif dengan kontras minimum 4.5:1',
-      backgroundStyle: 'Latar netral bersih untuk memaksimalkan keterbacaan',
-      ornamentStyle: 'Garis pemisah subtle dan ikon fungsional',
-      illustrationType: 'Ilustrasi vektor edukatif terstruktur',
-      invarianceNotice: 'Gaya visual tidak boleh mengubah fakta atau struktur materi.'
-    },
-    stage5_SupportingVisuals: {
-      heroVisual: `Ilustrasi sentral edukatif merepresentasikan konsep ${resolvedTopic}`,
-      supportingIllustrations: ['Diagram alur konsep', 'Bagan perbandingan', 'Infografis kartu poin'],
-      icons: ['Buku / Teori', 'Bagan / Grafik', 'Ceklis / Aplikasi', 'Lampu / Ide'],
-      relevantObjects: [resolvedTopic, 'Komponen Sistem', 'Contoh Kontekstual'],
-      supportingOrnaments: ['Badge jenjang', 'Nomor urut bagian', 'Aksen garis'],
-      styleAdaptiveVisualNote: `Visual pendukung diselaraskan dengan gaya ${resolvedStyle}`
-    },
-    stage6_LayoutStrategy: {
-      strategy: 'Central Concept',
-      layoutDescription: 'Tata letak vertikal rasio 2:3 dengan hierarki atas ke bawah',
-      readingFlow: 'Header Identitas -> Konsep Sentral -> Pembahasan Modul -> Rangkuman Kunci',
-      rationale: 'Menjamin kenyamanan alur kognitif peserta didik dalam menyerap materi'
-    },
-    stage7_FinalPrompt: `=== PROMPT CADANGAN STIVIA ===\nTopik: ${resolvedTopic}\nMata Pelajaran: ${subject}\nJenjang: ${educationLevel} (${grade})\nCakupan: ${scope}`
-  };
+  return runStiviaThinkingFramework({
+    title: params.title || params.topic || 'Infografis Pembelajaran',
+    topic: params.topic,
+    subject: params.subject || 'Umum',
+    educationLevel: params.educationLevel || 'SMA',
+    grade: params.grade || 'Kelas X',
+    pertemuan: params.pertemuan || 'Pertemuan 1',
+    scope: params.scope || '',
+    visualStyleName: params.styleName || 'Modern Edukatif'
+  });
 }
 
 // 1. GENERATOR UNIVERSAL PROMPT INFOGRAFIS DARI PROYEK STIVIA

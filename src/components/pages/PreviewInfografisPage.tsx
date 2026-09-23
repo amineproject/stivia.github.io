@@ -154,7 +154,7 @@ export const PreviewInfografisPage: React.FC<PreviewInfografisPageProps> = ({
         </div>
 
         {/* Empty / Unlocked Notice Box */}
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-sm text-center space-y-6">
+        <div className="bg-white rounded-2xl p-8 sm:p-12 border border-slate-200/90 shadow-xs text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
             <ShieldAlert className="w-8 h-8" />
           </div>
@@ -208,7 +208,7 @@ export const PreviewInfografisPage: React.FC<PreviewInfografisPageProps> = ({
   return (
     <div className="max-w-7xl mx-auto pb-24 space-y-6">
       {/* 1. Header Aplikasi & Bar Status Output Final Terkunci */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-indigo-700 text-xs font-bold">

@@ -202,7 +202,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   return (
     <div className="min-h-screen w-full bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
         
         {/* Left Side: Brand Visual & Information (Desktop Only) */}
         <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-[#3b49df] via-[#323ebd] to-[#1e293b] p-10 text-white flex-col justify-between relative overflow-hidden">

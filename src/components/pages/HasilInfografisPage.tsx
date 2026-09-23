@@ -477,7 +477,7 @@ export const HasilInfografisPage: React.FC<HasilInfografisPageProps> = ({
   return (
     <div className="max-w-7xl mx-auto pb-24 space-y-6">
       {/* 1. Header Khusus Preview & Tahap 4A Status */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
