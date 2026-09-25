@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { SupabaseUserProfile } from '../types';
+import { registerFreePromptClaim } from './subscriptionService';
 
 export interface SignInCredentials {
   email: string;
@@ -78,6 +79,24 @@ export function formatAuthError(error: any): string {
     return 'Terlalu banyak percobaan. Silakan tunggu beberapa menit sebelum mencoba lagi.';
   }
 
+  if (
+    msg.includes('token is expired') ||
+    msg.includes('token has expired') ||
+    msg.includes('recovery link is invalid') ||
+    msg.includes('invalid or expired link') ||
+    msg.includes('otp expired')
+  ) {
+    return 'Tautan reset password sudah kedaluwarsa atau tidak valid. Silakan ajukan permohonan baru.';
+  }
+
+  if (
+    msg.includes('should be different') ||
+    msg.includes('same_password') ||
+    msg.includes('same as old')
+  ) {
+    return 'Kata sandi baru harus berbeda dari kata sandi sebelumnya.';
+  }
+
   if (msg.includes('network') || msg.includes('failed to fetch') || msg.includes('cors')) {
     return 'Koneksi ke server terganggu. Periksa koneksi internet Anda.';
   }
@@ -99,6 +118,17 @@ export async function signInWithEmail({ email, password }: SignInCredentials) {
     throw new Error(formatAuthError(error));
   }
 
+  if (data.session?.user) {
+    try {
+      await registerFreePromptClaim();
+    } catch (claimError) {
+      console.warn(
+        '[STIVIA Anti-Abuse] Error klaim Free setelah sign in:',
+        claimError
+      );
+    }
+  }
+
   return data;
 }
 
@@ -110,21 +140,39 @@ export async function signUpWithEmail({ fullName, email, password }: SignUpCrede
   const cleanEmail = email.trim();
   const cleanName = fullName.trim();
 
-  const { data, error } = await supabase.auth.signUp({
-    email: cleanEmail,
-    password,
-    options: {
-      data: {
-        full_name: cleanName,
-        role: 'user',
-        plan: 'free',
-        subscription_status: 'active',
-      },
+const { data, error } = await supabase.auth.signUp({
+  email: cleanEmail,
+  password,
+  options: {
+    data: {
+      full_name: cleanName,
+      role: 'user',
+      plan: 'free',
+      subscription_status: 'active',
     },
-  });
+  },
+});
 
-  if (error) {
-    throw new Error(formatAuthError(error));
+if (error) {
+  throw new Error(formatAuthError(error));
+}
+
+  /**
+   * Jika Supabase langsung memberikan session setelah sign up,
+   * lakukan klaim Free 3 poin sekarang via anti-abuse check.
+   *
+   * Jika email confirmation aktif dan session belum tersedia,
+   * proses klaim akan dilakukan secara otomatis pada saat session pertama aktif.
+   */
+  if (data.session?.user) {
+    try {
+      await registerFreePromptClaim();
+    } catch (claimError) {
+      console.warn(
+        '[STIVIA Anti-Abuse] Error klaim Free setelah sign up:',
+        claimError
+      );
+    }
   }
 
   return data;
@@ -139,6 +187,25 @@ export async function resetPasswordForEmail(email: string) {
 
   const { data, error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
     redirectTo: redirectUrl,
+  });
+
+  if (error) {
+    throw new Error(formatAuthError(error));
+  }
+
+  return data;
+}
+
+/**
+ * Memperbarui kata sandi pengguna menggunakan Supabase Auth (setelah link reset dibuka)
+ */
+export async function updateUserPassword(newPassword: string) {
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('Kata sandi baru minimal terdiri dari 6 karakter.');
+  }
+
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
   });
 
   if (error) {

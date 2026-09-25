@@ -46,6 +46,108 @@ const loggedWarnings = new Set<string>();
 const CACHE_TTL_MS = 4000; // 4 detik TTL in-memory
 
 /**
+ * Mendapatkan ID unik browser/perangkat untuk anti-abuse.
+ *
+ * Digunakan untuk membatasi klaim Free 3 prompt berulang
+ * tanpa mengubah struktur user_subscriptions.
+ */
+export function getStiviaDeviceKey(): string {
+  const STORAGE_KEY = 'stivia_device_key';
+
+  try {
+    const existingKey = localStorage.getItem(STORAGE_KEY);
+
+    if (existingKey && existingKey.length >= 16) {
+      return existingKey;
+    }
+
+    const newKey =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+
+    localStorage.setItem(STORAGE_KEY, newKey);
+
+    return newKey;
+  } catch {
+    return `fallback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+/**
+ * Mendaftarkan klaim Free 3 prompt untuk browser/perangkat ini.
+ *
+ * Catatan:
+ * - Admin tidak membutuhkan klaim Free.
+ * - Identitas user ditentukan oleh Supabase Auth melalui auth.uid()
+ *   di dalam RPC.
+ * - Device key digunakan untuk mencegah satu browser membuat banyak
+ *   akun demi memperoleh Free 3 prompt berulang kali.
+ * - Tidak mengubah struktur user_subscriptions.
+ */
+export async function registerFreePromptClaim(): Promise<boolean> {
+  if (!isSupabaseConfigured) {
+    // Mode demo/offline tidak menggunakan mekanisme anti-abuse Supabase.
+    return true;
+  }
+
+  try {
+    const deviceKey = getStiviaDeviceKey();
+
+    const { data, error } = await supabase.rpc(
+      'claim_free_prompt',
+      {
+        p_device_key: deviceKey,
+      }
+    );
+
+    if (error) {
+      console.warn(
+        '[STIVIA Anti-Abuse] Gagal melakukan klaim Free:',
+        error.message
+      );
+
+      // Fail-safe:
+      // Jangan menghukum user hanya karena RPC mengalami masalah.
+      return true;
+    }
+
+    /**
+     * RPC mengembalikan JSON:
+     *
+     * {
+     *   success: boolean,
+     *   reason: string,
+     *   prompt_balance?: number
+     * }
+     */
+
+    if (data && typeof data === 'object') {
+      if (data.success === true) {
+        return true;
+      }
+
+      console.warn(
+        '[STIVIA Anti-Abuse] Klaim Free ditolak:',
+        data.reason || 'unknown_reason'
+      );
+
+      return false;
+    }
+
+    return false;
+  } catch (error) {
+    console.warn(
+      '[STIVIA Anti-Abuse] Error saat melakukan klaim Free:',
+      error
+    );
+
+    // Fail-safe:
+    // Jangan menghukum user jika terjadi error teknis.
+    return true;
+  }
+}
+/**
  * Helper internal untuk menampilkan warning hanya 1 kali per kunci/sesi
  * Mencegah banjir log di konsol browser pada setiap render ulang UI.
  */
@@ -251,34 +353,56 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
 
       // D. Record ditemukan di database
       if (data) {
-        const isAdmin = data.role === 'admin';
+        let record = data;
+        const isAdmin = record.role === 'admin';
         const role: UserRole = isAdmin ? 'admin' : 'user';
+
+        // Jika user baru berstatus Free dan belum pernah memperoleh kuota (total_granted === 0 dan prompt_balance === 0),
+        // jalankan klaim anti-abuse aman melalui RPC claim_free_prompt.
+        if (!isAdmin && record.plan === 'free' && Number(record.total_granted || 0) === 0 && Number(record.prompt_balance || 0) === 0) {
+          try {
+            const claimed = await registerFreePromptClaim();
+            if (claimed) {
+              const { data: refreshed } = await supabase
+                .from('user_subscriptions')
+                .select('*')
+                .eq('user_id', authUser.id)
+                .maybeSingle();
+
+              if (refreshed) {
+                record = refreshed;
+              }
+            }
+          } catch (claimErr) {
+            console.warn('[STIVIA Anti-Abuse] Error saat evaluasi klaim di getUserSubscription:', claimErr);
+          }
+        }
 
         // Baca saldo prompt dari Supabase (atau fallback berdasarkan konfigurasi STIVIA)
         const freeDefault = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
-        const promptBalance = typeof data.prompt_balance === 'number'
-          ? data.prompt_balance
-          : (data.plan === 'pro' ? 50 : freeDefault);
+        const promptBalance = typeof record.prompt_balance === 'number'
+          ? record.prompt_balance
+          : (record.plan === 'pro' ? 50 : freeDefault);
 
-        const totalGranted = typeof data.total_granted === 'number'
-          ? data.total_granted
-          : Math.max(promptBalance, data.plan === 'pro' ? 50 : freeDefault);
+        const totalGranted = typeof record.total_granted === 'number'
+          ? record.total_granted
+          : Math.max(promptBalance, record.plan === 'pro' ? 50 : freeDefault);
 
-        const usedCount = typeof data.used_count === 'number'
-          ? data.used_count
+        const usedCount = typeof record.used_count === 'number'
+          ? record.used_count
           : Math.max(0, totalGranted - promptBalance);
 
         const sub: UserSubscription = {
-          userId: data.user_id || userId,
-          plan: (data.plan as SubscriptionPlan) || 'free',
+          userId: record.user_id || userId,
+          plan: (record.plan as SubscriptionPlan) || 'free',
           role,
-          status: (data.status as SubscriptionStatus) || 'active',
+          status: (record.status as SubscriptionStatus) || 'active',
           promptBalance,
           totalGranted,
           usedCount,
-          startDate: data.start_date || data.created_at || new Date().toISOString(),
-          endDate: isAdmin ? null : (data.end_date || null), // Admin permanen tanpa tanggal kedaluwarsa
-          updatedAt: data.updated_at || new Date().toISOString(),
+          startDate: record.start_date || record.created_at || new Date().toISOString(),
+          endDate: isAdmin ? null : (record.end_date || null), // Admin permanen tanpa tanggal kedaluwarsa
+          updatedAt: record.updated_at || new Date().toISOString(),
         };
 
         try {
@@ -932,17 +1056,16 @@ export async function restoreAdminAccess(userId: string): Promise<SubscriptionSu
 }
 
 /**
- * Helper internal untuk membuat record subscription default (3 Saldo Prompt Gratis Awal)
+ * Helper internal untuk membuat record subscription default (Saldo awal 0, menunggu klaim anti-abuse Free 3)
  */
 function createDefaultSubscription(userId: string): UserSubscription {
-  const freePrompts = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
   return {
     userId,
     plan: 'free',
     role: 'user',
     status: 'active',
-    promptBalance: freePrompts,
-    totalGranted: freePrompts,
+    promptBalance: 0,
+    totalGranted: 0,
     usedCount: 0,
     startDate: new Date().toISOString(),
     endDate: null, // Tanpa kedaluwarsa (aktif selamanya)

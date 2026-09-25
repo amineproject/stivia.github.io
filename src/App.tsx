@@ -35,6 +35,14 @@ export default function App() {
   // Authentication & Session State
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      return hash.includes('type=recovery') || search.includes('type=recovery');
+    }
+    return false;
+  });
   const [userProfile, setUserProfile] = useState<SupabaseUserProfile | null>(null);
   const [subscriptionSummary, setSubscriptionSummary] = useState<SubscriptionSummary | null>(null);
 
@@ -90,10 +98,17 @@ export default function App() {
 
     const initAuth = async () => {
       try {
+        const hash = typeof window !== 'undefined' ? window.location.hash : '';
+        const search = typeof window !== 'undefined' ? window.location.search : '';
+        const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
+        if (isRecovery) {
+          setIsPasswordRecovery(true);
+        }
+
         const { data } = await supabase.auth.getSession();
         if (!isMounted) return;
         setSession(data.session);
-        if (data.session?.user) {
+        if (data.session?.user && !isRecovery) {
           await fetchUserProfile(
             data.session.user.id,
             data.session.user.user_metadata?.full_name
@@ -111,8 +126,15 @@ export default function App() {
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!isMounted) return;
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        setSession(newSession);
+        return;
+      }
+
       setSession(newSession);
       if (newSession?.user) {
         await fetchUserProfile(
@@ -413,13 +435,19 @@ export default function App() {
     );
   }
 
-  // Layar Autentikasi (Jika belum memiliki session aktif)
-  if (!session) {
+  // Layar Autentikasi / Pemulihan Kata Sandi
+  if (!session || isPasswordRecovery) {
     return (
       <>
         <AuthPage
+          initialView={isPasswordRecovery ? 'reset_password' : 'login'}
           onAuthSuccess={() => {
             showToast('Selamat datang di STIVIA!');
+          }}
+          onPasswordResetComplete={() => {
+            setIsPasswordRecovery(false);
+            setSession(null);
+            showToast('Password berhasil diperbarui. Silakan login kembali.');
           }}
           onDemoLogin={!isSupabaseConfigured ? handleDemoLogin : undefined}
         />

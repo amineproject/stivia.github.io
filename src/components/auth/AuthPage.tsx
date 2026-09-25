@@ -25,21 +25,27 @@ import {
   signInWithEmail, 
   signUpWithEmail, 
   resetPasswordForEmail, 
+  updateUserPassword,
   formatAuthError 
 } from '../../services/authService';
+import { supabase } from '../../lib/supabase';
 
-export type AuthView = 'login' | 'register' | 'forgot_password';
+export type AuthView = 'login' | 'register' | 'forgot_password' | 'reset_password';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
   onDemoLogin?: () => void;
+  initialView?: AuthView;
+  onPasswordResetComplete?: () => void;
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({ 
   onAuthSuccess,
-  onDemoLogin 
+  onDemoLogin,
+  initialView = 'login',
+  onPasswordResetComplete
 }) => {
-  const [currentView, setCurrentView] = useState<AuthView>('login');
+  const [currentView, setCurrentView] = useState<AuthView>(initialView);
 
   // Form Fields
   const [fullName, setFullName] = useState('');
@@ -47,12 +53,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
+  // Reset Password Fields
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
   // UI States
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Sync currentView when initialView prop changes
+  React.useEffect(() => {
+    if (initialView) {
+      setCurrentView(initialView);
+    }
+  }, [initialView]);
 
   const resetFormState = (newView: AuthView) => {
     setCurrentView(newView);
@@ -173,15 +192,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   // Handle Forgot Password Submit
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!email.trim()) {
-      setErrorMessage('Silakan masukkan alamat email akun Anda.');
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setErrorMessage('Alamat email wajib diisi.');
       return;
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmail(cleanEmail)) {
       setErrorMessage('Format alamat email tidak valid.');
       return;
     }
@@ -193,8 +214,64 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     setIsLoading(true);
     try {
-      await resetPasswordForEmail(email);
-      setSuccessMessage('Tautan pemulihan kata sandi telah dikirim ke email Anda. Silakan periksa kotak masuk atau folder spam.');
+      await resetPasswordForEmail(cleanEmail);
+      setSuccessMessage('Jika email terdaftar, link reset password telah dikirim. Silakan periksa email Anda.');
+    } catch (err: any) {
+      setErrorMessage(formatAuthError(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Reset Password (Buat Password Baru) Submit
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!newPassword) {
+      setErrorMessage('Kata sandi baru wajib diisi.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMessage('Kata sandi minimal terdiri dari 6 karakter.');
+      return;
+    }
+
+    if (!confirmNewPassword) {
+      setErrorMessage('Silakan masukkan konfirmasi kata sandi baru.');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setErrorMessage('Konfirmasi kata sandi tidak sama dengan kata sandi baru.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateUserPassword(newPassword);
+      setSuccessMessage('Password berhasil diperbarui. Silakan login kembali.');
+      setNewPassword('');
+      setConfirmNewPassword('');
+
+      // Beri jeda 1.8 detik agar pengguna sempat membaca konfirmasi sukses
+      setTimeout(async () => {
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // ignore
+        }
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        if (onPasswordResetComplete) {
+          onPasswordResetComplete();
+        }
+        setCurrentView('login');
+      }, 1800);
     } catch (err: any) {
       setErrorMessage(formatAuthError(err));
     } finally {
@@ -624,7 +701,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-3 transition-colors cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Kembali ke Halaman Masuk</span>
+                    <span>Kembali ke Login</span>
                   </button>
                   <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                     Lupa Password?
@@ -667,11 +744,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Mengirim Tautan...</span>
+                        <span>Mengirim Link...</span>
                       </>
                     ) : (
                       <>
-                        <span>Kirim Tautan Pemulihan</span>
+                        <span>Kirim Link Reset Password</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -687,7 +764,144 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       onClick={() => resetFormState('login')}
                       className="font-bold text-[#3b49df] hover:underline cursor-pointer ml-1"
                     >
-                      Masuk sekarang
+                      Kembali ke Login
+                    </button>
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {currentView === 'reset_password' && (
+              <motion.div
+                key="reset-view"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+              >
+                <div className="mb-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                      }
+                      if (onPasswordResetComplete) {
+                        onPasswordResetComplete();
+                      }
+                      resetFormState('login');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 mb-3 transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Kembali ke Login</span>
+                  </button>
+                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    Buat Password Baru
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    Silakan masukkan kata sandi baru untuk akun STIVIA Anda.
+                  </p>
+                </div>
+
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  {/* New Password Input */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Password Baru
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        id="new-password-input"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Minimal 6 karakter"
+                        className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-[#3b49df] focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-400"
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm New Password Input */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Konfirmasi Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <input
+                        type={showConfirmNewPassword ? 'text' : 'password'}
+                        id="confirm-new-password-input"
+                        value={confirmNewPassword}
+                        onChange={(e) => setConfirmNewPassword(e.target.value)}
+                        placeholder="Ulangi kata sandi baru"
+                        className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50/70 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-[#3b49df] focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-400"
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showConfirmNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    id="btn-reset-password-submit"
+                    disabled={isLoading}
+                    className="w-full mt-2 py-3 px-4 rounded-xl bg-[#3b49df] hover:bg-[#323ebd] text-white font-bold text-sm shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Menyimpan Password Baru...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Simpan Password Baru</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {/* Footer Switcher */}
+                <div className="mt-8 pt-5 border-t border-slate-100 text-center">
+                  <p className="text-xs text-slate-600">
+                    Batal memperbarui?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          window.history.replaceState({}, document.title, window.location.pathname);
+                        }
+                        if (onPasswordResetComplete) {
+                          onPasswordResetComplete();
+                        }
+                        resetFormState('login');
+                      }}
+                      className="font-bold text-[#3b49df] hover:underline cursor-pointer ml-1"
+                    >
+                      Kembali ke Login
                     </button>
                   </p>
                 </div>
