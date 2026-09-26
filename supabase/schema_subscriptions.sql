@@ -27,13 +27,27 @@ CREATE TABLE IF NOT EXISTS public.user_subscriptions (
     end_date TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT unique_user_subscription UNIQUE (user_id)
+    CONSTRAINT unique_user_subscription UNIQUE (user_id),
+    CONSTRAINT check_prompt_balance_non_negative CHECK (prompt_balance >= 0)
 );
 
 -- Pastikan kolom saldo prompt ada jika tabel sudah dibuat sebelumnya
 ALTER TABLE public.user_subscriptions ADD COLUMN IF NOT EXISTS prompt_balance INT DEFAULT 3;
 ALTER TABLE public.user_subscriptions ADD COLUMN IF NOT EXISTS total_granted INT DEFAULT 3;
 ALTER TABLE public.user_subscriptions ADD COLUMN IF NOT EXISTS used_count INT DEFAULT 0;
+
+-- Pastikan constraint non-negative balance terpasang dengan aman
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'check_prompt_balance_non_negative'
+    ) THEN
+        IF NOT EXISTS (SELECT 1 FROM public.user_subscriptions WHERE prompt_balance < 0) THEN
+            ALTER TABLE public.user_subscriptions 
+                ADD CONSTRAINT check_prompt_balance_non_negative CHECK (prompt_balance >= 0);
+        END IF;
+    END IF;
+END $$;
 
 -- Indeks untuk pencarian cepat berdasarkan user_id
 CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id 
@@ -67,8 +81,10 @@ REVOKE ALL ON public.usage_logs FROM anon;
 REVOKE INSERT, UPDATE, DELETE ON public.user_subscriptions FROM authenticated;
 GRANT SELECT ON public.user_subscriptions TO authenticated;
 
--- Role authenticated mendapatkan hak SELECT dan INSERT pada usage_logs
-GRANT SELECT, INSERT ON public.usage_logs TO authenticated;
+-- Role authenticated HANYA mendapatkan hak SELECT pada usage_logs
+-- Pencatatan log penggunaan dipusatkan 100% via RPC SECURITY DEFINER record_prompt_usage()
+REVOKE INSERT, UPDATE, DELETE ON public.usage_logs FROM authenticated;
+GRANT SELECT ON public.usage_logs TO authenticated;
 
 -- Kebijakan user_subscriptions:
 -- Pengguna HANYA dapat membaca (SELECT) subscription miliknya sendiri
@@ -92,12 +108,8 @@ CREATE POLICY "Users can read own usage logs"
     TO authenticated
     USING (auth.uid() = user_id);
 
+-- Cabut / hapus policy INSERT client pada usage_logs (pencatatan murni melalui RPC server)
 DROP POLICY IF EXISTS "Users can insert own usage logs" ON public.usage_logs;
-CREATE POLICY "Users can insert own usage logs" 
-    ON public.usage_logs 
-    FOR INSERT 
-    TO authenticated
-    WITH CHECK (auth.uid() = user_id);
 
 -- 4. DATABASE TRIGGER: OTOMATIS INISIALISASI UNTUK PENGGUNA BARU
 -- Dijalankan saat user baru mendaftar di auth.users
@@ -240,10 +252,11 @@ BEGIN
         RAISE EXCEPTION 'Akses ditolak: Pengguna belum terautentikasi';
     END IF;
 
-    -- Ambil data subscription saat ini
+    -- Ambil data subscription saat ini dengan row lock atomik (cegah race condition)
     SELECT role, prompt_balance, used_count INTO v_role, v_balance, v_used
     FROM public.user_subscriptions
-    WHERE user_id = v_user_id;
+    WHERE user_id = v_user_id
+    FOR UPDATE;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Record subscription tidak ditemukan untuk pengguna ini';

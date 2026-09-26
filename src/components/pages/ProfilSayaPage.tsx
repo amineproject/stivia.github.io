@@ -88,32 +88,14 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
   const isOwnerEmail = normalizedEmail === 'aminexplore@gmail.com';
   const isDemoAccount = Boolean(userId && userId.startsWith('demo-'));
 
-  // Cek hak istimewa admin persisten di sesi browser
-  const hasSavedAdminPrivilege = typeof window !== 'undefined' && userId
-    ? localStorage.getItem(`stivia_admin_privilege_${userId}`) === 'true'
-    : false;
-
-  // Verifikasi apakah akun ini adalah Administrator yang sah
+  // Verifikasi apakah akun ini adalah Administrator yang sah dari data terotentikasi
   // (Tetap diakui meski admin sedang dalam mode simulasi pengguna biasa)
   const isActualAdmin = Boolean(
     subscriptionSummary?.isAdmin ||
     userProfile?.role === 'admin' ||
     isOwnerEmail ||
-    isDemoAccount ||
-    hasSavedAdminPrivilege
+    isDemoAccount
   );
-
-  // Jika akun terbukti admin, simpan privilege agar saat beralih ke simulasi user biasa
-  // tombol "Kembali ke Admin" tetap selalu tersedia dan tidak terkunci
-  useEffect(() => {
-    if (userId && (subscriptionSummary?.isAdmin || userProfile?.role === 'admin' || isOwnerEmail || isDemoAccount)) {
-      try {
-        localStorage.setItem(`stivia_admin_privilege_${userId}`, 'true');
-      } catch {
-        // ignore
-      }
-    }
-  }, [userId, subscriptionSummary?.isAdmin, userProfile?.role, isOwnerEmail, isDemoAccount]);
 
   // Status apakah admin sedang menguji akun sebagai pengguna biasa
   const isSimulatingUser = isActualAdmin && !subscriptionSummary?.isAdmin;
@@ -280,7 +262,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
 
   const handleToggleRole = async (targetRole: UserRole) => {
     if (!userId) return;
-    if (!isActualAdmin && targetRole === 'admin' && !isOwnerEmail && !isDemoAccount && !hasSavedAdminPrivilege) {
+    if (!isActualAdmin && targetRole === 'admin' && !isOwnerEmail && !isDemoAccount) {
       showToast('Akses ditolak: Hanya Administrator yang berwenang mengubah peran.');
       return;
     }
@@ -853,7 +835,7 @@ export const ProfilSayaPage: React.FC<ProfilSayaPageProps> = ({
               </div>
 
               {/* BANNER RECOVERY: Jika pengguna utama sedang tidak dalam peran admin */}
-              {(!subscriptionSummary?.isAdmin && (isOwnerEmail || isDemoAccount || hasSavedAdminPrivilege)) && (
+              {(!subscriptionSummary?.isAdmin && (isOwnerEmail || isDemoAccount)) && (
                 <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 border-2 border-purple-300 text-purple-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">

@@ -268,11 +268,6 @@ async function verifyAdminAuthorization(userId: string): Promise<boolean> {
     }
   }
 
-  // 5. Cek privilege persistence jika akun ini telah diverifikasi sebagai admin pada sesi ini
-  if (typeof window !== 'undefined' && localStorage.getItem(`stivia_admin_privilege_${userId}`) === 'true') {
-    return true;
-  }
-
   return false;
 }
 
@@ -676,7 +671,7 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
 
   let rpcHandled = false;
 
-  // 1. Upayakan pemanggilan RPC database atomik dengan hak SECURITY DEFINER di Supabase
+  // 1. Pemanggilan RPC database atomik dengan hak SECURITY DEFINER di Supabase
   if (isSupabaseConfigured) {
     try {
       const { data: rpcRes, error: rpcErr } = await supabase.rpc('record_prompt_usage', {
@@ -686,36 +681,7 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
         rpcHandled = true;
       }
     } catch {
-      // Fallback jika database RPC belum di-apply oleh pengguna
-    }
-
-    // 2. Fallback terproteksi jika RPC database belum dibuat
-    if (!rpcHandled) {
-      try {
-        await supabase.from('usage_logs').insert({
-          user_id: authUser.id,
-          period,
-          feature: 'infographic_prompt',
-          created_at: new Date().toISOString(),
-        });
-      } catch (err) {
-        console.warn('[STIVIA Subscription] Catatan simpan log penggunaan Supabase:', err);
-      }
-
-      if (!isAdmin) {
-        try {
-          await supabase
-            .from('user_subscriptions')
-            .update({
-              prompt_balance: newBalance,
-              used_count: newUsedCount,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', authUser.id);
-        } catch (err) {
-          console.warn('[STIVIA Subscription] Catatan update saldo prompt Supabase:', err);
-        }
-      }
+      // Tangani exception koneksi jika terjadi
     }
   }
 
@@ -761,86 +727,76 @@ export async function topUpPromptBalance(
     return createFallbackSummary(userId || 'guest');
   }
 
-  const authUser = await getAuthenticatedUser(userId);
-  if (!authUser) {
-    return createFallbackSummary('guest');
-  }
+  const isDemo = userId.startsWith('demo-');
+  const authUser = isDemo ? null : await getAuthenticatedUser(userId);
+  const targetId = authUser?.id || userId;
 
   // Verifikasi Otorisasi: Pengguna biasa tidak boleh menambah saldo sendiri
-  const isAuthorizedAdmin = await verifyAdminAuthorization(authUser.id);
+  const isAuthorizedAdmin = await verifyAdminAuthorization(targetId);
   if (!isAuthorizedAdmin) {
     console.warn('[STIVIA Subscription] Otorisasi ditolak: Pengguna biasa tidak berwenang melakukan top-up saldo.');
     throw new Error('Akses ditolak: Hanya Administrator yang berwenang menambah saldo prompt.');
   }
 
-  const existingSub = await getUserSubscription(authUser.id);
-  const now = new Date();
-  const currentBalance = existingSub.promptBalance ?? 0;
-  const newBalance = currentBalance + addedPrompts;
-  const newTotalGranted = (existingSub.totalGranted ?? currentBalance) + addedPrompts;
+  // A. Mode Demo / Lingkungan Tanpa Supabase
+  if (isDemo || !isSupabaseConfigured) {
+    const existingSub = await getUserSubscription(targetId);
+    const now = new Date();
+    const currentBalance = existingSub.promptBalance ?? 0;
+    const newBalance = currentBalance + addedPrompts;
+    const newTotalGranted = (existingSub.totalGranted ?? currentBalance) + addedPrompts;
 
-  let rpcHandled = false;
+    const updatedSub: UserSubscription = {
+      ...existingSub,
+      plan: 'pro',
+      status: 'active',
+      promptBalance: newBalance,
+      totalGranted: newTotalGranted,
+      endDate: null,
+      updatedAt: now.toISOString(),
+    };
 
-  if (isSupabaseConfigured) {
-    // Upayakan RPC aman terlebih dahulu
     try {
-      const { error: rpcErr } = await supabase.rpc('admin_topup_prompts', {
-        target_user_id: authUser.id,
-        added_prompts: addedPrompts,
-      });
-      if (!rpcErr) {
-        rpcHandled = true;
-      }
+      localStorage.setItem(`stivia_sub_${targetId}`, JSON.stringify(updatedSub));
     } catch {
-      // Fallback
+      // ignore
     }
+    memorySubCache.set(targetId, { data: updatedSub, timestamp: Date.now() });
 
-    if (!rpcHandled) {
-      try {
-        await supabase
-          .from('user_subscriptions')
-          .update({
-            plan: 'pro',
-            status: 'active',
-            prompt_balance: newBalance,
-            total_granted: newTotalGranted,
-            end_date: null,
-            updated_at: now.toISOString(),
-          })
-          .eq('user_id', authUser.id);
-      } catch (err) {
-        console.warn('[STIVIA Subscription] Top up saldo prompt Supabase:', err);
-      }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('stivia_subscription_updated', {
+          detail: { userId: targetId, plan: 'pro', promptBalance: newBalance },
+        })
+      );
     }
+    return await getSubscriptionSummary(targetId);
   }
 
-  const updatedSub: UserSubscription = {
-    ...existingSub,
-    plan: 'pro',
-    status: 'active',
-    promptBalance: newBalance,
-    totalGranted: newTotalGranted,
-    endDate: null,
-    updatedAt: now.toISOString(),
-  };
+  // B. Lingkungan Supabase: Server / RPC adalah satu-satunya Sumber Kebenaran
+  const { error: rpcErr } = await supabase.rpc('admin_topup_prompts', {
+    target_user_id: targetId,
+    added_prompts: addedPrompts,
+  });
 
-  try {
-    localStorage.setItem(`stivia_sub_${authUser.id}`, JSON.stringify(updatedSub));
-  } catch {
-    // ignore
+  if (rpcErr) {
+    console.warn('[STIVIA Subscription] Gagal top up saldo prompt via RPC server:', rpcErr);
+    throw new Error(rpcErr.message || 'Gagal menambahkan saldo prompt melalui server.');
   }
 
-  memorySubCache.set(authUser.id, { data: updatedSub, timestamp: Date.now() });
+  // Hanya jika RPC server berhasil: sinkronkan cache lokal dengan kondisi mutakhir database
+  invalidateSubscriptionCache(targetId);
+  const latestSub = await getUserSubscription(targetId);
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('stivia_subscription_updated', {
-        detail: { userId: authUser.id, plan: 'pro', promptBalance: newBalance },
+        detail: { userId: targetId, plan: latestSub.plan, promptBalance: latestSub.promptBalance },
       })
     );
   }
 
-  return await getSubscriptionSummary(authUser.id);
+  return await getSubscriptionSummary(targetId);
 }
 
 /**
@@ -856,85 +812,76 @@ export async function setTestingPlan(
     return createFallbackSummary('guest');
   }
 
-  const authUser = await getAuthenticatedUser(userId);
-  if (!authUser) {
-    return createFallbackSummary('guest');
-  }
+  const isDemo = userId.startsWith('demo-');
+  const authUser = isDemo ? null : await getAuthenticatedUser(userId);
+  const targetId = authUser?.id || userId;
 
   // Verifikasi Otorisasi: Pengguna biasa tidak boleh memanipulasi paket
-  const isAuthorizedAdmin = await verifyAdminAuthorization(authUser.id);
+  const isAuthorizedAdmin = await verifyAdminAuthorization(targetId);
   if (!isAuthorizedAdmin) {
     console.warn('[STIVIA Subscription] Otorisasi ditolak: Pengguna biasa tidak diizinkan mengubah paket pengujian.');
     throw new Error('Akses ditolak: Hanya Administrator yang berwenang mengubah paket pengujian.');
   }
 
-  const existingSub = await getUserSubscription(authUser.id);
-  const now = new Date();
-  const isPro = newPlan === 'pro';
-  const targetPrompts = isPro ? 50 : 10;
+  // A. Mode Demo / Lingkungan Tanpa Supabase
+  if (isDemo || !isSupabaseConfigured) {
+    const existingSub = await getUserSubscription(targetId);
+    const now = new Date();
+    const isPro = newPlan === 'pro';
+    const targetPrompts = isPro ? 50 : 10;
 
-  let rpcHandled = false;
+    const updatedSub: UserSubscription = {
+      ...existingSub,
+      plan: newPlan,
+      promptBalance: targetPrompts,
+      totalGranted: targetPrompts,
+      usedCount: 0,
+      status: 'active',
+      endDate: null,
+      updatedAt: now.toISOString(),
+    };
 
-  if (isSupabaseConfigured) {
     try {
-      const { error: rpcErr } = await supabase.rpc('admin_set_user_plan', {
-        target_user_id: authUser.id,
-        new_plan: newPlan,
-      });
-      if (!rpcErr) {
-        rpcHandled = true;
-      }
+      localStorage.setItem(`stivia_sub_${targetId}`, JSON.stringify(updatedSub));
     } catch {
-      // Fallback
+      // ignore
     }
+    memorySubCache.set(targetId, { data: updatedSub, timestamp: Date.now() });
 
-    if (!rpcHandled) {
-      try {
-        await supabase
-          .from('user_subscriptions')
-          .update({
-            plan: newPlan,
-            prompt_balance: targetPrompts,
-            total_granted: targetPrompts,
-            used_count: 0,
-            end_date: null,
-            updated_at: now.toISOString(),
-          })
-          .eq('user_id', authUser.id);
-      } catch (err) {
-        console.warn('[STIVIA Subscription] Update paket testing Supabase:', err);
-      }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('stivia_subscription_updated', {
+          detail: { userId: targetId, plan: newPlan },
+        })
+      );
     }
+    return await getSubscriptionSummary(targetId);
   }
 
-  const updatedSub: UserSubscription = {
-    ...existingSub,
-    plan: newPlan,
-    promptBalance: targetPrompts,
-    totalGranted: targetPrompts,
-    usedCount: 0,
-    status: 'active',
-    endDate: null,
-    updatedAt: now.toISOString(),
-  };
+  // B. Lingkungan Supabase: Server / RPC adalah satu-satunya Sumber Kebenaran
+  const { error: rpcErr } = await supabase.rpc('admin_set_user_plan', {
+    target_user_id: targetId,
+    new_plan: newPlan,
+  });
 
-  try {
-    localStorage.setItem(`stivia_sub_${authUser.id}`, JSON.stringify(updatedSub));
-  } catch {
-    // ignore
+  if (rpcErr) {
+    console.warn('[STIVIA Subscription] Gagal mengubah paket testing via RPC server:', rpcErr);
+    throw new Error(rpcErr.message || 'Gagal mengubah paket pengujian melalui server.');
   }
 
-  memorySubCache.set(authUser.id, { data: updatedSub, timestamp: Date.now() });
+  // Hanya jika RPC server berhasil: sinkronkan cache lokal dengan kondisi mutakhir database
+  invalidateSubscriptionCache(targetId);
+  const latestSub = await getUserSubscription(targetId);
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('stivia_subscription_updated', {
-        detail: { userId: authUser.id, plan: newPlan },
+        detail: { userId: targetId, plan: latestSub.plan },
       })
     );
   }
 
-  return await getSubscriptionSummary(authUser.id);
+  return await getSubscriptionSummary(targetId);
 }
 
 export const updateUserPlan = setTestingPlan;
@@ -965,78 +912,58 @@ export async function updateUserRole(
     throw new Error('Akses ditolak: Hanya Administrator yang berwenang mengubah peran.');
   }
 
-  const existingSub = await getUserSubscription(targetId);
-  const isAdmin = newRole === 'admin';
-  const freePrompts = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
+  // A. Mode Demo / Lingkungan Tanpa Supabase
+  if (isDemo || !isSupabaseConfigured) {
+    const existingSub = await getUserSubscription(targetId);
+    const isAdmin = newRole === 'admin';
+    const freePrompts = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
 
-  let rpcHandled = false;
+    const updatedSub: UserSubscription = {
+      ...existingSub,
+      role: newRole,
+      plan: isAdmin ? 'pro' : existingSub.plan,
+      promptBalance: isAdmin ? 999999 : (existingSub.promptBalance > 900000 ? freePrompts : existingSub.promptBalance),
+      totalGranted: isAdmin ? 999999 : (existingSub.totalGranted > 900000 ? freePrompts : existingSub.totalGranted),
+      endDate: null,
+      updatedAt: new Date().toISOString(),
+    };
 
-  if (isSupabaseConfigured && authUser) {
     try {
-      const { error: rpcErr } = await supabase.rpc('admin_update_user_role', {
-        target_user_id: authUser.id,
-        new_role: newRole,
-      });
-      if (!rpcErr) {
-        rpcHandled = true;
-      }
+      localStorage.setItem(`stivia_sub_${targetId}`, JSON.stringify(updatedSub));
     } catch {
-      // Fallback
+      // ignore
     }
+    memorySubCache.set(targetId, { data: updatedSub, timestamp: Date.now() });
 
-    if (!rpcHandled) {
-      try {
-        await supabase
-          .from('user_subscriptions')
-          .update({
-            role: newRole,
-            plan: isAdmin ? 'pro' : existingSub.plan,
-            prompt_balance: isAdmin ? 999999 : freePrompts,
-            total_granted: isAdmin ? 999999 : freePrompts,
-            end_date: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', authUser.id);
-      } catch (err) {
-        console.warn('[STIVIA Subscription] Update role Supabase user_subscriptions:', err);
-      }
-
-      try {
-        await supabase
-          .from('profiles')
-          .update({ role: newRole })
-          .eq('id', authUser.id);
-      } catch (err) {
-        console.warn('[STIVIA Subscription] Update role Supabase profiles:', err);
-      }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('stivia_subscription_updated', {
+          detail: { userId: targetId, role: newRole, plan: updatedSub.plan, promptBalance: updatedSub.promptBalance },
+        })
+      );
     }
+    return await getSubscriptionSummary(targetId);
   }
 
-  const updatedSub: UserSubscription = {
-    ...existingSub,
-    role: newRole,
-    plan: isAdmin ? 'pro' : existingSub.plan,
-    promptBalance: isAdmin ? 999999 : (existingSub.promptBalance > 900000 ? freePrompts : existingSub.promptBalance),
-    totalGranted: isAdmin ? 999999 : (existingSub.totalGranted > 900000 ? freePrompts : existingSub.totalGranted),
-    endDate: null,
-    updatedAt: new Date().toISOString(),
-  };
+  // B. Lingkungan Supabase: Server / RPC adalah satu-satunya Sumber Kebenaran
+  const { error: rpcErr } = await supabase.rpc('admin_update_user_role', {
+    target_user_id: targetId,
+    new_role: newRole,
+  });
 
-  try {
-    localStorage.setItem(`stivia_sub_${targetId}`, JSON.stringify(updatedSub));
-    if (isAdmin) {
-      localStorage.setItem(`stivia_admin_privilege_${targetId}`, 'true');
-    }
-  } catch {
-    // ignore
+  if (rpcErr) {
+    console.warn('[STIVIA Subscription] Gagal mengubah role via RPC server:', rpcErr);
+    throw new Error(rpcErr.message || 'Gagal memperbarui peran pengguna melalui server.');
   }
 
-  memorySubCache.set(targetId, { data: updatedSub, timestamp: Date.now() });
+  // Hanya jika RPC server berhasil: sinkronkan cache lokal dengan kondisi mutakhir database
+  invalidateSubscriptionCache(targetId);
+  const latestSub = await getUserSubscription(targetId);
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('stivia_subscription_updated', {
-        detail: { userId: targetId, role: newRole, plan: updatedSub.plan, promptBalance: updatedSub.promptBalance },
+        detail: { userId: targetId, role: newRole, plan: latestSub.plan, promptBalance: latestSub.promptBalance },
       })
     );
   }
@@ -1049,9 +976,6 @@ export async function updateUserRole(
  * Digunakan jika pengembang/admin terkunci di mode user biasa dan tombol role gagal.
  */
 export async function restoreAdminAccess(userId: string): Promise<SubscriptionSummary> {
-  if (typeof window !== 'undefined' && userId) {
-    localStorage.setItem(`stivia_admin_privilege_${userId}`, 'true');
-  }
   return await updateUserRole(userId, 'admin');
 }
 
