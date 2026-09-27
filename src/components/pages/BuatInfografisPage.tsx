@@ -29,7 +29,18 @@ import {
   Clock,
   Target,
   PenTool,
-  HelpCircle
+  HelpCircle,
+  Plus,
+  Trash2,
+  Edit3,
+  Eye,
+  Download,
+  Palette,
+  Grid,
+  Type,
+  CheckSquare,
+  Square,
+  Maximize2
 } from 'lucide-react';
 import { 
   EducationLevel, 
@@ -38,7 +49,16 @@ import {
   InfographicDraft,
   NavigationTab,
   SubscriptionSummary,
-  PROMPT_PACKAGES
+  PROMPT_PACKAGES,
+  InfographicStructureShape,
+  InfographicContentComponent,
+  InfographicDepth,
+  InfographicIllustrationLevel,
+  InfographicVisualType,
+  InfographicDesignStyle,
+  InfographicPaperSize,
+  InfographicOrientation,
+  InfographicPreviewSection
 } from '../../types';
 import { 
   GRADE_OPTIONS_BY_LEVEL, 
@@ -48,7 +68,11 @@ import {
 import { getStyleProfile } from '../../data/styleProfilesData';
 import { APP_CURRENT_VERSION } from '../../data/versionHistoryData';
 import { analyzeAndGenerateProjectInfographicPrompt } from '../../services/promptStudioEngine';
-import { StiviaThinkingResult } from '../../services/stiviaThinkingFramework';
+import { 
+  StiviaThinkingResult, 
+  suggestLearningObjectives, 
+  buildPreviewInfographicStructure 
+} from '../../services/stiviaThinkingFramework';
 import { 
   LkpdActivityType, 
   LkpdFormatType, 
@@ -63,6 +87,74 @@ import {
 } from '../../services/lkpdEngine';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
+
+// ==========================================
+// PENGEMBANGAN FITUR INFOGRAFIS STIVIA: KONSTANTA PILIHAN
+// ==========================================
+
+const INFOGRAPHIC_STRUCTURE_OPTIONS: { id: InfographicStructureShape; label: string; desc: string; iconBadge: string }[] = [
+  { id: 'Konsep Dasar', label: 'Konsep Dasar', desc: 'Menjelaskan pengertian & konsep utama secara terstruktur', iconBadge: '01' },
+  { id: 'Analisis', label: 'Analisis', desc: 'Menguraikan unsur, relasi, atau karakteristik analitis', iconBadge: '02' },
+  { id: 'Perbandingan', label: 'Perbandingan', desc: 'Membandingkan dua atau lebih konsep secara bersisian', iconBadge: '03' },
+  { id: 'Proses / Langkah', label: 'Proses / Langkah', desc: 'Urutan tahapan atau prosedur kerja sistematis', iconBadge: '04' },
+  { id: 'Struktur / Komponen', label: 'Struktur / Komponen', desc: 'Menjelaskan bagian-bagian pembentuk suatu konsep', iconBadge: '05' },
+  { id: 'Ringkasan', label: 'Ringkasan', desc: 'Merangkum intisari materi menjadi poin-poin utama', iconBadge: '06' },
+  { id: 'Materi + Contoh', label: 'Materi + Contoh', desc: 'Menggabungkan teori konsep dengan contoh konkret nyata', iconBadge: '07' },
+  { id: 'Kontekstual', label: 'Kontekstual', desc: 'Menghubungkan materi dengan kehidupan sehari-hari siswa', iconBadge: '08' },
+  { id: 'AI Pilihkan', label: '✨ AI Pilihkan', desc: 'AI menentukan bentuk paling ideal sesuai karakter materi', iconBadge: 'AI' },
+];
+
+const INFOGRAPHIC_COMPONENT_OPTIONS: InfographicContentComponent[] = [
+  'Pengertian',
+  'Tujuan',
+  'Fungsi',
+  'Ciri-ciri',
+  'Unsur / Komponen',
+  'Jenis',
+  'Karakteristik',
+  'Contoh',
+  'Perbandingan',
+  'Langkah / Proses',
+  'Tips',
+  'Kesimpulan'
+];
+
+const INFOGRAPHIC_DEPTH_OPTIONS: { id: InfographicDepth; label: string; desc: string }[] = [
+  { id: 'Ringkas', label: 'Ringkas', desc: 'Hanya inti materi yang paling esensial' },
+  { id: 'Sedang', label: 'Sedang (Standar)', desc: 'Materi proporsional, cukup lengkap dan nyaman dibaca' },
+  { id: 'Mendalam', label: 'Mendalam', desc: 'Materi lebih detail, disertai penjelasan dan contoh kontekstual' }
+];
+
+const INFOGRAPHIC_ILLUSTRATION_LEVELS: { id: InfographicIllustrationLevel; label: string; desc: string }[] = [
+  { id: 'Tanpa Ilustrasi', label: 'Tanpa Ilustrasi', desc: 'Fokus pada teks, diagram, ikon, dan struktur' },
+  { id: 'Pendukung Konsep', label: 'Pendukung Konsep', desc: 'Ilustrasi memperjelas pemahaman konsep inti' },
+  { id: 'Kontekstual', label: 'Kontekstual', desc: 'Ilustrasi menggambarkan situasi nyata siswa' },
+  { id: 'Dominan Visual', label: 'Dominan Visual', desc: 'Visual menjadi bagian utama, teks lebih ringkas' }
+];
+
+const INFOGRAPHIC_VISUAL_TYPES: InfographicVisualType[] = [
+  'Ikon',
+  'Diagram',
+  'Ilustrasi Kejadian',
+  'Karakter',
+  'Objek Nyata',
+  'Simbol',
+  'Contoh Visual'
+];
+
+const INFOGRAPHIC_DESIGN_STYLES: { id: InfographicDesignStyle; label: string }[] = [
+  { id: 'Modern', label: 'Modern' },
+  { id: 'Illustrated', label: 'Illustrated' },
+  { id: 'Minimal', label: 'Minimal' },
+  { id: 'Editorial', label: 'Editorial' },
+  { id: 'Scientific', label: 'Scientific' },
+  { id: 'Playful', label: 'Playful' },
+  { id: 'Premium', label: 'Premium' },
+  { id: 'AI Pilihkan', label: '✨ AI Pilihkan' }
+];
+
+const INFOGRAPHIC_PAPER_SIZES: InfographicPaperSize[] = ['A4', 'A3', 'Digital'];
+const INFOGRAPHIC_ORIENTATIONS: InfographicOrientation[] = ['Portrait', 'Landscape'];
 
 const LKPD_ACTIVITY_OPTIONS: LkpdActivityType[] = [
   'Individu',
@@ -180,6 +272,69 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [selectedPromptType, setSelectedPromptType] = useState<'infografis' | 'lkpd'>('infografis');
   const [activeOutputType, setActiveOutputType] = useState<'infografis' | 'lkpd'>('infografis');
 
+  // Pengaturan Khusus Infografis (Pengembangan Fitur Infografis STIVIA)
+  const [learningObjectivesList, setLearningObjectivesList] = useState<string[]>(() => {
+    if (currentDraft.learningObjectivesList && currentDraft.learningObjectivesList.length > 0) {
+      return currentDraft.learningObjectivesList;
+    }
+    if (currentDraft.learningObjective) {
+      return [currentDraft.learningObjective];
+    }
+    return [
+      `Memahami konsep dasar dan pengertian esensial dari ${currentDraft.rawTopic || currentDraft.title || 'Materi'}.`,
+      `Mengidentifikasi ciri-ciri, unsur pembangun, dan fungsi materi secara terstruktur.`,
+      `Menganalisis keterkaitan materi dengan penerapannya dalam kehidupan nyata peserta didik.`
+    ];
+  });
+  const [newObjectiveInput, setNewObjectiveInput] = useState<string>('');
+  const [isSuggestingObjectives, setIsSuggestingObjectives] = useState<boolean>(false);
+
+  const [structureShape, setStructureShape] = useState<InfographicStructureShape>(
+    currentDraft.infographicSettings?.structureShape || 'Konsep Dasar'
+  );
+  const [selectedComponents, setSelectedComponents] = useState<InfographicContentComponent[]>(
+    currentDraft.infographicSettings?.selectedComponents || [
+      'Pengertian',
+      'Tujuan',
+      'Ciri-ciri',
+      'Contoh',
+      'Kesimpulan'
+    ]
+  );
+  const [depth, setDepth] = useState<InfographicDepth>(
+    currentDraft.infographicSettings?.depth || 'Sedang'
+  );
+  const [illustrationLevel, setIllustrationLevel] = useState<InfographicIllustrationLevel>(
+    currentDraft.infographicSettings?.illustrationLevel || 'Pendukung Konsep'
+  );
+  const [selectedVisualTypes, setSelectedVisualTypes] = useState<InfographicVisualType[]>(
+    currentDraft.infographicSettings?.selectedVisualTypes || ['Ikon', 'Diagram', 'Contoh Visual']
+  );
+  const [designStyle, setDesignStyle] = useState<InfographicDesignStyle>(
+    currentDraft.infographicSettings?.designStyle || 'Modern'
+  );
+  const [orientation, setOrientation] = useState<InfographicOrientation>(
+    currentDraft.infographicSettings?.orientation || 'Portrait'
+  );
+  const [paperSize, setPaperSize] = useState<InfographicPaperSize>(
+    currentDraft.infographicSettings?.paperSize || 'A4'
+  );
+  const [teacherNotes, setTeacherNotes] = useState<string>(
+    currentDraft.infographicSettings?.teacherNotes || currentDraft.userNotes || ''
+  );
+
+  // Preview Rancangan Infografis State (In-Memory, Bebas Saldo)
+  const [previewStructure, setPreviewStructure] = useState<InfographicPreviewSection[]>(() => {
+    return buildPreviewInfographicStructure(
+      currentDraft.rawTopic || currentDraft.title || 'Struktur Data Graph',
+      currentDraft.subject || 'Informatika',
+      currentDraft.infographicSettings?.structureShape || 'Konsep Dasar',
+      currentDraft.infographicSettings?.selectedComponents || ['Pengertian', 'Tujuan', 'Ciri-ciri', 'Contoh', 'Kesimpulan'],
+      currentDraft.infographicSettings?.depth || 'Sedang'
+    );
+  });
+  const [isEditingPreview, setIsEditingPreview] = useState<boolean>(false);
+
   // Pengaturan Khusus LKPD (Section 7)
   const [lkpdActivityType, setLkpdActivityType] = useState<LkpdActivityType>('Kelompok');
   const [lkpdFormatType, setLkpdFormatType] = useState<LkpdFormatType>('Pemahaman Konsep');
@@ -198,6 +353,21 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [thinkingResult, setThinkingResult] = useState<StiviaThinkingResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyToast, setCopyToast] = useState<string | null>(null);
+
+  // Sync reaktif preview rancangan infografis in-memory (Nol Saldo)
+  useEffect(() => {
+    if (!isEditingPreview) {
+      const activeSubj = isCustomSubject ? customSubject : subject;
+      const updated = buildPreviewInfographicStructure(
+        materiDiajarkan,
+        activeSubj,
+        structureShape,
+        selectedComponents,
+        depth
+      );
+      setPreviewStructure(updated);
+    }
+  }, [materiDiajarkan, subject, customSubject, isCustomSubject, structureShape, selectedComponents, depth, isEditingPreview]);
 
   // Sync available grades when education level changes
   useEffect(() => {
@@ -232,8 +402,79 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
       setUserNotes(currentDraft.userNotes || '');
       setFormat(currentDraft.format || 'portrait');
       setVisualLevel(currentDraft.visualLevel || 'seimbang');
+
+      if (currentDraft.learningObjectivesList && currentDraft.learningObjectivesList.length > 0) {
+        setLearningObjectivesList(currentDraft.learningObjectivesList);
+      } else if (currentDraft.learningObjective) {
+        setLearningObjectivesList([currentDraft.learningObjective]);
+      }
+
+      if (currentDraft.infographicSettings) {
+        setStructureShape(currentDraft.infographicSettings.structureShape || 'Konsep Dasar');
+        setSelectedComponents(currentDraft.infographicSettings.selectedComponents || ['Pengertian', 'Tujuan', 'Ciri-ciri', 'Contoh', 'Kesimpulan']);
+        setDepth(currentDraft.infographicSettings.depth || 'Sedang');
+        setIllustrationLevel(currentDraft.infographicSettings.illustrationLevel || 'Pendukung Konsep');
+        setSelectedVisualTypes(currentDraft.infographicSettings.selectedVisualTypes || ['Ikon', 'Diagram', 'Contoh Visual']);
+        setDesignStyle(currentDraft.infographicSettings.designStyle || 'Modern');
+        setOrientation(currentDraft.infographicSettings.orientation || 'Portrait');
+        setPaperSize(currentDraft.infographicSettings.paperSize || 'A4');
+        setTeacherNotes(currentDraft.infographicSettings.teacherNotes || currentDraft.userNotes || '');
+      }
     }
   }, [currentDraft.id, currentDraft.updatedAt]);
+
+  const handleSuggestObjectives = () => {
+    setIsSuggestingObjectives(true);
+    try {
+      const finalSubject = isCustomSubject ? customSubject.trim() : subject;
+      const suggestions = suggestLearningObjectives(finalSubject, materiDiajarkan, scope);
+      if (suggestions && suggestions.length > 0) {
+        setLearningObjectivesList(suggestions);
+        setCopyToast('✨ Tujuan pembelajaran berhasil dirumuskan AI berdasarkan materi!');
+        setTimeout(() => setCopyToast(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error suggesting objectives:', err);
+    } finally {
+      setIsSuggestingObjectives(false);
+    }
+  };
+
+  const handleAddObjective = () => {
+    if (!newObjectiveInput.trim()) return;
+    setLearningObjectivesList(prev => [...prev, newObjectiveInput.trim()]);
+    setNewObjectiveInput('');
+  };
+
+  const handleRemoveObjective = (index: number) => {
+    setLearningObjectivesList(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateObjective = (index: number, val: string) => {
+    setLearningObjectivesList(prev => prev.map((item, i) => i === index ? val : item));
+  };
+
+  const handleToggleComponent = (comp: InfographicContentComponent) => {
+    setSelectedComponents(prev => {
+      if (prev.includes(comp)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter(c => c !== comp);
+      } else {
+        return [...prev, comp];
+      }
+    });
+  };
+
+  const handleToggleVisualType = (vt: InfographicVisualType) => {
+    setSelectedVisualTypes(prev => {
+      if (prev.includes(vt)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter(v => v !== vt);
+      } else {
+        return [...prev, vt];
+      }
+    });
+  };
 
   const handleLevelChange = (level: EducationLevel) => {
     setEducationLevel(level);
@@ -339,7 +580,32 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     }
   };
 
+  const handleUpdatePreviewBlock = (index: number, field: 'title' | 'desc', value: string) => {
+    setIsEditingPreview(true);
+    setPreviewStructure(prev => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      return updated;
+    });
+  };
+
+  const handleResetPreviewStructure = () => {
+    setIsEditingPreview(false);
+    const activeSubj = isCustomSubject ? customSubject : subject;
+    const fresh = buildPreviewInfographicStructure(
+      materiDiajarkan,
+      activeSubj,
+      structureShape,
+      selectedComponents,
+      depth
+    );
+    setPreviewStructure(fresh);
+  };
+
   const executeGenerateLkpdPrompt = async () => {
+    if (isGenerating) return; // Synchronous Lock (Security Fix #5A)
     if (!validateForm()) return;
 
     // 1. Validasi Akses & Limit Subscription
@@ -360,75 +626,85 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     setIsGenerating(true);
     setCopied(false);
 
-    setTimeout(async () => {
-      try {
-        const lkpdResult = runLkpdThinkingFramework(
-          {
-            educationLevel,
-            grade,
-            subject: finalSubject,
-            materiDiajarkan: materiDiajarkan.trim(),
-            bab: bab.trim(),
-            temaKegiatan: temaKegiatan.trim(),
-            pertemuan: pertemuan.trim() || 'Pertemuan 1',
-            scope: scope.trim(),
-            userNotes: userNotes.trim(),
-          },
-          {
-            activityType: lkpdActivityType,
-            formatType: lkpdFormatType,
-            difficulty: lkpdDifficulty,
-            timeAllocation: lkpdTimeAllocation,
-            studentOutput: lkpdStudentOutput,
-            pageSize: lkpdPageSize,
-            orientation: lkpdOrientation,
-            visualStyle: lkpdVisualStyle,
-            additionalInstructions: lkpdAdditionalInstructions.trim(),
-          }
-        );
-
-        setGeneratedPrompt(lkpdResult.stage7_FinalPrompt);
-        setLkpdThinkingResult(lkpdResult);
-        setActiveOutputType('lkpd');
-
-        onSubmitForm({
-          ...currentDraft,
+    try {
+      // 2. Generate prompt ke LOCAL VARIABLE / IN-MEMORY (Security Fix #5B)
+      const lkpdResult = runLkpdThinkingFramework(
+        {
           educationLevel,
           grade,
           subject: finalSubject,
-          title: materiDiajarkan.trim(),
-          rawTopic: materiDiajarkan.trim(),
-          theme: temaKegiatan.trim() || materiDiajarkan.trim(),
+          materiDiajarkan: materiDiajarkan.trim(),
           bab: bab.trim(),
+          temaKegiatan: temaKegiatan.trim(),
           pertemuan: pertemuan.trim() || 'Pertemuan 1',
-          scope,
+          scope: scope.trim(),
           userNotes: userNotes.trim(),
-          stiviaPrompt: lkpdResult.stage7_FinalPrompt,
-          updatedAt: new Date().toISOString().split('T')[0],
-        });
-
-        // 2. Catat penambahan penggunaan (+1 generate) jika pengguna login
-        if (userId) {
-          try {
-            await recordGenerateUsage(userId);
-            if (onUsageRecorded) {
-              onUsageRecorded();
-            }
-          } catch (usageErr) {
-            console.warn('[Buat Prompt LKPD] Gagal mencatat log penggunaan:', usageErr);
-          }
+        },
+        {
+          activityType: lkpdActivityType,
+          formatType: lkpdFormatType,
+          difficulty: lkpdDifficulty,
+          timeAllocation: lkpdTimeAllocation,
+          studentOutput: lkpdStudentOutput,
+          pageSize: lkpdPageSize,
+          orientation: lkpdOrientation,
+          visualStyle: lkpdVisualStyle,
+          additionalInstructions: lkpdAdditionalInstructions.trim(),
         }
+      );
 
-        scrollToResult();
-      } catch (err) {
-        console.error('[Buat Prompt LKPD Generator Error]', err);
-      } finally {
-        setIsGenerating(false);
+      // 3. Catat penambahan penggunaan (+1 generate) jika pengguna login (Security Fix #5A + #5B)
+      if (userId) {
+        try {
+          await recordGenerateUsage(userId);
+          if (onUsageRecorded) {
+            onUsageRecorded();
+          }
+        } catch (usageErr: any) {
+          console.error('[Buat Prompt LKPD] Gagal potong saldo prompt:', usageErr);
+          setIsGenerating(false);
+          setLimitReason(
+            usageErr?.message || 
+            'Gagal memproses kuota saldo prompt di server. Prompt tidak disimpan.'
+          );
+          setShowLimitModal(true);
+          return; // Hentikan dan JANGAN commit ke state jika saldo gagal dipotong!
+        }
       }
-    }, 250);
+
+      // 4. COMMIT KE STATE HANYA JIKA KONSUMSI SALDO BERHASIL
+      setGeneratedPrompt(lkpdResult.stage7_FinalPrompt);
+      setLkpdThinkingResult(lkpdResult);
+      setActiveOutputType('lkpd');
+
+      onSubmitForm({
+        ...currentDraft,
+        educationLevel,
+        grade,
+        subject: finalSubject,
+        title: materiDiajarkan.trim(),
+        rawTopic: materiDiajarkan.trim(),
+        theme: temaKegiatan.trim() || materiDiajarkan.trim(),
+        bab: bab.trim(),
+        pertemuan: pertemuan.trim() || 'Pertemuan 1',
+        scope,
+        userNotes: userNotes.trim(),
+        stiviaPrompt: lkpdResult.stage7_FinalPrompt,
+        updatedAt: new Date().toISOString().split('T')[0],
+      });
+
+      scrollToResult();
+    } catch (err) {
+      console.error('[Buat Prompt LKPD Generator Error]', err);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const executeGeneratePrompt = async () => {
+    if (isGenerating) return; // Synchronous Lock (Security Fix #5A)
+    if (!validateForm()) return;
+
     // 1. Validasi Akses & Limit Subscription
     if (userId) {
       const check = await checkCanGenerate(userId);
@@ -443,67 +719,91 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     }
 
     const finalSubject = isCustomSubject ? customSubject.trim() : subject;
-    const finalStyle = 'Modern Edukatif';
+    const finalStyle = (designStyle && designStyle !== 'AI Pilihkan' && designStyle !== '✨ AI Pilihkan') 
+      ? designStyle 
+      : 'Modern Edukatif';
     const styleProfile = getStyleProfile(finalStyle);
 
     setIsGenerating(true);
     setCopied(false);
 
-    setTimeout(async () => {
-      try {
-        const fullDraft: InfographicDraft = {
-          ...currentDraft,
-          educationLevel,
-          grade,
-          subject: finalSubject,
-          theme: temaKegiatan.trim() || materiDiajarkan.trim(),
-          title: materiDiajarkan.trim(),
-          rawTopic: materiDiajarkan.trim(),
-          bab: bab.trim(),
-          pertemuan: pertemuan.trim() || 'Pertemuan 1',
-          scope,
-          userNotes: userNotes.trim(),
-          visualStyle: finalStyle,
-          format,
-          visualLevel,
-          styleProfile,
-          typographyMode: 'otomatis',
-          updatedAt: new Date().toISOString().split('T')[0],
-        };
+    try {
+      const activeObjectives = learningObjectivesList.filter(o => o.trim().length > 0);
+      const fullDraft: InfographicDraft = {
+        ...currentDraft,
+        educationLevel,
+        grade,
+        subject: finalSubject,
+        theme: temaKegiatan.trim() || materiDiajarkan.trim(),
+        title: materiDiajarkan.trim(),
+        rawTopic: materiDiajarkan.trim(),
+        bab: bab.trim(),
+        pertemuan: pertemuan.trim() || 'Pertemuan 1',
+        scope,
+        userNotes: userNotes.trim(),
+        visualStyle: finalStyle,
+        format,
+        visualLevel,
+        styleProfile,
+        typographyMode: 'otomatis',
+        learningObjectivesList: activeObjectives,
+        previewStructureBlocks: previewStructure,
+        infographicSettings: {
+          structureShape,
+          selectedComponents,
+          depth,
+          illustrationLevel,
+          selectedVisualTypes,
+          designStyle,
+          orientation,
+          paperSize,
+          teacherNotes: teacherNotes.trim(),
+          learningObjectives: activeObjectives,
+        },
+        updatedAt: new Date().toISOString().split('T')[0],
+      };
 
-        const { prompt, thinkingResult: result } = analyzeAndGenerateProjectInfographicPrompt(fullDraft, {
-          format: 'Vertikal',
-          visualStyleName: finalStyle,
-        });
+      // 2. Generate prompt ke LOCAL VARIABLE / IN-MEMORY dulu (Security Fix #5B)
+      const { prompt, thinkingResult: result } = analyzeAndGenerateProjectInfographicPrompt(fullDraft, {
+        format: orientation === 'Landscape' ? 'Landscape' : 'Vertikal',
+        visualStyleName: finalStyle,
+      });
 
-        setGeneratedPrompt(prompt);
-        setThinkingResult(result);
-        setActiveOutputType('infografis');
-
-        onSubmitForm({
-          ...fullDraft,
-          stiviaPrompt: prompt,
-        });
-
-        // 2. Catat penambahan penggunaan (+1 generate) jika pengguna login
-        if (userId) {
-          try {
-            await recordGenerateUsage(userId);
-            if (onUsageRecorded) {
-              onUsageRecorded();
-            }
-          } catch (usageErr) {
-            console.warn('[Buat Prompt] Gagal mencatat log penggunaan:', usageErr);
+      // 3. Validasi & Potong Saldo via RPC jika authenticated user (Security Fix #5A + #5B)
+      if (userId) {
+        try {
+          await recordGenerateUsage(userId);
+          if (onUsageRecorded) {
+            onUsageRecorded();
           }
+        } catch (usageErr: any) {
+          console.error('[Buat Prompt Generator] Gagal potong saldo prompt:', usageErr);
+          setIsGenerating(false);
+          setLimitReason(
+            usageErr?.message || 
+            'Gagal memproses kuota saldo prompt di server. Prompt tidak disimpan.'
+          );
+          setShowLimitModal(true);
+          return; // Hentikan dan JANGAN commit ke state jika saldo gagal dipotong!
         }
-
-        scrollToResult();
-      } catch (err) {
-        console.error('[Buat Prompt Generator Error]', err);
-      } finally {
-        setIsGenerating(false);
       }
-    }, 250);
+
+      // 4. COMMIT KE STATE HANYA JIKA KONSUMSI SALDO BERHASIL
+      setGeneratedPrompt(prompt);
+      setThinkingResult(result);
+      setActiveOutputType('infografis');
+
+      onSubmitForm({
+        ...fullDraft,
+        stiviaPrompt: prompt,
+      });
+
+      scrollToResult();
+    } catch (err) {
+      console.error('[Buat Prompt Generator Error]', err);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -905,11 +1205,93 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             </p>
           </div>
 
-          {/* 9. Catatan Pengguna (Opsional) */}
+          {/* 9. Tujuan Pembelajaran (Analisis Pedagogik STIVIA) */}
+          <div className="space-y-3 pt-3 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  9. Tujuan Pembelajaran <span className="text-slate-400 font-normal lowercase">(Capaian Pembelajaran)</span>
+                </label>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Tujuan pembelajaran memandu kedalaman konsep dan hierarki visual yang disusun AI
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSuggestObjectives}
+                disabled={isSuggestingObjectives || !materiDiajarkan.trim()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              >
+                {isSuggestingObjectives ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                )}
+                <span>💡 AI Rekomendasikan Tujuan</span>
+              </button>
+            </div>
+
+            {/* List Tujuan Pembelajaran */}
+            <div className="space-y-2">
+              {learningObjectivesList.map((obj, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/80 text-xs text-slate-800 group"
+                >
+                  <span className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                    {idx + 1}
+                  </span>
+                  <span className="flex-1 leading-relaxed">{obj}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveObjective(idx)}
+                    className="text-slate-400 hover:text-rose-500 p-1 rounded-md transition-colors cursor-pointer"
+                    title="Hapus tujuan ini"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              {learningObjectivesList.length === 0 && (
+                <div className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                  Belum ada tujuan pembelajaran khusus. Klik tombol <strong className="text-indigo-600">"💡 AI Rekomendasikan Tujuan"</strong> di atas atau tambah manual di bawah.
+                </div>
+              )}
+            </div>
+
+            {/* Input Tambah Tujuan Manual */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newObjectiveInput}
+                onChange={(e) => setNewObjectiveInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddObjective();
+                  }
+                }}
+                placeholder="Tambah tujuan pembelajaran lain secara manual..."
+                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 font-medium"
+              />
+              <button
+                type="button"
+                onClick={handleAddObjective}
+                disabled={!newObjectiveInput.trim()}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tambah</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 10. Catatan Pengguna (Opsional) */}
           <div className="space-y-2 pt-3 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <label htmlFor="user-notes-field" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                9. Catatan Pengguna <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                10. Catatan Pengguna <span className="text-slate-400 font-normal lowercase">(opsional)</span>
               </label>
               <span className="text-[11px] text-indigo-700 font-semibold bg-indigo-50 border border-indigo-100/80 px-2.5 py-0.5 rounded-md">
                 Ikut pada Hasil Generate
@@ -947,22 +1329,23 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {/* TOMBOL 1: INFOGRAFIS (SISTEM YANG SUDAH BERJALAN - TETAP IDENTIK) */}
+            {/* TOMBOL 1: INFOGRAFIS */}
             <button
               type="button"
               id="btn-prompt-type-infografis"
               onClick={() => {
                 setSelectedPromptType('infografis');
-                if (validateForm()) {
-                  executeGeneratePrompt();
-                }
+                setTimeout(() => {
+                  const el = document.getElementById('infografis-settings-panel');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
               }}
               disabled={isGenerating}
               className={`group flex items-center gap-3.5 px-5 py-3.5 rounded-xl border-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] ${
                 isGenerating && selectedPromptType === 'infografis'
                   ? 'border-indigo-400 bg-indigo-50/90 text-indigo-950 cursor-wait'
                   : selectedPromptType === 'infografis'
-                  ? 'border-[#3b49df] bg-indigo-50/70 hover:bg-[#3b49df] text-slate-900 hover:text-white hover:shadow-md'
+                  ? 'border-[#3b49df] bg-indigo-50/80 text-slate-900 hover:shadow-md'
                   : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50 text-slate-800'
               }`}
             >
@@ -970,7 +1353,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 isGenerating && selectedPromptType === 'infografis'
                   ? 'bg-indigo-600 text-white'
                   : selectedPromptType === 'infografis'
-                  ? 'bg-[#3b49df] text-white group-hover:bg-white group-hover:text-[#3b49df] shadow-xs'
+                  ? 'bg-[#3b49df] text-white shadow-xs'
                   : 'bg-slate-100 text-slate-600 group-hover:bg-[#3b49df] group-hover:text-white'
               }`}>
                 {isGenerating && selectedPromptType === 'infografis' ? (
@@ -988,25 +1371,21 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
                     isGenerating && selectedPromptType === 'infografis'
                       ? 'bg-indigo-200 text-indigo-900'
-                      : 'bg-indigo-100 text-indigo-800 group-hover:bg-white/20 group-hover:text-white'
+                      : 'bg-indigo-100 text-indigo-800'
                   }`}>
-                    Poster Vertikal
+                    Poster Pendidikan
                   </span>
                 </div>
                 <p className={`text-xs mt-0.5 transition-colors ${
                   isGenerating && selectedPromptType === 'infografis'
                     ? 'text-indigo-700 font-medium'
-                    : 'text-slate-500 group-hover:text-indigo-100'
+                    : 'text-slate-500'
                 }`}>
-                  {isGenerating && selectedPromptType === 'infografis' ? 'Sedang memproses prompt...' : 'Generate Prompt Infografis'}
+                  {isGenerating && selectedPromptType === 'infografis' ? 'Sedang memproses prompt...' : 'Atur & Generate Infografis'}
                 </p>
               </div>
 
-              <div className={`ml-auto p-1.5 rounded-lg transition-all ${
-                isGenerating && selectedPromptType === 'infografis'
-                  ? 'text-indigo-600'
-                  : 'text-indigo-600 group-hover:text-white group-hover:translate-x-0.5'
-              }`}>
+              <div className="ml-auto p-1.5 rounded-lg text-indigo-600">
                 <Sparkles className="w-4 h-4" />
               </div>
             </button>
@@ -1072,6 +1451,376 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               </div>
             </button>
           </div>
+
+          {/* PENGATURAN KHUSUS INFOGRAFIS (MUNCUL KETIKA PENGGUNA MEMILIH INFOGRAFIS) */}
+          {selectedPromptType === 'infografis' && (
+            <div 
+              id="infografis-settings-panel"
+              className="mt-6 pt-6 border-t border-slate-200/80 space-y-6 animate-in fade-in duration-200"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-indigo-100 text-indigo-800 uppercase tracking-wider mb-1">
+                    <Palette className="w-3 h-3" />
+                    <span>Pengaturan Khusus Infografis</span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                    Karakteristik & Format Poster Infografis Pendidikan
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Data materi aktif di atas otomatis dianalisis oleh AI. Sesuaikan parameter visual & pedagogik sebelum membuat poster:
+                  </p>
+                </div>
+              </div>
+
+              {/* A. BENTUK INFOGRAFIS */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    A. Bentuk Infografis
+                  </label>
+                  <span className="text-[11px] text-indigo-600 font-medium">
+                    Format penyampaian pesan visual
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {INFOGRAPHIC_STRUCTURE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setStructureShape(opt.id)}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                        structureShape === opt.id
+                          ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 shadow-xs ring-1 ring-indigo-500'
+                          : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold">{opt.label}</span>
+                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{opt.iconBadge}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* B. KOMPONEN ISI INFOGRAFIS */}
+              <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    B. Komponen Isi Infografis <span className="text-slate-400 font-normal lowercase">(Pilih 3–6 modul)</span>
+                  </label>
+                  <span className="text-[11px] text-indigo-600 font-medium">
+                    {selectedComponents.length} dipilih
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {INFOGRAPHIC_COMPONENT_OPTIONS.map((comp) => {
+                    const isSelected = selectedComponents.includes(comp);
+                    return (
+                      <button
+                        key={comp}
+                        type="button"
+                        onClick={() => handleToggleComponent(comp)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 text-slate-400" />}
+                        <span>{comp}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  * Modul materi yang dipilih akan menjadi section terstruktur pada rancangan infografis.
+                </p>
+              </div>
+
+              {/* C & D: KEDALAMAN MATERI & TINGKAT ILUSTRASI */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                {/* C. Tingkat Kedalaman */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    C. Tingkat Kedalaman Materi
+                  </label>
+                  <div className="space-y-1.5">
+                    {INFOGRAPHIC_DEPTH_OPTIONS.map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setDepth(d.id)}
+                        className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                          depth === d.id
+                            ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 font-bold ring-1 ring-indigo-500'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="font-semibold">{d.label}</div>
+                        <div className="text-[11px] text-slate-500 font-normal">{d.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* D. Tingkat Ilustrasi Visual */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    D. Tingkat Ilustrasi Visual
+                  </label>
+                  <div className="space-y-1.5">
+                    {INFOGRAPHIC_ILLUSTRATION_LEVELS.map((il) => (
+                      <button
+                        key={il.id}
+                        type="button"
+                        onClick={() => setIllustrationLevel(il.id)}
+                        className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                          illustrationLevel === il.id
+                            ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 font-bold ring-1 ring-indigo-500'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="font-semibold">{il.label}</div>
+                        <div className="text-[11px] text-slate-500 font-normal">{il.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* E & F: JENIS VISUAL & GAYA DESAIN */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                {/* E. Jenis Visual Prioritas */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      E. Jenis Visual Prioritas
+                    </label>
+                    <span className="text-[11px] text-slate-400">Pilih elemen</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {INFOGRAPHIC_VISUAL_TYPES.map((vType) => {
+                      const isSelected = selectedVisualTypes.includes(vType);
+                      return (
+                        <button
+                          key={vType}
+                          type="button"
+                          onClick={() => handleToggleVisualType(vType)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {vType}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* F. Gaya Desain */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    F. Gaya Desain Visual
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {INFOGRAPHIC_DESIGN_STYLES.map((style) => (
+                      <button
+                        key={style.id}
+                        type="button"
+                        onClick={() => setDesignStyle(style.id)}
+                        className={`p-2 rounded-lg text-xs font-semibold border text-center transition-all cursor-pointer ${
+                          designStyle === style.id
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {style.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* G & H: UKURAN KERTAS & ORIENTASI & CATATAN GURU */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                {/* G. Ukuran Kertas & Orientasi */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      G. Ukuran & Orientasi Dokumen
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {INFOGRAPHIC_PAPER_SIZES.map((sz) => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => setPaperSize(sz)}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
+                            paperSize === sz
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {INFOGRAPHIC_ORIENTATIONS.map((ori) => (
+                      <button
+                        key={ori}
+                        type="button"
+                        onClick={() => setOrientation(ori)}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
+                          orientation === ori
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {ori === 'Portrait' ? 'Vertikal (Portrait)' : 'Mendatar (Landscape)'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* H. Catatan Khusus Guru */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    H. Catatan Khusus Guru / Desain <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={teacherNotes}
+                    onChange={(e) => setTeacherNotes(e.target.value)}
+                    placeholder="Catatan tambahan untuk poster, misal: Gunakan warna dominan hijau tosca, tekankan poin nomor 2 dengan highlight khusus."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs leading-relaxed focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100"
+                  />
+                </div>
+              </div>
+
+              {/* I. PREVIEW RANCANGAN STRUKTUR INFOGRAFIS (ANALISIS AI REAL-TIME) */}
+              <div className="space-y-3 pt-3 border-t border-slate-200/90 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Preview Analisis Rancangan Struktur Infografis</span>
+                      </h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                        Nol Saldo
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      AI menyusun urutan materi ini secara otomatis. Anda dapat menyesuaikannya sebelum generate poster:
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isEditingPreview ? (
+                      <button
+                        type="button"
+                        onClick={handleResetPreviewStructure}
+                        className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 cursor-pointer transition-all"
+                      >
+                        ↺ Reset ke Otomatis
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingPreview(true)}
+                        className="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 cursor-pointer transition-all flex items-center gap-1.5"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>✏️ Sesuaikan Rancangan</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {previewStructure.map((sec, idx) => (
+                    <div 
+                      key={idx} 
+                      className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                          Modul {sec.step}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {sec.visualHint?.split(' ')[0] || 'Visual'}
+                        </span>
+                      </div>
+                      {isEditingPreview ? (
+                        <div className="space-y-1.5 pt-1">
+                          <input
+                            type="text"
+                            value={sec.title}
+                            onChange={(e) => handleUpdatePreviewBlock(idx, 'title', e.target.value)}
+                            className="w-full px-2 py-1 text-xs font-bold text-slate-900 border border-slate-200 rounded-md focus:border-indigo-500"
+                          />
+                          <textarea
+                            rows={2}
+                            value={sec.desc}
+                            onChange={(e) => handleUpdatePreviewBlock(idx, 'desc', e.target.value)}
+                            className="w-full px-2 py-1 text-[11px] text-slate-600 border border-slate-200 rounded-md focus:border-indigo-500"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <h5 className="text-xs font-bold text-slate-900 line-clamp-1">{sec.title}</h5>
+                          <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{sec.desc}</p>
+                          {sec.visualHint && (
+                            <p className="text-[10px] text-indigo-600 font-medium line-clamp-1 pt-0.5 flex items-center gap-1">
+                              <span>🎨</span>
+                              <span>{sec.visualHint}</span>
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* TOMBOL GENERATE INFOGRAFIS UTAMA */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  id="btn-generate-infografis-final"
+                  onClick={executeGeneratePrompt}
+                  disabled={isGenerating}
+                  className={`w-full py-4 px-6 rounded-2xl font-extrabold text-sm sm:text-base transition-all cursor-pointer shadow-lg flex items-center justify-center gap-3 active:scale-[0.99] ${
+                    isGenerating
+                      ? 'bg-indigo-400 text-white cursor-wait'
+                      : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-indigo-200 hover:shadow-xl'
+                  }`}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Sedang Menganalisis & Mengenerate Poster Infografis...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5 text-indigo-200" />
+                      <span>GENERATE PROMPT & POSTER INFOGRAFIS</span>
+                      <ArrowRight className="w-5 h-5 ml-1" />
+                    </>
+                  )}
+                </button>
+                <p className="text-center text-[11px] text-slate-500 mt-2">
+                  ✨ Menghasilkan Universal Educational Poster Prompt & Poster Visual Terstruktur
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* PENGATURAN KHUSUS LKPD (MUNCUL KETIKA PENGGUNA MEMILIH LKPD) */}
           {selectedPromptType === 'lkpd' && (
@@ -1371,14 +2120,46 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               </p>
             </div>
 
-            {/* Action Buttons: SALIN PROMPT & CETAK & REGENERATE */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            {/* Action Buttons: SALIN PROMPT & CETAK & REGENERATE & NAVIGASI */}
+            <div className="flex flex-wrap items-center gap-2">
+              {activeOutputType === 'infografis' && onNavigate && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('visual')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-900/80 hover:bg-indigo-800 text-indigo-200 text-xs font-bold transition-all cursor-pointer border border-indigo-700/60 shadow-sm"
+                    title="Buka studio visual infografis"
+                  >
+                    <Palette className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>🎨 Visual & Gaya</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('rancangan')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
+                    title="Lihat & edit rancangan materi terstruktur"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>✏️ Edit Materi</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('preview')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
+                    title="Lihat pratinjau poster final"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>👁️ Preview</span>
+                  </button>
+                </>
+              )}
+
               <button
                 type="button"
                 id="btn-regenerate-prompt"
                 onClick={handleRegenerate}
                 disabled={isGenerating}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
                 title="Regenerate Prompt dengan data materi saat ini"
               >
                 <RotateCcw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
@@ -1389,10 +2170,10 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 id="btn-print-prompt"
                 type="button"
                 onClick={handlePrintPrompt}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 hover:text-white text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 hover:text-white text-xs font-bold transition-all cursor-pointer border border-slate-700 shadow-sm"
                 title={`Cetak Prompt ${activeOutputType === 'lkpd' ? 'LKPD' : 'Infografis'}`}
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="w-3.5 h-3.5" />
                 <span>CETAK</span>
               </button>
 
@@ -1400,7 +2181,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 id="btn-copy-prompt"
                 type="button"
                 onClick={handleCopyPrompt}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md ${
                   copied
                     ? 'bg-emerald-600 text-white shadow-emerald-900/40'
                     : activeOutputType === 'lkpd'

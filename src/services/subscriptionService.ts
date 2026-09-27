@@ -673,16 +673,17 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
 
   // 1. Pemanggilan RPC database atomik dengan hak SECURITY DEFINER di Supabase
   if (isSupabaseConfigured) {
-    try {
-      const { data: rpcRes, error: rpcErr } = await supabase.rpc('record_prompt_usage', {
-        p_feature: 'infographic_prompt',
-      });
-      if (!rpcErr && rpcRes) {
-        rpcHandled = true;
-      }
-    } catch {
-      // Tangani exception koneksi jika terjadi
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('record_prompt_usage', {
+      p_feature: 'infographic_prompt',
+    });
+    if (rpcErr) {
+      console.error('[Subscription] Gagal eksekusi RPC record_prompt_usage:', rpcErr);
+      throw new Error(rpcErr.message || 'Gagal memproses transaksi saldo prompt di server.');
     }
+    if (rpcRes && typeof rpcRes === 'object' && (rpcRes as any).success === false) {
+      throw new Error((rpcRes as any).message || 'Saldo kuota prompt tidak mencukupi.');
+    }
+    rpcHandled = true;
   }
 
   const updatedSub: UserSubscription = {

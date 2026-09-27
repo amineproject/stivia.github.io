@@ -35,7 +35,7 @@ function createFallbackThinkingResult(params: {
 
 // 1. GENERATOR UNIVERSAL PROMPT INFOGRAFIS DARI PROYEK STIVIA
 export interface InfographicPromptOptions {
-  format?: 'Vertikal';
+  format?: 'Vertikal' | 'Landscape' | string;
   visualStyleName: string;
   customStyleDescription?: string;
 }
@@ -53,9 +53,12 @@ export function analyzeAndGenerateProjectInfographicPrompt(
       `${sec.title}: ${sec.coreIdea}. ${sec.explanation} ${sec.keyPoints?.join(', ') || ''}`
     ).join('\n');
 
-    const learningObjectives = project.learningObjective
-      ? [project.learningObjective]
-      : [overview || `Peserta didik memahami ${title} secara komprehensif.`];
+    const settings = project.infographicSettings;
+    const learningObjectives = project.learningObjectivesList && project.learningObjectivesList.length > 0
+      ? project.learningObjectivesList
+      : (project.learningObjective
+        ? [project.learningObjective]
+        : [overview || `Peserta didik memahami ${title} secara komprehensif.`]);
 
     const keyPoints = (keySummary && keySummary.length > 0)
       ? keySummary
@@ -76,9 +79,20 @@ export function analyzeAndGenerateProjectInfographicPrompt(
         rawContent: rawSectionsText || project.scope || project.rawTopic || title,
         learningObjectives,
         keyPoints,
-        userNotes: project.userNotes || snapshot.userNotes || identity.userNotes,
-        visualStyleName: options.visualStyleName,
+        userNotes: settings?.teacherNotes || project.userNotes || snapshot.userNotes || identity.userNotes,
+        visualStyleName: (settings?.designStyle && (settings.designStyle as string) !== 'AI Pilihkan' && (settings.designStyle as string) !== '✨ AI Pilihkan') 
+          ? settings.designStyle 
+          : options.visualStyleName,
         customStyleDescription: options.customStyleDescription,
+        structureShape: settings?.structureShape,
+        selectedComponents: settings?.selectedComponents,
+        depth: settings?.depth,
+        illustrationLevel: settings?.illustrationLevel,
+        selectedVisualTypes: settings?.selectedVisualTypes,
+        designStyle: settings?.designStyle,
+        orientation: settings?.orientation,
+        paperSize: settings?.paperSize,
+        teacherNotes: settings?.teacherNotes || project.userNotes,
       });
 
       return {

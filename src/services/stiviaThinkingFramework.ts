@@ -1,4 +1,5 @@
 import { findStyleByNameOrId, InfographicStyleItem } from '../data/infographicStylesData';
+import { InfographicPreviewSection } from '../types';
 
 /**
  * ===================================================================
@@ -72,6 +73,17 @@ export interface StiviaThinkingInput {
   keyPoints?: string[];
   visualStyleName: string;
   customStyleDescription?: string;
+
+  // Pengaturan Infografis Pendidikan Baru (Backward-Compatible Optional Fields)
+  structureShape?: string;
+  selectedComponents?: string[];
+  depth?: 'Ringkas' | 'Sedang' | 'Mendalam';
+  illustrationLevel?: string;
+  selectedVisualTypes?: string[];
+  designStyle?: string;
+  orientation?: 'Portrait' | 'Landscape';
+  paperSize?: 'A4' | 'A3' | 'Digital';
+  teacherNotes?: string;
 }
 
 /**
@@ -555,19 +567,238 @@ function determineSemanticVisualAssets(
 }
 
 /**
+ * Helper STIVIA: Menyusun Saran Tujuan Pembelajaran Berbasis Materi (Bloom's Taxonomy)
+ */
+export function suggestLearningObjectives(
+  subject: string,
+  topic: string,
+  scope?: string
+): string[] {
+  const cleanSubject = subject?.trim() || 'Mata Pelajaran';
+  const cleanTopic = topic?.trim() || 'Materi Pembelajaran';
+  const rawScope = scope?.trim() || '';
+
+  const scopeItems = rawScope
+    .split(/\n+/)
+    .map(line => line.replace(/^(\d+|[a-zA-Z])[\.\)\-\*•]\s*/, '').trim())
+    .filter(line => line.length > 3);
+
+  const results: string[] = [
+    `Memahami konsep dasar, batasan ruang lingkup, dan pengertian esensial dari ${cleanTopic} dalam ${cleanSubject}.`,
+    `Mengidentifikasi ciri-ciri khusus, fungsi utama, dan unsur pembangun dari ${cleanTopic}.`,
+    `Menganalisis keterkaitan konsep materi dengan penerapannya dalam kehidupan nyata peserta didik.`,
+    `Menyimpulkan intisari pembelajaran dan memecahkan studi kasus sederhana terkait ${cleanTopic}.`
+  ];
+
+  if (scopeItems.length >= 2) {
+    results[1] = `Mengidentifikasi karakteristik dan membedakan ${scopeItems.slice(0, 2).join(' serta ')} secara tepat.`;
+  }
+  if (scopeItems.length >= 3) {
+    results[2] = `Menganalisis keterkaitan ${scopeItems[2]} dalam situasi aplikatif terarah.`;
+  }
+
+  return results;
+}
+
+/**
+ * Helper STIVIA: Membentuk Preview Struktur Rancangan Infografis (Lokal & In-Memory Tanpa Saldo)
+ */
+export function buildPreviewInfographicStructure(
+  topic: string,
+  subject: string,
+  shape: string = 'Konsep Dasar',
+  components: string[] = [],
+  depth: string = 'Sedang'
+): InfographicPreviewSection[] {
+  const cleanTopic = topic?.trim() || 'Materi Pembelajaran';
+  const cleanSubject = subject?.trim() || 'Umum';
+
+  // Jika guru memilih komponen tertentu secara eksplisit:
+  if (components && components.length > 0) {
+    return components.slice(0, 6).map((comp, idx) => {
+      const stepNum = String(idx + 1).padStart(2, '0');
+      let desc = `Penjelasan terstruktur mengenai ${comp.toLowerCase()} dari ${cleanTopic} sesuai kedalaman materi ${depth.toLowerCase()}.`;
+      let visualHint = `Visual penjelas dengan ikon ${comp.toLowerCase()} representatif`;
+
+      if (comp === 'Pengertian') {
+        desc = `Definisi operasional, ruang lingkup konsep, dan hakikat utama ${cleanTopic}.`;
+        visualHint = 'Callout card definisi dengan tipografi berbobot tegas';
+      } else if (comp === 'Tujuan' || comp === 'Fungsi') {
+        desc = `Peranan strategis dan fungsi praktis konsep dalam konteks ${cleanSubject}.`;
+        visualHint = 'Daftar berpoin target capaian dengan ikon fokus';
+      } else if (comp === 'Ciri-ciri' || comp === 'Karakteristik') {
+        desc = `Indikator pembeda dan karakteristik khas yang harus dikuasai siswa.`;
+        visualHint = 'Modul grid checklist dengan visual penanda';
+      } else if (comp === 'Unsur / Komponen' || comp === 'Jenis') {
+        desc = `Uraian bagian-bagian pembentuk, klasifikasi entitas, dan sub-elemen.`;
+        visualHint = 'Diagram modular struktural atau bagan keterkaitan komponen';
+      } else if (comp === 'Contoh' || comp === 'Perbandingan') {
+        desc = `Studi kasus konkret atau perbandingan kontekstual dalam situasi nyata.`;
+        visualHint = 'Kartu perbandingan bersisian atau ilustrasi situasi kontekstual';
+      } else if (comp === 'Langkah / Proses') {
+        desc = `Urutan kronologis atau prosedur sistematis dari awal hingga akhir.`;
+        visualHint = 'Diagram alur bertahap dengan indikator panah';
+      } else if (comp === 'Tips' || comp === 'Kesimpulan') {
+        desc = `Sintesis penutup pembelajaran dan panduan praktis bagi siswa.`;
+        visualHint = 'Kotak kesimpulan berbingkai aksen kontras';
+      }
+
+      return {
+        step: stepNum,
+        title: comp,
+        desc,
+        visualHint
+      };
+    });
+  }
+
+  // Jika berdasarkan bentuk infografis:
+  switch (shape) {
+    case 'Analisis':
+      return [
+        { step: '01', title: 'Identifikasi Konsep', desc: `Pembedahan konsep pokok ${cleanTopic}.`, visualHint: 'Ikon lensa analitis & diagram fokus' },
+        { step: '02', title: 'Unsur & Parameter', desc: `Variabel dan faktor penentu dalam ${cleanSubject}.`, visualHint: 'Bagan klasifikasi parameter' },
+        { step: '03', title: 'Hubungan Kausal', desc: `Keterkaitan sebab-akibat antarkomponen.`, visualHint: 'Diagram relasi logis' },
+        { step: '04', title: 'Konteks Aplikasi', desc: `Penerapan analitis dalam situasi nyata.`, visualHint: 'Data visual dan ilustrasi skenario' },
+        { step: '05', title: 'Sintesis & Temuan', desc: `Kesimpulan hasil analisis mendalam.`, visualHint: 'Highlight card temuan esensial' }
+      ];
+    case 'Perbandingan':
+      return [
+        { step: '01', title: 'Parameter Komparasi', desc: `Kriteria dasar pembanding kedua konsep.`, visualHint: 'Timbangan visual pembanding' },
+        { step: '02', title: 'Entitas A (Karakteristik)', desc: `Kelebihan dan ciri khas entitas pertama.`, visualHint: 'Kolom visual sisi kiri (warna primer)' },
+        { step: '03', title: 'Entitas B (Karakteristik)', desc: `Kelebihan dan ciri khas entitas pembanding.`, visualHint: 'Kolom visual sisi kanan (warna komplementer)' },
+        { step: '04', title: 'Titik Temu & Perbedaan', desc: `Matriks komparasi dan perbedaan esensial.`, visualHint: 'Tabel komparasi / Diagram Venn' },
+        { step: '05', title: 'Rekomendasi Pemilihan', desc: `Petunjuk penerapan sesuai kondisi belajar.`, visualHint: 'Kartu panduan keputusan' }
+      ];
+    case 'Proses / Langkah':
+      return [
+        { step: '01', title: 'Tahap Persiapan', desc: `Prasyarat awal sebelum memulai proses.`, visualHint: 'Ikon persiapan & checklist' },
+        { step: '02', title: 'Langkah Inti 1', desc: `Tindakan operasional utama awal.`, visualHint: 'Badge nomor 1 berpanah alur' },
+        { step: '03', title: 'Langkah Inti 2', desc: `Tahap pemrosesan dan transisi lanjutan.`, visualHint: 'Badge nomor 2 berpanah alur' },
+        { step: '04', title: 'Verifikasi / Evaluasi', desc: `Pengecekan kualitas dan ketepatan hasil.`, visualHint: 'Ikon verifikasi & kendali mutu' },
+        { step: '05', title: 'Luaran Akhir', desc: `Hasil akhir dari rangkaian proses.`, visualHint: 'Simbol pencapaian target' }
+      ];
+    case 'Struktur / Komponen':
+      return [
+        { step: '01', title: 'Arsitektur Global', desc: `Gambaran utuh dari sistem ${cleanTopic}.`, visualHint: 'Bagan anatomi sentral' },
+        { step: '02', title: 'Komponen Utama', desc: `Bagian primer penggerak fungsi esensial.`, visualHint: 'Ikon bagian inti beraksen kontras' },
+        { step: '03', title: 'Komponen Pendukung', desc: `Elemen sekunder penjaga stabilitas.`, visualHint: 'Ikon modul pelengkap' },
+        { step: '04', title: 'Interaksi Antarbagian', desc: `Mekanisme kerja sama antar-elemen.`, visualHint: 'Garis penghubung fungsi' },
+        { step: '05', title: 'Integritas Sistem', desc: `Pentingnya kesatuan komponen secara utuh.`, visualHint: 'Badge keutuhan sistem' }
+      ];
+    case 'Ringkasan':
+      return [
+        { step: '01', title: 'Gagasan Pokok', desc: `Intisari terpenting dari seluruh materi.`, visualHint: 'Highlight card tipografi besar' },
+        { step: '02', title: 'Pilar Utama 1', desc: `Rangkuman pilar konsep pertama.`, visualHint: 'Kartu ringkas berikon' },
+        { step: '03', title: 'Pilar Utama 2', desc: `Rangkuman pilar konsep kedua.`, visualHint: 'Kartu ringkas berikon' },
+        { step: '04', title: 'Kesimpulan Pembelajaran', desc: `Ringkasan penutup pembelajaran.`, visualHint: 'Pita kesimpulan akhir' }
+      ];
+    case 'Materi + Contoh':
+      return [
+        { step: '01', title: 'Pengertian Teoretis', desc: `Definisi akademis konsep ${cleanTopic}.`, visualHint: 'Modul teori berikon edukatif' },
+        { step: '02', title: 'Kaidah / Prinsip', desc: `Aturan baku yang mendasari konsep.`, visualHint: 'Highlight aturan kunci' },
+        { step: '03', title: 'Contoh Konkret 1', desc: `Kasus nyata dari lingkungan belajar.`, visualHint: 'Ilustrasi contoh beranotasi' },
+        { step: '04', title: 'Contoh Konkret 2', desc: `Variasi contoh dalam konteks berbeda.`, visualHint: 'Ilustrasi konteks alternatif' },
+        { step: '05', title: 'Refleksi Contoh', desc: `Alasan mengapa contoh tersebut valid.`, visualHint: 'Kartu bedah konsep' }
+      ];
+    case 'Kontekstual':
+      return [
+        { step: '01', title: 'Fenomena Nyata', desc: `Kejadian nyata di sekitar kehidupan siswa.`, visualHint: 'Ilustrasi aktivitas kehidupan nyata' },
+        { step: '02', title: 'Kaitan Konseptual', desc: `Teori ${cleanSubject} di balik fenomena.`, visualHint: 'Ikon penghubung sains dan kenyataan' },
+        { step: '03', title: 'Mekanisme Kejadian', desc: `Penjelasan fungsional yang mudah dipahami.`, visualHint: 'Bagan visual sebab-akibat' },
+        { step: '04', title: 'Manfaat Nyata', desc: `Nilai guna konsep dalam kehidupan siswa.`, visualHint: 'Ikon manfaat positif' },
+        { step: '05', title: 'Aksi Siswa', desc: `Penerapan mandiri yang dapat dilakukan siswa.`, visualHint: 'Ikon aksi kreatif peserta didik' }
+      ];
+    case 'Konsep Dasar':
+    default:
+      return [
+        { step: '01', title: 'Pengertian Dasar', desc: `Definisi ringkas dan hakikat utama ${cleanTopic}.`, visualHint: 'Header definisi dengan ikon konsep' },
+        { step: '02', title: 'Tujuan & Peranan', desc: `Mengapa konsep ini penting dalam ${cleanSubject}.`, visualHint: 'Kartu target capaian' },
+        { step: '03', title: 'Karakteristik Utama', desc: `Ciri pembeda yang perlu dipahami siswa.`, visualHint: 'Grid checklist 3 poin' },
+        { step: '04', title: 'Penerapan Nyata', desc: `Contoh aplikatif yang dekat dengan siswa.`, visualHint: 'Visual konteks penerapan' },
+        { step: '05', title: 'Rangkuman Inti', desc: `Kesimpulan penutup pembelajaran.`, visualHint: 'Footer kartu ringkasan' }
+      ];
+  }
+}
+
+/**
  * Pemilihan Struktur Infografis dari 10 Pilihan Standar STIVIA
  */
 function determineInfographicStructure(
   primaryChar: MaterialCharacterType,
   scopePoints: string[],
   activeSubject: string,
-  styleItem: InfographicStyleItem
+  styleItem: InfographicStyleItem,
+  customShape?: string
 ): {
   strategy: InfographicLayoutStrategy;
   layoutDescription: string;
   readingFlow: string;
   rationale: string;
 } {
+  // Jika pengguna memilih bentuk secara spesifik (selain AI Pilihkan):
+  if (customShape && customShape !== '✨ AI Pilihkan' && customShape !== 'AI Pilihkan') {
+    switch (customShape) {
+      case 'Analisis':
+        return {
+          strategy: '8. Central Concept',
+          layoutDescription: 'Tata letak analitis memusatkan konsep inti yang dibedah menjadi komponen parameter dan keterkaitan sebab-akibat.',
+          readingFlow: 'Alur Analisis: Identifikasi Konsep → Pembedahan Parameter → Relasi Sebab-Akibat → Sintesis Temuan.',
+          rationale: 'Bentuk Analisis dipilih guru untuk menguraikan unsur, relasi, atau karakteristik materi secara mendalam.'
+        };
+      case 'Perbandingan':
+        return {
+          strategy: '3. Comparison',
+          layoutDescription: 'Tata letak kolom berdampingan (side-by-side) dengan matriks komparasi kontras antara dua entitas atau pendekatan.',
+          readingFlow: 'Alur Komparasi: Parameter Pembeda → Kolom Entitas A vs Entitas B → Matriks Distingsi → Kesimpulan.',
+          rationale: 'Bentuk Perbandingan dipilih guru untuk mempermudah siswa membandingkan dua atau lebih konsep secara berimbang.'
+        };
+      case 'Proses / Langkah':
+        return {
+          strategy: '2. Flowchart',
+          layoutDescription: 'Diagram alir proses terstruktur berurutan dari input awal, tahapan kerja operasional, hingga produk/hasil akhir.',
+          readingFlow: 'Alur Alir Logis: Masukan / Persiapan → Tahapan Eksekusi Bertahap → Pengujian Mutu → Capaian Luaran.',
+          rationale: 'Bentuk Proses/Langkah dipilih guru untuk materi yang memiliki urutan atau tahapan operasional sistematis.'
+        };
+      case 'Struktur / Komponen':
+        return {
+          strategy: '4. Hierarchy',
+          layoutDescription: 'Bagan hierarki dan anatomi komponen yang menguraikan bagian-bagian pembentuk materi secara terstruktur.',
+          readingFlow: 'Alur Struktural: Arsitektur Utuh → Pembagian Bagian Utama → Peranan Komponen Pendukung → Kesatuan Sistem.',
+          rationale: 'Bentuk Struktur/Komponen dipilih guru untuk menjelaskan unsur-unsur pembangun suatu konsep secara runtut.'
+        };
+      case 'Ringkasan':
+        return {
+          strategy: '6. Grid / Cards',
+          layoutDescription: 'Struktur kartu ringkasan seimbang berisi poin-poin terpenting yang dirangkum padat dan cepat dipindai siswa.',
+          readingFlow: 'Alur Ringkasan: Gagasan Pokok → 3-4 Kartu Pilar Rangkuman → Kesimpulan Penutup.',
+          rationale: 'Bentuk Ringkasan dipilih guru untuk merangkum materi luas menjadi poin-poin utama yang mudah diingat.'
+        };
+      case 'Materi + Contoh':
+        return {
+          strategy: '6. Grid / Cards',
+          layoutDescription: 'Tata letak modular seimbang yang memadukan blok teori konseptual dengan blok contoh konkret kontekstual.',
+          readingFlow: 'Alur Teori & Contoh: Definisi Teori → Kaidah Pokok → Contoh Kasus Nyata → Analisis Validasi Contoh.',
+          rationale: 'Bentuk Materi + Contoh dipilih guru untuk menjembatani teori abstrak dengan contoh nyata siswa.'
+        };
+      case 'Kontekstual':
+        return {
+          strategy: '9. Diagram Relationship',
+          layoutDescription: 'Visualisasi relasi kontekstual yang menghubungkan konsep pembelajaran dengan peristiwa nyata dalam kehidupan sehari-hari.',
+          readingFlow: 'Alur Kontekstual: Fenomena Nyata Siswa → Konsep Pembelajaran Terhubung → Mekanisme Kerja → Manfaat Aplikatif.',
+          rationale: 'Bentuk Kontekstual dipilih guru untuk mengaitkan materi langsung dengan kehidupan sehari-hari siswa.'
+        };
+      case 'Konsep Dasar':
+      default:
+        return {
+          strategy: '6. Grid / Cards',
+          layoutDescription: 'Struktur kartu modular simetris berisi definisi esensial, tujuan pembelajaran, ciri pembeda, dan kesimpulan konsep.',
+          readingFlow: 'Alur Konsep Dasar: Header Judul → Kartu Definisi → Kartu Unsur/Ciri → Kartu Contoh → Rangkuman.',
+          rationale: 'Bentuk Konsep Dasar dipilih guru untuk menjelaskan pengertian dan fondasi utama materi secara jernih.'
+        };
+    }
+  }
+
   const scopeText = scopePoints.join(' ').toLowerCase();
 
   // 1. Timeline / Step-by-Step
@@ -655,9 +886,56 @@ function determineInfographicStructure(
 function synthesizeContentSections(
   activeContext: ActiveContentContext,
   primaryChar: MaterialCharacterType,
-  icons: string[]
+  icons: string[],
+  selectedComponents?: string[],
+  depth: string = 'Sedang'
 ): InfographicContentSection[] {
   const { scopePoints, title, subject, activeKeywords } = activeContext;
+
+  // Jika guru memilih komponen spesifik pada form:
+  if (selectedComponents && selectedComponents.length >= 3) {
+    return selectedComponents.slice(0, 6).map((compName, idx) => {
+      const bagianNum = idx + 1;
+      const iconForSection = icons[idx % icons.length] || `Ikon ${compName}`;
+      const keywordForSection = activeKeywords[idx % activeKeywords.length] || compName;
+
+      let detailText = `Uraian konsep ${compName.toLowerCase()} dari ${title} yang relevan dengan pembelajaran ${subject}.`;
+      if (compName === 'Pengertian') {
+        detailText = `Definisi ringkas dan hakikat utama yang mendasari konsep ${title}.`;
+      } else if (compName === 'Tujuan') {
+        detailText = `Tujuan pembelajaran dan capaian kompetensi yang diharapkan dari ${title}.`;
+      } else if (compName === 'Fungsi') {
+        detailText = `Peranan fungsional dan manfaat utama dalam aplikasi nyata peserta didik.`;
+      } else if (compName === 'Ciri-ciri' || compName === 'Karakteristik') {
+        detailText = `Karakteristik khas dan indikator penting pembeda dari materi ${title}.`;
+      } else if (compName === 'Unsur / Komponen' || compName === 'Jenis') {
+        detailText = `Bagian-bagian pembentuk, klasifikasi kategori, atau sub-elemen materi.`;
+      } else if (compName === 'Contoh') {
+        detailText = `Contoh konkret aplikatif yang akrab dengan keseharian siswa.`;
+      } else if (compName === 'Langkah / Proses') {
+        detailText = `Alur tahapan terstruktur dari awal persiapan hingga tercapainya hasil.`;
+      } else if (compName === 'Tips') {
+        detailText = `Panduan praktis dan tips cerdas untuk mempermudah pemahaman siswa.`;
+      } else if (compName === 'Kesimpulan') {
+        detailText = `Rangkuman kesimpulan penutup pembelajaran ${title} secara utuh.`;
+      }
+
+      // Sesuaikan panjang teks berdasarkan kedalaman
+      if (depth === 'Ringkas' && detailText.length > 80) {
+        detailText = detailText.slice(0, 75) + '...';
+      }
+
+      return {
+        bagianNumber: bagianNum,
+        judul: compName,
+        teksSingkat: detailText,
+        kataKunci: keywordForSection,
+        contohKonkret: `Contoh penerapan ${compName.toLowerCase()} dalam materi ${title} (${subject}).`,
+        visual: `Modul visual beraksen fokus pada aspek ${compName.toLowerCase()}`,
+        ikon: iconForSection
+      };
+    });
+  }
 
   // Gunakan scopePoints yang diberikan pengguna sebagai dasar 4–6 bagian
   let basePoints = scopePoints.slice(0, 6);
@@ -682,9 +960,15 @@ function synthesizeContentSections(
       .split(/[:\-\–]/)[0]
       .trim();
 
-    const detailText = pointText.includes(':') 
+    let detailText = pointText.includes(':') 
       ? pointText.split(':').slice(1).join(':').trim() 
       : `Intisari pemahaman tentang ${cleanTitle.toLowerCase()} yang relevan dengan ${subject}.`;
+
+    if (depth === 'Ringkas' && detailText.length > 80) {
+      detailText = detailText.slice(0, 75) + '...';
+    } else if (depth === 'Mendalam' && detailText.length < 60) {
+      detailText = `${detailText} Disertai penjelasan relasional yang memperdalam pemahaman siswa.`;
+    }
 
     const iconForSection = icons[idx % icons.length] || `Ikon ${cleanTitle}`;
     const keywordForSection = activeKeywords[idx % activeKeywords.length] || cleanTitle;
@@ -984,7 +1268,8 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
     stage3_MaterialCharacters.primaryCharacter,
     activeScopePoints,
     resolvedSubject,
-    resolvedStyle
+    resolvedStyle,
+    input.structureShape
   );
 
   const stage5_SupportingVisuals = {
@@ -1002,7 +1287,9 @@ export function runStiviaThinkingFramework(input: StiviaThinkingInput): StiviaTh
   const contentSections = synthesizeContentSections(
     activeContext,
     stage3_MaterialCharacters.primaryCharacter,
-    semanticAssets.icons
+    semanticAssets.icons,
+    input.selectedComponents,
+    input.depth || 'Sedang'
   );
 
   const footerSummary = `Pemahaman tentang ${resolvedTitle} (${resolvedSubject} - ${resolvedLevel} ${resolvedGrade}) memberikan landasan konsep yang kokoh bagi siswa. Melalui penguasaan komponen inti dan aplikasi nyata, peserta didik mampu menginternalisasi materi secara utuh dan berkelanjutan.`;
@@ -1145,18 +1432,24 @@ ${footerSummary}
 
   // FINAL PROMPT INFOGRAFIS RESMI STIVIA (MEMATUHI BAGIAN 8 & 12 USER SPEC)
   // Menghasilkan prompt terstruktur yang siap pakai untuk AI Image Generator
-  const stage7_FinalPrompt = `Create a vertical educational infographic poster for ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade}) ${stage1_Understanding.subject} titled "${stage1_Understanding.title}".
+  const resolvedOrientation = input.orientation || 'Portrait';
+  const resolvedPaperSize = input.paperSize || 'A4';
+  const resolvedAspectRatio = resolvedOrientation === 'Landscape' ? '3:2' : '2:3';
+
+  const stage7_FinalPrompt = `Create a ${resolvedOrientation.toLowerCase()} educational infographic poster (${resolvedPaperSize}) for ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade}) ${stage1_Understanding.subject} titled "${stage1_Understanding.title}".
 
 ### A. IDENTITAS
 * Judul Materi: ${stage1_Understanding.title}
 * Mata Pelajaran: ${stage1_Understanding.subject}
 * Jenjang & Kelas: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
 * Tema / Bab: ${stage1_Understanding.bab || stage1_Understanding.theme || stage1_Understanding.title}
-* Posisi Rangkaian: ${stage1_Understanding.pertemuan}
+* Posisi Rangkaian: ${stage1_Understanding.pertemuan}${input.teacherNotes ? `\n* Catatan Khusus Guru: "${input.teacherNotes.trim()}"` : ''}
 
 ### B. KONTEN
 * Konsep Utama: ${stage2_ImportantInfo.mainConcept}
-* 4–6 Bagian Utama Infografis:
+* Bentuk Infografis: ${input.structureShape || stage6_LayoutStrategy.strategy}
+* Tingkat Kedalaman Materi: ${input.depth || 'Sedang'}
+${activeObjectives.length > 0 ? `* Tujuan Pembelajaran:\n${activeObjectives.map(o => `  - ${o}`).join('\n')}\n` : ''}* 4–6 Bagian Utama Infografis:
 ${contentSections.map(s => `  - Bagian ${s.bagianNumber}: [${s.judul}]
     • Teks yang Harus Ditampilkan: "${s.teksSingkat}"
     • Kata Kunci: ${s.kataKunci}
@@ -1172,7 +1465,8 @@ ${contentSections.map(s => `  - Bagian ${s.bagianNumber}: [${s.judul}]
 * Hubungan Antarbagian: Alur logis terstruktur ${stage2_ImportantInfo.informationRelationship}, bertahap dan mudah dipelajari siswa
 
 ### D. VISUAL
-* Ilustrasi Utama: ${semanticAssets.heroVisual}
+* Tingkat Intensitas Visual: ${input.illustrationLevel || 'Pendukung Konsep'}
+${input.selectedVisualTypes && input.selectedVisualTypes.length > 0 ? `* Jenis Visual Prioritas: ${input.selectedVisualTypes.join(', ')}\n` : ''}* Ilustrasi Utama: ${semanticAssets.heroVisual}
 * Ilustrasi Pendukung: ${semanticAssets.supportingIllustrations.join(', ')}
 * Ikon: ${semanticAssets.icons.join(', ')}
 * Objek Visual & Simbol: ${semanticAssets.relevantObjects.join(', ')}
@@ -1188,8 +1482,9 @@ ${contentSections.map(s => `  - Bagian ${s.bagianNumber}: [${s.judul}]
 * Konsistensi Visual: Seluruh kartu modul menggunakan sudut membulat halus, batas garis rapi, dan konsistensi perataan
 
 ### F. FORMAT
-* Orientasi: Portrait (Vertikal)
-* Rasio: 2:3
+* Orientasi: ${resolvedOrientation} (${resolvedOrientation === 'Landscape' ? 'Mendatar' : 'Vertikal'})
+* Ukuran Dokumen: ${resolvedPaperSize}
+* Rasio: ${resolvedAspectRatio}
 * Resolusi Rekomendasi: 1200 × 1800 px (atau 1024 × 1536 px)
 * Kualitas Teks: Teks harus tajam dan terbaca sempurna (ultra-sharp typography)
 * Kerapian Komposisi: Bebas dari teks terpotong, tidak ada elemen bertumpuk (zero overlapping elements), tata letak bersih dan profesional untuk pembelajaran`;

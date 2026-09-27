@@ -557,6 +557,85 @@ export interface SynthesisStep {
   desc: string;
 }
 
+// ==========================================
+// PENGEMBANGAN FITUR INFOGRAFIS STIVIA: SETTINGS & RANCANGAN
+// ==========================================
+
+export type InfographicStructureShape =
+  | 'Konsep Dasar'
+  | 'Analisis'
+  | 'Perbandingan'
+  | 'Proses / Langkah'
+  | 'Struktur / Komponen'
+  | 'Ringkasan'
+  | 'Materi + Contoh'
+  | 'Kontekstual'
+  | 'AI Pilihkan';
+
+export type InfographicContentComponent =
+  | 'Pengertian'
+  | 'Tujuan'
+  | 'Fungsi'
+  | 'Ciri-ciri'
+  | 'Unsur / Komponen'
+  | 'Jenis'
+  | 'Karakteristik'
+  | 'Contoh'
+  | 'Perbandingan'
+  | 'Langkah / Proses'
+  | 'Tips'
+  | 'Kesimpulan';
+
+export type InfographicDepth = 'Ringkas' | 'Sedang' | 'Mendalam';
+
+export type InfographicIllustrationLevel =
+  | 'Tanpa Ilustrasi'
+  | 'Pendukung Konsep'
+  | 'Kontekstual'
+  | 'Dominan Visual';
+
+export type InfographicVisualType =
+  | 'Ikon'
+  | 'Diagram'
+  | 'Ilustrasi Kejadian'
+  | 'Karakter'
+  | 'Objek Nyata'
+  | 'Simbol'
+  | 'Contoh Visual';
+
+export type InfographicDesignStyle =
+  | 'Modern'
+  | 'Illustrated'
+  | 'Minimal'
+  | 'Editorial'
+  | 'Scientific'
+  | 'Playful'
+  | 'Premium'
+  | 'AI Pilihkan';
+
+export type InfographicPaperSize = 'A4' | 'A3' | 'Digital';
+export type InfographicOrientation = 'Portrait' | 'Landscape';
+
+export interface InfographicPreviewSection {
+  step: string;
+  title: string;
+  desc: string;
+  visualHint?: string;
+}
+
+export interface InfographicSettings {
+  structureShape: InfographicStructureShape;
+  selectedComponents: InfographicContentComponent[];
+  depth: InfographicDepth;
+  illustrationLevel: InfographicIllustrationLevel;
+  selectedVisualTypes: InfographicVisualType[];
+  designStyle: InfographicDesignStyle;
+  orientation: InfographicOrientation;
+  paperSize: InfographicPaperSize;
+  teacherNotes?: string;
+  learningObjectives?: string[];
+}
+
 export interface InfographicDraft {
   id: string;
   title: string;
@@ -603,6 +682,11 @@ export interface InfographicDraft {
   finalOutput?: FinalOutputState | null;
   isLocked?: boolean;
   stiviaPrompt?: string;
+
+  // Pengembangan Fitur Infografis STIVIA (Backward-Compatible Optional Fields)
+  learningObjectivesList?: string[];
+  infographicSettings?: InfographicSettings;
+  previewStructureBlocks?: InfographicPreviewSection[];
 }
 
 export type NavigationTab = 
