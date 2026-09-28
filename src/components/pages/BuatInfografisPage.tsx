@@ -92,6 +92,35 @@ import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
 // PENGEMBANGAN FITUR INFOGRAFIS STIVIA: KONSTANTA PILIHAN
 // ==========================================
 
+export const getSubjectRecommendedComponents = (subjectName: string): string[] => {
+  const s = (subjectName || '').toLowerCase();
+  if (s.includes('matematika') || s.includes('fisika')) {
+    return ['Rumus Pokok', 'Contoh Soal & Solusi', 'Langkah Perhitungan', 'Satuan / Besaran'];
+  }
+  if (s.includes('biologi') || s.includes('ipa') || s.includes('sains')) {
+    return ['Struktur & Anatomi', 'Siklus / Daur', 'Fungsi Biologis', 'Klasifikasi'];
+  }
+  if (s.includes('kimia')) {
+    return ['Reaksi & Formula', 'Sifat Zat & Karakteristik', 'Aplikasi Praktis', 'Prosedur Aman'];
+  }
+  if (s.includes('sejarah') || s.includes('ips') || s.includes('sosiologi') || s.includes('geografi')) {
+    return ['Linimasa Peristiwa', 'Tokoh Kunci', 'Latar Belakang', 'Dampak & Nilai'];
+  }
+  if (s.includes('bahasa') || s.includes('inggris') || s.includes('indonesia')) {
+    return ['Struktur Teks', 'Ciri Kebahasaan', 'Kosakata Kunci', 'Contoh Kalimat'];
+  }
+  if (s.includes('informatika') || s.includes('komputer') || s.includes('tik') || s.includes('rpl')) {
+    return ['Logika & Algoritma', 'Sintaks / Perintah', 'Alur Eksekusi', 'Studi Kasus Digital'];
+  }
+  if (s.includes('pkn') || s.includes('pancasila') || s.includes('agama') || s.includes('ppkn')) {
+    return ['Nilai Karakter', 'Penerapan Sikap', 'Kaidah & Norma', 'Keteladanan'];
+  }
+  if (s.includes('seni') || s.includes('prakarya') || s.includes('pjok') || s.includes('olahraga')) {
+    return ['Alat & Bahan', 'Teknik Dasar', 'Prosedur K3', 'Kriteria Penilaian'];
+  }
+  return ['Konsep Kunci', 'Penerapan Nyata', 'Panduan Praktis', 'Tips Penting'];
+};
+
 const INFOGRAPHIC_STRUCTURE_OPTIONS: { id: InfographicStructureShape; label: string; desc: string; iconBadge: string }[] = [
   { id: 'Konsep Dasar', label: 'Konsep Dasar', desc: 'Menjelaskan pengertian & konsep utama secara terstruktur', iconBadge: '01' },
   { id: 'Analisis', label: 'Analisis', desc: 'Menguraikan unsur, relasi, atau karakteristik analitis', iconBadge: '02' },
@@ -222,6 +251,7 @@ interface BuatInfografisPageProps {
   userId?: string;
   subscriptionSummary?: SubscriptionSummary | null;
   onUsageRecorded?: () => void;
+  initialPromptType?: 'infografis' | 'lkpd';
 }
 
 export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
@@ -234,6 +264,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   userId = '',
   subscriptionSummary,
   onUsageRecorded,
+  initialPromptType,
 }) => {
   // Form state
   const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft.educationLevel || 'SMA');
@@ -269,8 +300,18 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [limitReason, setLimitReason] = useState<string>('');
 
   // Prompt Type Selection (Infografis vs LKPD)
-  const [selectedPromptType, setSelectedPromptType] = useState<'infografis' | 'lkpd'>('infografis');
-  const [activeOutputType, setActiveOutputType] = useState<'infografis' | 'lkpd'>('infografis');
+  const [selectedPromptType, setSelectedPromptType] = useState<'infografis' | 'lkpd'>(
+    initialPromptType || 'infografis'
+  );
+  const [activeOutputType, setActiveOutputType] = useState<'infografis' | 'lkpd'>(
+    initialPromptType || 'infografis'
+  );
+
+  useEffect(() => {
+    if (initialPromptType) {
+      setSelectedPromptType(initialPromptType);
+    }
+  }, [initialPromptType]);
 
   // Pengaturan Khusus Infografis (Pengembangan Fitur Infografis STIVIA)
   const [learningObjectivesList, setLearningObjectivesList] = useState<string[]>(() => {
@@ -301,6 +342,13 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
       'Kesimpulan'
     ]
   );
+  // Komponen Kustom Pengguna & Rekomendasi Mapel
+  const [customComponents, setCustomComponents] = useState<string[]>(() => {
+    const draftComps = currentDraft.infographicSettings?.selectedComponents || [];
+    return draftComps.filter(c => !INFOGRAPHIC_COMPONENT_OPTIONS.includes(c as any));
+  });
+  const [newComponentInput, setNewComponentInput] = useState<string>('');
+  const [isAddingComponent, setIsAddingComponent] = useState<boolean>(false);
   const [depth, setDepth] = useState<InfographicDepth>(
     currentDraft.infographicSettings?.depth || 'Sedang'
   );
@@ -411,7 +459,12 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
       if (currentDraft.infographicSettings) {
         setStructureShape(currentDraft.infographicSettings.structureShape || 'Konsep Dasar');
-        setSelectedComponents(currentDraft.infographicSettings.selectedComponents || ['Pengertian', 'Tujuan', 'Ciri-ciri', 'Contoh', 'Kesimpulan']);
+        const draftComps = currentDraft.infographicSettings.selectedComponents || ['Pengertian', 'Tujuan', 'Ciri-ciri', 'Contoh', 'Kesimpulan'];
+        setSelectedComponents(draftComps);
+        const customFromDraft = draftComps.filter(c => !INFOGRAPHIC_COMPONENT_OPTIONS.includes(c as any));
+        if (customFromDraft.length > 0) {
+          setCustomComponents(prev => Array.from(new Set([...prev, ...customFromDraft])));
+        }
         setDepth(currentDraft.infographicSettings.depth || 'Sedang');
         setIllustrationLevel(currentDraft.infographicSettings.illustrationLevel || 'Pendukung Konsep');
         setSelectedVisualTypes(currentDraft.infographicSettings.selectedVisualTypes || ['Ikon', 'Diagram', 'Contoh Visual']);
@@ -454,15 +507,102 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     setLearningObjectivesList(prev => prev.map((item, i) => i === index ? val : item));
   };
 
-  const handleToggleComponent = (comp: InfographicContentComponent) => {
+  const handleToggleComponent = (comp: string) => {
     setSelectedComponents(prev => {
       if (prev.includes(comp)) {
-        if (prev.length <= 1) return prev;
+        if (prev.length <= 1) {
+          setCopyToast('Minimal harus ada 1 komponen infografis yang dipilih.');
+          setTimeout(() => setCopyToast(null), 2000);
+          return prev;
+        }
         return prev.filter(c => c !== comp);
       } else {
+        if (prev.length >= 6) {
+          setCopyToast('Maksimal 6 komponen infografis (disarankan 3–6 modul).');
+          setTimeout(() => setCopyToast(null), 2500);
+          return prev;
+        }
         return [...prev, comp];
       }
     });
+  };
+
+  const handleAddCustomComponent = () => {
+    const trimmed = newComponentInput.trim();
+    if (!trimmed) return;
+
+    const allExisting = [...INFOGRAPHIC_COMPONENT_OPTIONS, ...customComponents];
+    const match = allExisting.find(c => c.toLowerCase() === trimmed.toLowerCase());
+
+    if (match) {
+      if (!selectedComponents.includes(match)) {
+        if (selectedComponents.length < 6) {
+          setSelectedComponents(prev => [...prev, match]);
+          setCopyToast(`Komponen "${match}" diaktifkan!`);
+          setTimeout(() => setCopyToast(null), 2000);
+        } else {
+          setCopyToast('Maksimal 6 komponen yang dapat dipilih.');
+          setTimeout(() => setCopyToast(null), 2500);
+        }
+      } else {
+        setCopyToast(`Komponen "${match}" sudah terpilih.`);
+        setTimeout(() => setCopyToast(null), 2000);
+      }
+      setNewComponentInput('');
+      setIsAddingComponent(false);
+      return;
+    }
+
+    setCustomComponents(prev => [...prev, trimmed]);
+    if (selectedComponents.length < 6) {
+      setSelectedComponents(prev => [...prev, trimmed]);
+      setCopyToast(`✨ Komponen kustom "${trimmed}" ditambahkan & dipilih!`);
+    } else {
+      setCopyToast(`Komponen kustom "${trimmed}" ditambahkan ke opsi.`);
+    }
+    setTimeout(() => setCopyToast(null), 2500);
+    setNewComponentInput('');
+    setIsAddingComponent(false);
+  };
+
+  const handleRemoveCustomComponent = (comp: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCustomComponents(prev => prev.filter(c => c !== comp));
+    setSelectedComponents(prev => prev.filter(c => c !== comp));
+    setCopyToast(`Komponen "${comp}" dihapus.`);
+    setTimeout(() => setCopyToast(null), 2000);
+  };
+
+  const handleSuggestSubjectComponents = () => {
+    const activeSubj = isCustomSubject ? customSubject : subject;
+    const recommendations = getSubjectRecommendedComponents(activeSubj);
+
+    const newItems = recommendations.filter(
+      r => !INFOGRAPHIC_COMPONENT_OPTIONS.includes(r as any) && !customComponents.includes(r)
+    );
+
+    if (newItems.length > 0) {
+      setCustomComponents(prev => [...prev, ...newItems]);
+    }
+
+    setSelectedComponents(prev => {
+      let updated = [...prev];
+      for (const rec of recommendations) {
+        if (!updated.includes(rec) && updated.length < 6) {
+          updated.push(rec);
+        }
+      }
+      return updated;
+    });
+
+    setCopyToast(`✨ Rekomendasi modul untuk "${activeSubj || 'Mata Pelajaran'}" berhasil dimuat!`);
+    setTimeout(() => setCopyToast(null), 3000);
+  };
+
+  const handleResetDefaultComponents = () => {
+    setSelectedComponents(['Pengertian', 'Tujuan', 'Ciri-ciri', 'Contoh', 'Kesimpulan']);
+    setCopyToast('Komponen direset ke 5 modul standar.');
+    setTimeout(() => setCopyToast(null), 2000);
   };
 
   const handleToggleVisualType = (vt: InfographicVisualType) => {
@@ -1312,151 +1452,13 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           </div>
         </div>
 
-        {/* 2. PILIH JENIS PROMPT YANG DIINGINKAN (DI BAWAH FORM PENGISIAN DATA) */}
+        {/* 2. PENGATURAN SPESIFIK & GENERATE PROMPT */}
         <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-3 border-b border-slate-100">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 block">
-                Pilih Jenis Prompt
-              </span>
-              <h2 className="text-base font-bold text-slate-900 mt-0.5">
-                Pilih jenis prompt yang dibuat:
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500">
-              Satu data materi sebagai Single Source of Truth menghasilkan dua jenis prompt
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {/* TOMBOL 1: INFOGRAFIS */}
-            <button
-              type="button"
-              id="btn-prompt-type-infografis"
-              onClick={() => {
-                setSelectedPromptType('infografis');
-                setTimeout(() => {
-                  const el = document.getElementById('infografis-settings-panel');
-                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-              }}
-              disabled={isGenerating}
-              className={`group flex items-center gap-3.5 px-5 py-3.5 rounded-xl border-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] ${
-                isGenerating && selectedPromptType === 'infografis'
-                  ? 'border-indigo-400 bg-indigo-50/90 text-indigo-950 cursor-wait'
-                  : selectedPromptType === 'infografis'
-                  ? 'border-[#3b49df] bg-indigo-50/80 text-slate-900 hover:shadow-md'
-                  : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50 text-slate-800'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                isGenerating && selectedPromptType === 'infografis'
-                  ? 'bg-indigo-600 text-white'
-                  : selectedPromptType === 'infografis'
-                  ? 'bg-[#3b49df] text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 group-hover:bg-[#3b49df] group-hover:text-white'
-              }`}>
-                {isGenerating && selectedPromptType === 'infografis' ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <ImageIcon className="w-5 h-5" />
-                )}
-              </div>
-
-              <div className="text-left flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold tracking-tight">
-                    INFOGRAFIS
-                  </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
-                    isGenerating && selectedPromptType === 'infografis'
-                      ? 'bg-indigo-200 text-indigo-900'
-                      : 'bg-indigo-100 text-indigo-800'
-                  }`}>
-                    Poster Pendidikan
-                  </span>
-                </div>
-                <p className={`text-xs mt-0.5 transition-colors ${
-                  isGenerating && selectedPromptType === 'infografis'
-                    ? 'text-indigo-700 font-medium'
-                    : 'text-slate-500'
-                }`}>
-                  {isGenerating && selectedPromptType === 'infografis' ? 'Sedang memproses prompt...' : 'Atur & Generate Infografis'}
-                </p>
-              </div>
-
-              <div className="ml-auto p-1.5 rounded-lg text-indigo-600">
-                <Sparkles className="w-4 h-4" />
-              </div>
-            </button>
-
-            {/* TOMBOL 2: LKPD (FITUR BARU - STYLE KONSISTEN) */}
-            <button
-              type="button"
-              id="btn-prompt-type-lkpd"
-              onClick={() => {
-                setSelectedPromptType('lkpd');
-                setTimeout(() => {
-                  const el = document.getElementById('lkpd-settings-panel');
-                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-              }}
-              disabled={isGenerating}
-              className={`group flex items-center gap-3.5 px-5 py-3.5 rounded-xl border-2 transition-all cursor-pointer shadow-xs active:scale-[0.99] ${
-                isGenerating && selectedPromptType === 'lkpd'
-                  ? 'border-emerald-400 bg-emerald-50/90 text-emerald-950 cursor-wait'
-                  : selectedPromptType === 'lkpd'
-                  ? 'border-emerald-600 bg-emerald-50/80 text-slate-900 hover:shadow-md'
-                  : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50 text-slate-800'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                isGenerating && selectedPromptType === 'lkpd'
-                  ? 'bg-emerald-600 text-white'
-                  : selectedPromptType === 'lkpd'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 group-hover:bg-emerald-600 group-hover:text-white'
-              }`}>
-                {isGenerating && selectedPromptType === 'lkpd' ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <FileText className="w-5 h-5" />
-                )}
-              </div>
-
-              <div className="text-left flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold tracking-tight">
-                    LKPD
-                  </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
-                    isGenerating && selectedPromptType === 'lkpd'
-                      ? 'bg-emerald-200 text-emerald-900'
-                      : 'bg-emerald-100 text-emerald-800'
-                  }`}>
-                    Lembar Kerja Siswa
-                  </span>
-                </div>
-                <p className={`text-xs mt-0.5 transition-colors ${
-                  isGenerating && selectedPromptType === 'lkpd'
-                    ? 'text-emerald-700 font-medium'
-                    : 'text-slate-500'
-                }`}>
-                  {isGenerating && selectedPromptType === 'lkpd' ? 'Sedang memproses prompt...' : 'Atur & Buat Prompt LKPD'}
-                </p>
-              </div>
-
-              <div className="ml-auto p-1.5 rounded-lg text-emerald-600">
-                <Sparkles className="w-4 h-4" />
-              </div>
-            </button>
-          </div>
-
           {/* PENGATURAN KHUSUS INFOGRAFIS (MUNCUL KETIKA PENGGUNA MEMILIH INFOGRAFIS) */}
           {selectedPromptType === 'infografis' && (
             <div 
               id="infografis-settings-panel"
-              className="mt-6 pt-6 border-t border-slate-200/80 space-y-6 animate-in fade-in duration-200"
+              className="space-y-6 animate-in fade-in duration-200"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
                 <div>
@@ -1505,38 +1507,198 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 </div>
               </div>
 
-              {/* B. KOMPONEN ISI INFOGRAFIS */}
-              <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    B. Komponen Isi Infografis <span className="text-slate-400 font-normal lowercase">(Pilih 3–6 modul)</span>
-                  </label>
-                  <span className="text-[11px] text-indigo-600 font-medium">
-                    {selectedComponents.length} dipilih
+              {/* B. KOMPONEN ISI INFOGRAFIS (HYBRID: PRESET + KUSTOM PENGGUNA) */}
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      B. Komponen Isi Infografis <span className="text-slate-400 font-normal lowercase">(Pilih 3–6 modul)</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Pilih dari preset teruji atau tambahkan komponen kustom sesuai kebutuhan materi:
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleSuggestSubjectComponents}
+                      className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Muat komponen yang relevan dengan mata pelajaran yang dipilih"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>✨ Sesuai Mapel</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResetDefaultComponents}
+                      className="px-2 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Reset ke komponen preset standar"
+                    >
+                      <RotateCcw className="w-3 h-3 text-slate-400" />
+                      <span>Reset</span>
+                    </button>
+
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      selectedComponents.length >= 3 && selectedComponents.length <= 6
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : selectedComponents.length < 3
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {selectedComponents.length} dipilih
+                    </span>
+                  </div>
+                </div>
+
+                {/* Preset Modul Standar */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Preset Modul Standar:
                   </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {INFOGRAPHIC_COMPONENT_OPTIONS.map((comp) => {
+                      const isSelected = selectedComponents.includes(comp);
+                      return (
+                        <button
+                          key={comp}
+                          type="button"
+                          onClick={() => handleToggleComponent(comp)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 text-slate-400" />}
+                          <span>{comp}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {INFOGRAPHIC_COMPONENT_OPTIONS.map((comp) => {
-                    const isSelected = selectedComponents.includes(comp);
-                    return (
+
+                {/* Komponen Khusus / Kustom Guru */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-indigo-500" />
+                      Komponen Khusus / Kustom Guru:
+                    </span>
+                    {!isAddingComponent && (
                       <button
-                        key={comp}
                         type="button"
-                        onClick={() => handleToggleComponent(comp)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 ${
-                          isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
+                        onClick={() => setIsAddingComponent(true)}
+                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 cursor-pointer"
                       >
-                        {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 text-slate-400" />}
-                        <span>{comp}</span>
+                        <Plus className="w-3 h-3" />
+                        Tambah Komponen Sendiri
                       </button>
-                    );
-                  })}
+                    )}
+                  </div>
+
+                  {/* Input Penambahan Komponen Kustom */}
+                  {isAddingComponent && (
+                    <div className="flex items-center gap-2 p-2 bg-indigo-50/70 border border-indigo-200 rounded-xl animate-in fade-in duration-200">
+                      <input
+                        type="text"
+                        value={newComponentInput}
+                        onChange={(e) => setNewComponentInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomComponent();
+                          } else if (e.key === 'Escape') {
+                            setIsAddingComponent(false);
+                            setNewComponentInput('');
+                          }
+                        }}
+                        placeholder="Contoh: Rumus Pokok, Linimasa, Tokoh Kunci, Prosedur K3..."
+                        autoFocus
+                        className="flex-1 px-3 py-1.5 text-xs bg-white border border-indigo-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCustomComponent}
+                        disabled={!newComponentInput.trim()}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Simpan</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingComponent(false);
+                          setNewComponentInput('');
+                        }}
+                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
+                        title="Batal"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Daftar Badge Komponen Kustom */}
+                  {customComponents.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {customComponents.map((comp) => {
+                        const isSelected = selectedComponents.includes(comp);
+                        return (
+                          <div
+                            key={comp}
+                            className={`group pl-3 pr-1.5 py-1 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-indigo-700 text-white border-indigo-700 shadow-xs'
+                                : 'bg-white text-indigo-900 border-indigo-200 hover:bg-indigo-50/70'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleToggleComponent(comp)}
+                              className="flex items-center gap-1.5 cursor-pointer text-left"
+                            >
+                              {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 text-indigo-400" />}
+                              <span>{comp}</span>
+                              <span className={`text-[9px] px-1 py-0.2 rounded font-normal ${
+                                isSelected ? 'bg-indigo-800/80 text-indigo-100' : 'bg-indigo-100 text-indigo-700'
+                              }`}>
+                                Kustom
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveCustomComponent(comp, e)}
+                              className={`p-1 rounded hover:bg-black/10 transition-colors ml-0.5 cursor-pointer ${
+                                isSelected ? 'text-indigo-200 hover:text-white' : 'text-slate-400 hover:text-rose-600'
+                              }`}
+                              title={`Hapus komponen "${comp}"`}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : !isAddingComponent ? (
+                    <div className="p-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 text-slate-500 text-xs flex items-center justify-between">
+                      <span className="text-[11px]">Belum ada modul kustom. Guru dapat menambahkan komponen khusus sesuai kebutuhan pembelajaran.</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingComponent(true)}
+                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Tambah
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  * Modul materi yang dipilih akan menjadi section terstruktur pada rancangan infografis.
+
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  * Modul materi yang dipilih (baik standar maupun kustom) akan dianalisis secara pedagogik oleh STIVIA dan dijadikan section terstruktur pada rancangan infografis.
                 </p>
               </div>
 
@@ -1826,7 +1988,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
           {selectedPromptType === 'lkpd' && (
             <div 
               id="lkpd-settings-panel"
-              className="mt-6 pt-6 border-t border-slate-200/80 space-y-6 animate-in fade-in duration-200"
+              className="space-y-6 animate-in fade-in duration-200"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
                 <div>

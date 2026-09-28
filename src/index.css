@@ -38,12 +38,37 @@
     visibility: hidden;
   }
 
-  /* Make sure the infographic canvas or prompt print area remain visible */
+  /* Make sure the infographic canvas, prompt print area, or materi document print area remain visible */
   #infographic-preview-canvas,
   #infographic-preview-canvas *,
   #stivia-prompt-print-area,
-  #stivia-prompt-print-area * {
+  #stivia-prompt-print-area *,
+  #materi-document-print-area,
+  #materi-document-print-area * {
     visibility: visible !important;
+  }
+
+  #materi-document-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .materi-a4-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
   }
 
   #infographic-preview-canvas {

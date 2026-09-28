@@ -51,6 +51,839 @@ export type LkpdStudentOutput =
   | 'Presentasi' 
   | 'Kombinasi';
 
+// ============================================================================
+// STIVIA POSTER LKPD BLUEPRINT ENGINE (Tahap 1 s/d Tahap 6)
+// Sistem Perancangan Struktur LKPD Kontekstual & Visual Poster
+// ============================================================================
+
+export type LkpdStimulusType = 
+  | 'Teks'
+  | 'Ilustrasi'
+  | 'Kasus/Kejadian'
+  | 'Tabel/Data'
+  | 'Diagram'
+  | 'Percakapan/Dialog'
+  | 'Teks + Ilustrasi'
+  | 'Kasus + Data'
+  | 'Tanpa Stimulus';
+
+export type LkpdStimulusSource = 'ai_generated' | 'user_manual';
+
+export type LkpdActivityCategory = 
+  | 'Memahami'
+  | 'Mengamati'
+  | 'Mengidentifikasi'
+  | 'Mengelompokkan'
+  | 'Membandingkan'
+  | 'Menganalisis'
+  | 'Menafsirkan'
+  | 'Mengevaluasi'
+  | 'Memecahkan masalah'
+  | 'Mencipta'
+  | 'Berdiskusi'
+  | 'Menyimpulkan'
+  | 'Refleksi';
+
+export type LkpdQuestionType = 
+  | 'Pilihan Ganda'
+  | 'Benar/Salah'
+  | 'Isian Singkat'
+  | 'Menjodohkan'
+  | 'Uraian'
+  | 'Studi Kasus'
+  | 'Analisis'
+  | 'Problem Solving'
+  | 'Pengamatan'
+  | 'Diskusi'
+  | 'Refleksi'
+  | 'Tugas Kreatif';
+
+export interface LkpdDifficultyComposition {
+  mudah: number;  // persentase (misal 30)
+  sedang: number; // persentase (misal 50)
+  hots: number;   // persentase (misal 20)
+  mode: 'ai' | 'manual';
+}
+
+export interface LkpdBlueprintDesign {
+  id: string;
+  title: string;
+  subject: string;
+  educationLevel: string;
+  grade: string;
+  materi: string;
+  subTopic: string;
+  timeAllocation: string;
+  learningObjectives: string[];
+  stimulusType: LkpdStimulusType;
+  stimulusSource: LkpdStimulusSource;
+  userStimulusText?: string;
+  activityComposition: { category: LkpdActivityCategory; count: number }[];
+  questionTypes: { type: LkpdQuestionType; count: number }[];
+  difficultyComposition: LkpdDifficultyComposition;
+  totalResponses: number;
+  notes?: string;
+}
+
+export interface GeneratedLkpdQuestion {
+  id: string;
+  number: number;
+  activityCategory: LkpdActivityCategory;
+  questionType: LkpdQuestionType;
+  cognitiveLevel: 'Mudah' | 'Sedang' | 'HOTS';
+  prompt: string;
+  options?: string[]; // jika pilihan ganda
+  matchingPairs?: { left: string; right: string }[]; // jika menjodohkan
+  answerSpaceType: 'lines' | 'box' | 'table' | 'options';
+  answerLineCount?: number;
+  expectedResponseGuidance: string;
+}
+
+export interface GeneratedLkpdActivitySection {
+  category: LkpdActivityCategory;
+  title: string;
+  instruction: string;
+  questions: GeneratedLkpdQuestion[];
+}
+
+export interface GeneratedLkpdDocument {
+  id: string;
+  title: string;
+  subject: string;
+  educationLevel: string;
+  grade: string;
+  materi: string;
+  subTopic: string;
+  timeAllocation: string;
+  learningObjectives: string[];
+  stimulus: {
+    type: LkpdStimulusType;
+    title: string;
+    content: string;
+    contextualHint: string;
+    illustrationPrompt: string;
+  };
+  generalInstructions: string[];
+  sections: GeneratedLkpdActivitySection[];
+  totalResponses: number;
+  reflectionQuestions: string[];
+  teacherNotesSection: string;
+  createdAt: string;
+}
+
+export interface PosterLkpdPageLayout {
+  pageNumber: number;
+  totalPages: number;
+  title: string;
+  metadata: string;
+  hasStudentHeader: boolean;
+  stimulusBox?: {
+    type: LkpdStimulusType;
+    title: string;
+    content: string;
+    illustrationDesc: string;
+  };
+  activityBoxes: {
+    category: string;
+    instruction: string;
+    questions: {
+      number: number;
+      type: string;
+      prompt: string;
+      options?: string[];
+      answerLineCount: number;
+    }[];
+  }[];
+  footer?: {
+    reflectionItems?: string[];
+    teacherSignBox: boolean;
+  };
+}
+
+export const ALL_LKPD_ACTIVITY_CATEGORIES: LkpdActivityCategory[] = [
+  'Memahami',
+  'Mengamati',
+  'Mengidentifikasi',
+  'Mengelompokkan',
+  'Membandingkan',
+  'Menganalisis',
+  'Menafsirkan',
+  'Mengevaluasi',
+  'Memecahkan masalah',
+  'Mencipta',
+  'Berdiskusi',
+  'Menyimpulkan',
+  'Refleksi'
+];
+
+export const ALL_LKPD_QUESTION_TYPES: LkpdQuestionType[] = [
+  'Pilihan Ganda',
+  'Benar/Salah',
+  'Isian Singkat',
+  'Menjodohkan',
+  'Uraian',
+  'Studi Kasus',
+  'Analisis',
+  'Problem Solving',
+  'Pengamatan',
+  'Diskusi',
+  'Refleksi',
+  'Tugas Kreatif'
+];
+
+export const ALL_LKPD_STIMULUS_TYPES: { id: LkpdStimulusType; label: string; desc: string; icon: string }[] = [
+  { id: 'Teks + Ilustrasi', label: 'Teks + Ilustrasi', desc: 'Kombinasi naskah bacaan dengan gambaran visual kontekstual', icon: '🖼️' },
+  { id: 'Teks', label: 'Teks / Bacaan', desc: 'Artikel, kutipan berita, wacana, iklan, atau naskah cerita', icon: '📄' },
+  { id: 'Ilustrasi', label: 'Ilustrasi / Gambar', desc: 'Gambar situasi, poster, karya seni, atau fenomena visual', icon: '🎨' },
+  { id: 'Kasus/Kejadian', label: 'Kasus / Kejadian Nyata', desc: 'Studi peristiwa sosial, fenomena alam, atau dinamika kehidupan', icon: '🔍' },
+  { id: 'Tabel/Data', label: 'Tabel / Data Fakta', desc: 'Hasil pengamatan, statistik, tabel nilai, atau data survei', icon: '📊' },
+  { id: 'Diagram', label: 'Diagram / Alur', desc: 'Bagan proses, siklus, diagram alir, atau skema kerja', icon: '📈' },
+  { id: 'Percakapan/Dialog', label: 'Percakapan / Dialog', desc: 'Interaksi dua tokoh atau diskusi situasional', icon: '💬' },
+  { id: 'Kasus + Data', label: 'Kasus + Data Tabel', desc: 'Uraian kejadian faktual disertai data pendukung konkret', icon: '📑' },
+  { id: 'Tanpa Stimulus', label: 'Tanpa Stimulus', desc: 'Pertanyaan langsung berbasis konsep tanpa bahan pemantik', icon: '⚡' }
+];
+
+/**
+ * Memberikan rekomendasi komposisi aktivitas, jenis soal, dan alokasi waktu ideal
+ */
+export function recommendLkpdComposition(
+  timeAllocation: string,
+  level: string,
+  grade: string,
+  subject: string
+): {
+  recommendedActivities: { category: LkpdActivityCategory; count: number }[];
+  recommendedQuestionTypes: { type: LkpdQuestionType; count: number }[];
+  difficulty: LkpdDifficultyComposition;
+  totalResponses: number;
+  rationale: string;
+} {
+  const t = timeAllocation.toLowerCase();
+  const s = (subject || '').toLowerCase();
+
+  if (t.includes('20')) {
+    return {
+      recommendedActivities: [
+        { category: 'Memahami', count: 2 },
+        { category: 'Mengidentifikasi', count: 2 },
+        { category: 'Refleksi', count: 1 }
+      ],
+      recommendedQuestionTypes: [
+        { type: 'Pilihan Ganda', count: 2 },
+        { type: 'Isian Singkat', count: 2 },
+        { type: 'Refleksi', count: 1 }
+      ],
+      difficulty: { mudah: 40, sedang: 50, hots: 10, mode: 'ai' },
+      totalResponses: 5,
+      rationale: 'Alokasi 20 menit dirancang untuk aktivitas ringkas dan pemahaman konsep cepat (±15-18 menit pengerjaan siswa).'
+    };
+  }
+
+  if (t.includes('30') || t.includes('40') || t.includes('45')) {
+    const isMathOrSci = s.includes('matematika') || s.includes('ipa') || s.includes('fisika');
+    return {
+      recommendedActivities: isMathOrSci ? [
+        { category: 'Memahami', count: 2 },
+        { category: 'Menganalisis', count: 2 },
+        { category: 'Memecahkan masalah', count: 2 },
+        { category: 'Refleksi', count: 1 }
+      ] : [
+        { category: 'Memahami', count: 2 },
+        { category: 'Mengidentifikasi', count: 2 },
+        { category: 'Menganalisis', count: 2 },
+        { category: 'Mengevaluasi', count: 1 },
+        { category: 'Refleksi', count: 1 }
+      ],
+      recommendedQuestionTypes: [
+        { type: 'Pilihan Ganda', count: 3 },
+        { type: 'Isian Singkat', count: 2 },
+        { type: 'Uraian', count: 2 },
+        { type: 'Refleksi', count: 1 }
+      ],
+      difficulty: { mudah: 30, sedang: 50, hots: 20, mode: 'ai' },
+      totalResponses: 8,
+      rationale: `Untuk alokasi ${timeAllocation}, disarankan 4 aktivitas utama dengan 8 respon berjenjang dari C2 hingga C5 (estimasi pengerjaan: ±35–40 menit).`
+    };
+  }
+
+  // 60 - 90 menit (Proyek / Eksplorasi mendalam)
+  return {
+    recommendedActivities: [
+      { category: 'Mengamati', count: 2 },
+      { category: 'Mengidentifikasi', count: 3 },
+      { category: 'Menganalisis', count: 3 },
+      { category: 'Memecahkan masalah', count: 2 },
+      { category: 'Berdiskusi', count: 1 },
+      { category: 'Refleksi', count: 1 }
+    ],
+    recommendedQuestionTypes: [
+      { type: 'Pilihan Ganda', count: 4 },
+      { type: 'Isian Singkat', count: 3 },
+      { type: 'Uraian', count: 2 },
+      { type: 'Studi Kasus', count: 2 },
+      { type: 'Refleksi', count: 1 }
+    ],
+    difficulty: { mudah: 20, sedang: 50, hots: 30, mode: 'ai' },
+    totalResponses: 12,
+    rationale: `Untuk alokasi waktu lapang (${timeAllocation}), LKPD mengombinasikan observasi stimulus mendalam, analisis kasus, diskusi tim, dan pemecahan masalah kontekstual.`
+  };
+}
+
+/**
+ * Validasi apakah jumlah aktivitas/soal realistis terhadap alokasi waktu
+ */
+export function checkTimeAllocationWarning(
+  timeAllocation: string,
+  totalResponses: number
+): { hasWarning: boolean; message: string } {
+  const t = timeAllocation.toLowerCase();
+  
+  if (t.includes('20') && totalResponses > 6) {
+    return {
+      hasWarning: true,
+      message: `Jumlah ${totalResponses} pertanyaan/tugas kemungkinan melebihi alokasi waktu 20 menit. Disarankan maksimal 4–6 pertanyaan agar siswa tidak terburu-buru.`
+    };
+  }
+
+  if ((t.includes('30') || t.includes('40') || t.includes('45')) && totalResponses > 10) {
+    return {
+      hasWarning: true,
+      message: `Jumlah ${totalResponses} pertanyaan/tugas tergolong padat untuk alokasi ${timeAllocation}. Disarankan 6–9 respon agar proses berpikir dan refleksi tetap bermakna.`
+    };
+  }
+
+  if (t.includes('60') && totalResponses > 16) {
+    return {
+      hasWarning: true,
+      message: `Jumlah ${totalResponses} respon berpotensi melebihi batas waktu 60 menit saat siswa membaca stimulus dan berdiskusi.`
+    };
+  }
+
+  return { hasWarning: false, message: '' };
+}
+
+/**
+ * Membuat Stimulus Pembelajaran Kontekstual Berdasarkan Karakter Mata Pelajaran
+ */
+export function generateContextualStimulus(
+  subject: string,
+  topic: string,
+  level: string,
+  grade: string,
+  stimulusType: LkpdStimulusType,
+  objectives: string[],
+  customStimulusText?: string
+): {
+  type: LkpdStimulusType;
+  title: string;
+  content: string;
+  contextualHint: string;
+  illustrationPrompt: string;
+} {
+  if (customStimulusText && customStimulusText.trim().length > 10) {
+    return {
+      type: stimulusType,
+      title: `Stimulus Materi: ${topic}`,
+      content: customStimulusText.trim(),
+      contextualHint: 'Stimulus ini dirumuskan langsung oleh pendidik sebagai acuan utama seluruh aktivitas pengerjaan peserta didik.',
+      illustrationPrompt: `Ilustrasi edukatif yang memvisualisasikan stimulus materi "${topic}" secara faktual dan kontekstual untuk siswa ${level} ${grade}.`
+    };
+  }
+
+  if (stimulusType === 'Tanpa Stimulus') {
+    return {
+      type: 'Tanpa Stimulus',
+      title: `Pemahaman Konsep: ${topic}`,
+      content: `Aktivitas pembelajaran terfokus pada penguasaan konsep pokok "${topic}" secara bertahap melalui penalaran deduktif dan pemecahan masalah langsung.`,
+      contextualHint: 'Lembar kerja langsung menyajikan instruksi kerja terstruktur tanpa bacaan pemantik panjang.',
+      illustrationPrompt: `Ikon grafis simbolis materi "${topic}" dengan tata letak lembar kerja yang rapi.`
+    };
+  }
+
+  const s = (subject || '').toLowerCase();
+
+  // BAHASA INDONESIA / INGGRIS
+  if (s.includes('bahasa') || s.includes('indonesia') || s.includes('inggris')) {
+    return {
+      type: stimulusType,
+      title: `Teks Stimulus: Iklan Layanan Masyarakat & Wacana "${topic}"`,
+      content: `[IKLAN LAYANAN MASYARAKAT: "BIJAK BERMEDIA SOSIAL, CERDAS MEMILIH INFORMASI"]\n` +
+        `Dalam era keterbukaan digital saat ini, arus pertukaran pesan berlangsung sangat cepat. Namun, survei literasi digital menunjukkan bahwa 62% siswa mengaku pernah membaca berita sensasional yang terbukti tidak benar (hoaks).\n` +
+        `Iklan ini menampilkan slogan: "SEBARKAN FAKTA, TANGKIS DUSTA — BACA TUNTAS SEBELUM MENEKAN TOMBOL BAGIKAN!". Pesan ini mengajak generasi muda untuk memverifikasi sumber berita, mencermati kredibilitas penulis, dan memikirkan dampak sosial sebelum menyebarkan konten ke ruang publik.`,
+      contextualHint: 'Teks iklan dan data statistik di atas menjadi Single Source of Truth bagi siswa dalam menganalisis tujuan, bahasa persuasif, dan target pembaca.',
+      illustrationPrompt: 'Poster infografis edukatif dua remaja mengamati layar smartphone dengan lencana periksa fakta centang hijau, berlatar tipografi persuasif modern kontras tinggi.'
+    };
+  }
+
+  // IPA / BIOLOGI / FISIKA / KIMIA
+  if (s.includes('ipa') || s.includes('biologi') || s.includes('fisika') || s.includes('kimia') || s.includes('sains')) {
+    return {
+      type: stimulusType,
+      title: `Fenomena Alam & Data Pengamatan: "${topic}"`,
+      content: `[HASIL PENGAMATAN FENOMENA & DATA EKSPERIMEN]\n` +
+        `Sekelompok siswa melakukan eksperimen pengukuran terhadap laju reaksi/perubahan lingkungan pada materi "${topic}".\n` +
+        `Tabel Data Uji:\n` +
+        `• Kondisi A (Suhu 25°C, Kontrol): Waktu reaksi 120 detik, endapan 0.5 gram, kondisi larutan bening.\n` +
+        `• Kondisi B (Suhu 40°C, Pemanasan): Waktu reaksi 45 detik, endapan 1.8 gram, kondisi larutan bergelembung aktif.\n` +
+        `• Kondisi C (Suhu 60°C, Katalis): Waktu reaksi 18 detik, endapan 2.4 gram, pelepasan energi cepat.\n` +
+        `Fenomena ini menunjukkan korelasi langsung antara parameter fisik dengan laju proses yang terjadi di alam nyata.`,
+      contextualHint: 'Data tabel pengamatan ini wajib dijadikan rujukan siswa saat membandingkan variabel kontrol dan menarik kesimpulan eksperimental.',
+      illustrationPrompt: 'Diagram ilmiah saintifik dengan tabung reaksi, grafik termometer suhu, dan tabel data terstruktur berpalet biru cyan dan zamrud bersih.'
+    };
+  }
+
+  // MATEMATIKA
+  if (s.includes('matematika')) {
+    return {
+      type: stimulusType,
+      title: `Studi Kasus Kontekstual: "${topic} dalam Kebutuhan Sehari-Hari"`,
+      content: `[STUDI KASUS: OPTIMASI LOGISTIK & PERJALANAN KOTA]\n` +
+        `Sebuah koperasi sekolah berencana mendistribusikan paket perlengkapan belajar ke 4 cabang mitra di kecamatan sekitar.\n` +
+        `Data Jarak dan Biaya Transportasi:\n` +
+        `• Titik Pusat ke Cabang A: Jarak 8 km, estimasi waktu 20 menit, kuota 40 paket.\n` +
+        `• Titik Pusat ke Cabang B: Jarak 14 km, estimasi waktu 35 menit, kuota 75 paket.\n` +
+        `• Cabang A ke Cabang C: Jarak 6 km, biaya tol Rp15.000, kuota 30 paket.\n` +
+        `Jika armada kurir memiliki kapasitas angkut maksimal 100 paket per perjalanan, tentukan kombinasi rute terpendek dan biaya paling hemat dengan memodelkan konsep "${topic}".`,
+      contextualHint: 'Masalah kontekstual logistik ini memberikan angka-angka nyata yang membumi tanpa menjebak siswa dalam rumus abstrak yang terisolasi.',
+      illustrationPrompt: 'Peta rute minimalis dengan pin lokasi bertitik koordinat, diagram alur panah berbobot jarak, dan tabel biaya logistik yang mudah dibaca.'
+    };
+  }
+
+  // IPS / SEJARAH / SOSIOLOGI / GEOGRAFI
+  if (s.includes('ips') || s.includes('sejarah') || s.includes('sosiologi') || s.includes('geografi') || s.includes('ekonomi')) {
+    return {
+      type: stimulusType,
+      title: `Studi Kasus Dinamika Sosial: "${topic}"`,
+      content: `[KASUS SOSIAL: PERUBAHAN SOSIAL-EKONOMI MASYARAKAT PESISIR]\n` +
+        `Desa Pesisir Bahari mengalami transformasi signifikan dalam satu dekade terakhir. Awalnya, 85% warga menggantungkan mata pencaharian sebagai nelayan tangkap tradisional.\n` +
+        `Sejak dibangunnya dermaga ekowisata dan sentra pengolahan hasil laut modern:\n` +
+        `1. Pendapatan rata-rata keluarga meningkat 40%.\n` +
+        `2. Muncul pergeseran profesi generasi muda ke sektor jasa dan pemasaran digital.\n` +
+        `3. Di sisi lain, timbul tantangan pengelolaan sampah pesisir dan kenaikan harga lahan lokal.\n` +
+        `Fenomena ini mencerminkan keterkaitan erat antara modernisasi, kelembagaan ekonomi, dan adaptasi sosial masyarakat.`,
+      contextualHint: 'Studi kasus sosio-geografis ini merangsang kemampuan berpikir kritis siswa dalam mengevaluasi dampak positif dan negatif pembangunan.',
+      illustrationPrompt: 'Foto ilustratif komparasi lanskap desa nelayan tradisional berdampingan dengan sentra ekowisata bahari modern yang teratur.'
+    };
+  }
+
+  // INFORMATIKA
+  if (s.includes('informatika') || s.includes('komputer') || s.includes('rpl') || s.includes('tik')) {
+    return {
+      type: stimulusType,
+      title: `Skenario Algoritmik & Rekayasa Sistem: "${topic}"`,
+      content: `[SKENARIO: PERANCANGAN SISTEM REKOMENDASI KONTEN CERDAS]\n` +
+        `Sebuah platform aplikasi belajar digital mengelola ribuan materi pelajaran untuk ratusan ribu siswa. Untuk mencegah kebingungan pengguna, tim pengembang merancang arsitektur sistem berbasis "${topic}".\n` +
+        `Arsitektur mencatat:\n` +
+        `• Simpul (Nodes): Siswa, Materi Pelajaran, dan Kuis Evaluasi.\n` +
+        `• Sisi Berbobot (Weighted Edges): Tingkat kemiripan minat belajar dan tingkat kesulitan materi.\n` +
+        `Permasalahan: Sistem harus mampu merekomendasikan 3 materi berikutnya dalam waktu kurang dari 50 milidetik saat siswa menyelesaikan kuis terakhir.`,
+      contextualHint: 'Skenario rekayasa ini menghubungkan teori struktur data/algoritma dengan aplikasi nyata yang setiap hari digunakan siswa di smartphone mereka.',
+      illustrationPrompt: 'Visual arsitektur sistem jaringan simpul (graph nodes) berwarna ungu neon dan biru royal dengan garis keterhubungan data yang elegan.'
+    };
+  }
+
+  // DEFAULT CONTEXTUAL STIMULUS
+  return {
+    type: stimulusType,
+    title: `Kasus Pembelajaran Kontekstual: "${topic}"`,
+    content: `[KASUS EKSPLORASI: PENERAPAN NYATA ${topic.toUpperCase()}]\n` +
+      `Dalam kehidupan sehari-hari, konsep "${topic}" memegang peranan krusial dalam membantu manusia memecahkan masalah praktis.\n` +
+      `Amatilah bagaimana komponen-komponen utama materi ini berinteraksi satu sama lain, bagaimana fakta di lapangan mendukung teori yang dipelajari, dan tantangan apa saja yang sering ditemui ketika konsep ini diterapkan pada lingkungan sekitar peserta didik jenjang ${level} ${grade}.`,
+    contextualHint: 'Uraian kasus faktual di atas dirancang untuk memicu rasa ingin tahu siswa sebelum menjawab rangkaian pertanyaan kerja.',
+    illustrationPrompt: `Ilustrasi modular edukatif modern yang menggambarkan penerapan konsep "${topic}" pada kehidupan nyata peserta didik.`
+  };
+}
+
+/**
+ * Menghasilkan LKPD Lengkap Terstruktur dari Blueprint
+ * Menjamin jumlah soal, jenis soal, dan keterikatan stimulus 100% presisi
+ */
+export function generateLkpdFromBlueprint(blueprint: LkpdBlueprintDesign): GeneratedLkpdDocument {
+  const stimulus = generateContextualStimulus(
+    blueprint.subject,
+    blueprint.materi,
+    blueprint.educationLevel,
+    blueprint.grade,
+    blueprint.stimulusType,
+    blueprint.learningObjectives,
+    blueprint.userStimulusText
+  );
+
+  // Hitung distribusi pertanyaan berdasarkan komposisi aktivitas dan jenis soal yang dipilih
+  const totalWanted = blueprint.totalResponses || 8;
+  const activityList = blueprint.activityComposition.filter(a => a.count > 0);
+  const questionTypeList = blueprint.questionTypes.filter(q => q.count > 0);
+
+  // Buat antrean jenis soal yang harus dialokasikan
+  const qTypePool: LkpdQuestionType[] = [];
+  questionTypeList.forEach(qt => {
+    for (let i = 0; i < qt.count; i++) {
+      qTypePool.push(qt.type);
+    }
+  });
+
+  // Jika pool jenis soal belum mencukupi totalWanted, isi dengan 'Uraian' atau 'Pilihan Ganda'
+  while (qTypePool.length < totalWanted) {
+    qTypePool.push('Uraian');
+  }
+
+  // Antrean tingkat kognitif berdasarkan persentase
+  const diffComp = blueprint.difficultyComposition || { mudah: 30, sedang: 50, hots: 20, mode: 'ai' };
+  const countMudah = Math.max(1, Math.round((diffComp.mudah / 100) * totalWanted));
+  const countHots = Math.max(1, Math.round((diffComp.hots / 100) * totalWanted));
+  const countSedang = Math.max(1, totalWanted - countMudah - countHots);
+
+  const cognitivePool: ('Mudah' | 'Sedang' | 'HOTS')[] = [
+    ...Array(countMudah).fill('Mudah'),
+    ...Array(countSedang).fill('Sedang'),
+    ...Array(countHots).fill('HOTS')
+  ];
+
+  let currentQNumber = 1;
+  let qTypeIdx = 0;
+  let cogIdx = 0;
+
+  const sections: GeneratedLkpdActivitySection[] = activityList.map((act) => {
+    const questions: GeneratedLkpdQuestion[] = [];
+    const sectionTargetCount = act.count;
+
+    for (let k = 0; k < sectionTargetCount; k++) {
+      const qNum = currentQNumber++;
+      const qType = qTypePool[qTypeIdx % qTypePool.length];
+      const cog = cognitivePool[cogIdx % cognitivePool.length];
+      qTypeIdx++;
+      cogIdx++;
+
+      // Bangun pertanyaan yang 100% terikat pada stimulus!
+      let promptText = '';
+      let optionsList: string[] | undefined = undefined;
+      let matchingList: { left: string; right: string }[] | undefined = undefined;
+      let spaceType: 'lines' | 'box' | 'table' | 'options' = 'lines';
+      let answerLineCount = 3;
+
+      switch (act.category) {
+        case 'Memahami':
+          if (qType === 'Pilihan Ganda') {
+            promptText = `Berdasarkan stimulus "${stimulus.title}", manakah pernyataan berikut yang paling tepat mendefinisikan intisari dari ${blueprint.materi}?`;
+            optionsList = [
+              `A. Penjelasan faktual yang merujuk langsung pada kondisi utama stimulus.`,
+              `B. Pandangan alternatif yang bertentangan dengan data stimulus.`,
+              `C. Asumsi umum tanpa bukti pendukung pada stimulus.`,
+              `D. Kesimpulan sepihak yang mengabaikan variabel pokok materi.`
+            ];
+            spaceType = 'options';
+            answerLineCount = 1;
+          } else if (qType === 'Benar/Salah') {
+            promptText = `[B / S] Berdasarkan stimulus bacaan, informasi yang disajikan bertujuan untuk mengubah cara pandang pembaca terhadap ${blueprint.materi}. Tuliskan alasan singkat Anda!`;
+            spaceType = 'lines';
+            answerLineCount = 2;
+          } else {
+            promptText = `Berdasarkan stimulus di atas, jelaskan dengan kalimat Anda sendiri apa ide pokok dan tujuan utama dari ${blueprint.materi}!`;
+            spaceType = 'lines';
+            answerLineCount = 3;
+          }
+          break;
+
+        case 'Mengamati':
+          promptText = `Cermati secara teliti elemen-elemen penting pada stimulus. Tuliskan 3 fakta atau rincian data paling mencolok yang Anda temukan terkait ${blueprint.materi}!`;
+          spaceType = 'lines';
+          answerLineCount = 4;
+          break;
+
+        case 'Mengidentifikasi':
+          if (qType === 'Isian Singkat') {
+            promptText = `Sebutkan 2 faktor kunci yang disebutkan dalam stimulus sebagai pemicu terjadinya peristiwa atau fenomena pada ${blueprint.materi}!`;
+            spaceType = 'lines';
+            answerLineCount = 2;
+          } else {
+            promptText = `Identifikasilah bagian mana dari stimulus yang menunjukkan tantangan utama dalam penerapan ${blueprint.materi}! Berikan bukti kalimat/datanya.`;
+            spaceType = 'lines';
+            answerLineCount = 3;
+          }
+          break;
+
+        case 'Menganalisis':
+          if (qType === 'Uraian' || qType === 'Analisis') {
+            promptText = `Analisis hubungan sebab-akibat antara data pada stimulus dengan dampak yang dirasakan oleh pihak-pihak terkait. Mengapa situasi tersebut dapat terjadi?`;
+            spaceType = 'lines';
+            answerLineCount = 5;
+          } else if (qType === 'Pilihan Ganda') {
+            promptText = `Jika kondisi pada stimulus tidak segera ditangani, dampak lanjutan yang paling logis menurut analisis Anda adalah...`;
+            optionsList = [
+              `A. Terjadi penurunan efisiensi sistem secara signifikan.`,
+              `B. Stabilitas kondisi tetap terjaga tanpa perubahan berarti.`,
+              `C. Terjadi perbaikan otomatis tanpa intervensi data.`,
+              `D. Komponen materi kehilangan keterhubungannya secara total.`
+            ];
+            spaceType = 'options';
+            answerLineCount = 1;
+          } else {
+            promptText = `Bedahlah struktur informasi pada stimulus: pisahkan antara fakta objektif dan opini/penafsiran subjektif yang muncul!`;
+            spaceType = 'table';
+            answerLineCount = 4;
+          }
+          break;
+
+        case 'Membandingkan':
+          promptText = `Bandingkan dua kondisi atau alternatif solusi yang tersirat dalam stimulus. Buatlah tabel perbandingan sederhana yang memuat kelebihan dan kekurangannya!`;
+          spaceType = 'table';
+          answerLineCount = 5;
+          break;
+
+        case 'Mengevaluasi':
+          promptText = `Menurut pertimbangan kritis Anda, apakah data atau langkah yang ditempuh pada stimulus di atas sudah efektif dan adil? Jelaskan argumentasi Anda berdasarkan bukti!`;
+          spaceType = 'lines';
+          answerLineCount = 4;
+          break;
+
+        case 'Memecahkan masalah':
+          promptText = `Jika Anda bertindak sebagai pengambil keputusan dalam studi kasus stimulus di atas, rumuskan 2 solusi inovatif dan aplikatif untuk mengatasi masalah tersebut!`;
+          spaceType = 'box';
+          answerLineCount = 5;
+          break;
+
+        case 'Berdiskusi':
+          promptText = `Diskusikan bersama rekan kerja Anda: bagaimana penerapan konsep "${blueprint.materi}" pada stimulus ini dapat diadaptasikan di lingkungan sekolah/tempat tinggal Anda?`;
+          spaceType = 'lines';
+          answerLineCount = 4;
+          break;
+
+        case 'Refleksi':
+          promptText = `Setelah menuntaskan penelaahan stimulus dan materi ${blueprint.materi}, apa wawasan baru yang paling bermakna bagi Anda dan bagaimana Anda akan menggunakannya?`;
+          spaceType = 'lines';
+          answerLineCount = 3;
+          break;
+
+        default:
+          promptText = `Berdasarkan stimulus yang disajikan, lakukan telaah mendalam terkait ${blueprint.materi} dan kemukakan simpulan Anda secara ringkas!`;
+          spaceType = 'lines';
+          answerLineCount = 3;
+      }
+
+      questions.push({
+        id: `q-${qNum}`,
+        number: qNum,
+        activityCategory: act.category,
+        questionType: qType,
+        cognitiveLevel: cog,
+        prompt: promptText,
+        options: optionsList,
+        matchingPairs: matchingList,
+        answerSpaceType: spaceType,
+        answerLineCount,
+        expectedResponseGuidance: `Siswa merujuk langsung pada fakta dalam stimulus dengan penalaran logis tingkat ${cog}.`
+      });
+    }
+
+    return {
+      category: act.category,
+      title: `Aktivitas — ${act.category.toUpperCase()}`,
+      instruction: `Perhatikan stimulus di atas secara cermat, kemudian selesaikan tugas berikut sesuai panduan:`,
+      questions
+    };
+  });
+
+  return {
+    id: blueprint.id || `lkpd-doc-${Date.now()}`,
+    title: blueprint.title || `LEMBAR KERJA PESERTA DIDIK: ${blueprint.materi.toUpperCase()}`,
+    subject: blueprint.subject,
+    educationLevel: blueprint.educationLevel,
+    grade: blueprint.grade,
+    materi: blueprint.materi,
+    subTopic: blueprint.subTopic || '',
+    timeAllocation: blueprint.timeAllocation,
+    learningObjectives: blueprint.learningObjectives,
+    stimulus,
+    generalInstructions: [
+      'Berdoalah sebelum memulai kegiatan pembelajaran.',
+      'Bacalah seluruh stimulus dan informasi pengantar secara seksama.',
+      'Setiap tugas dan pertanyaan disusun berdasarkan informasi pada stimulus di atas.',
+      'Tuliskan jawaban Anda pada ruang kerja yang telah disediakan dengan rapi dan terstruktur.',
+      'Periksalah kembali kelengkapan seluruh respon sebelum menyerahkan lembar kerja kepada guru.'
+    ],
+    sections,
+    totalResponses: currentQNumber - 1,
+    reflectionQuestions: [
+      `1. Apa konsep inti dari ${blueprint.materi} yang paling penting dan berhasil saya kuasai hari ini?`,
+      `2. Bagian aktivitas mana yang paling menantang bagi saya, dan bagaimana stimulus membantu pemahaman saya?`
+    ],
+    teacherNotesSection: `Nilai: [ .......... ] | Catatan Guru: [ ................................................................ ]`,
+    createdAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Menyusun Halaman Poster LKPD Visual (Multi-halaman jika materi panjang)
+ */
+export function generatePosterPagesFromLkpd(
+  doc: GeneratedLkpdDocument,
+  paperSize: LkpdPaperSize = 'A4',
+  orientation: LkpdOrientation = 'Portrait'
+): PosterLkpdPageLayout[] {
+  const allSections = doc.sections;
+  const totalQuestions = allSections.reduce((acc, s) => acc + s.questions.length, 0);
+
+  // Jika total respons <= 6 dan stimulus ringkas -> 1 Halaman Poster cukup
+  // Jika total respons > 6 atau stimulus teks panjang -> 2 Halaman Poster agar KETERBACAAN TERJAMIN
+  const isMultiPage = totalQuestions > 6 || doc.stimulus.content.length > 500;
+
+  if (!isMultiPage) {
+    return [{
+      pageNumber: 1,
+      totalPages: 1,
+      title: doc.title,
+      metadata: `${doc.subject} | ${doc.educationLevel} ${doc.grade} | Alokasi: ${doc.timeAllocation}`,
+      hasStudentHeader: true,
+      stimulusBox: {
+        type: doc.stimulus.type,
+        title: doc.stimulus.title,
+        content: doc.stimulus.content,
+        illustrationDesc: doc.stimulus.illustrationPrompt
+      },
+      activityBoxes: allSections.map(sec => ({
+        category: sec.category,
+        instruction: sec.instruction,
+        questions: sec.questions.map(q => ({
+          number: q.number,
+          type: q.questionType,
+          prompt: q.prompt,
+          options: q.options,
+          answerLineCount: q.answerLineCount || 3
+        }))
+      })),
+      footer: {
+        reflectionItems: doc.reflectionQuestions,
+        teacherSignBox: true
+      }
+    }];
+  }
+
+  // Pembagian 2 Halaman:
+  // Halaman 1: Header + Stimulus Utama + Aktivitas Pemahaman & Identifikasi
+  // Halaman 2: Aktivitas Analisis, Evaluasi, Pemecahan Masalah + Refleksi + Nilai Guru
+  const halfSecIndex = Math.ceil(allSections.length / 2);
+  const page1Sections = allSections.slice(0, halfSecIndex);
+  const page2Sections = allSections.slice(halfSecIndex);
+
+  return [
+    {
+      pageNumber: 1,
+      totalPages: 2,
+      title: `${doc.title} — BAGIAN 1`,
+      metadata: `${doc.subject} | ${doc.educationLevel} ${doc.grade} | Alokasi: ${doc.timeAllocation}`,
+      hasStudentHeader: true,
+      stimulusBox: {
+        type: doc.stimulus.type,
+        title: doc.stimulus.title,
+        content: doc.stimulus.content,
+        illustrationDesc: doc.stimulus.illustrationPrompt
+      },
+      activityBoxes: page1Sections.map(sec => ({
+        category: sec.category,
+        instruction: sec.instruction,
+        questions: sec.questions.map(q => ({
+          number: q.number,
+          type: q.questionType,
+          prompt: q.prompt,
+          options: q.options,
+          answerLineCount: q.answerLineCount || 3
+        }))
+      })),
+      footer: {
+        teacherSignBox: false
+      }
+    },
+    {
+      pageNumber: 2,
+      totalPages: 2,
+      title: `${doc.title} — BAGIAN 2 (EKSPLORASI & REFLEKSI)`,
+      metadata: `${doc.subject} | ${doc.educationLevel} ${doc.grade} | Alokasi: ${doc.timeAllocation}`,
+      hasStudentHeader: true,
+      activityBoxes: page2Sections.map(sec => ({
+        category: sec.category,
+        instruction: sec.instruction,
+        questions: sec.questions.map(q => ({
+          number: q.number,
+          type: q.questionType,
+          prompt: q.prompt,
+          options: q.options,
+          answerLineCount: q.answerLineCount || 3
+        }))
+      })),
+      footer: {
+        reflectionItems: doc.reflectionQuestions,
+        teacherSignBox: true
+      }
+    }
+  ];
+}
+
+/**
+ * Menyusun Universal Educational Poster Prompt untuk AI Image Generator
+ * Berasal 100% dari LKPD Final yang telah disetujui pengguna
+ */
+export function buildUniversalPosterPromptFromLkpd(
+  doc: GeneratedLkpdDocument,
+  settings: {
+    paperSize?: LkpdPaperSize;
+    orientation?: LkpdOrientation;
+    visualStyle?: LkpdVisualStyle;
+  }
+): string {
+  const paperSize = settings.paperSize || 'A4';
+  const orientation = settings.orientation || 'Portrait';
+  const visualStyle = settings.visualStyle || 'Modern Edukatif';
+
+  const objectivesSummary = doc.learningObjectives
+    .map(o => o.replace(/Peserta didik mampu\s*/i, '').trim())
+    .join('; ');
+
+  const activitiesSummary = doc.sections
+    .map(s => `${s.category} (${s.questions.length} tugas: ${s.questions.map(q => q.questionType).join(', ')})`)
+    .join('; ');
+
+  const stimulusBrief = doc.stimulus.content.length > 250 
+    ? doc.stimulus.content.slice(0, 250) + '...'
+    : doc.stimulus.content;
+
+  return `BUAT POSTER LKPD PEMBELAJARAN (EDUCATIONAL WORKSHEET POSTER) untuk siswa ${doc.educationLevel} kelas ${doc.grade}, mata pelajaran ${doc.subject}, dengan judul "${doc.title}".
+
+Sumber Data Utama:
+- Topik Pembelajaran: "${doc.materi}${doc.subTopic ? ` - ${doc.subTopic}` : ''}"
+- Alokasi Waktu: ${doc.timeAllocation}
+- Tujuan Pembelajaran: "${objectivesSummary}"
+- Stimulus Pembelajaran (${doc.stimulus.type}): "${doc.stimulus.title} — ${stimulusBrief}"
+- Rangkaian Aktivitas: ${activitiesSummary}
+- Total Respon Siswa: Tepat ${doc.totalResponses} pertanyaan/tugas terstruktur.
+
+Susun Desain Poster Lembar Kerja dengan Tata Letak Modular:
+1. Header Identitas Edukatif:
+   - Judul Display yang kuat dan terbaca jelas: "${doc.title}"
+   - Kotak Identitas Siswa: Nama Siswa / Kelompok, Kelas, No. Absen, Tanggal, dan Kotak Skor/Nilai Guru.
+2. Panel Tujuan Pembelajaran & Ikon Petunjuk Pengerjaan Cepat.
+3. Modul Stimulus Utama (Kotak Berbingkai Rapi):
+   - Menampilkan naskah stimulus/kasus/data secara terstruktur.
+   - Dilengkapi ilustrasi edukatif: "${doc.stimulus.illustrationPrompt}".
+4. Bagian Aktivitas & Pertanyaan Siswa:
+   ${doc.sections.map((sec, i) => `- Blok ${i + 1} [${sec.category.toUpperCase()}]: Berisi pertanyaan/tugas bernomor dengan garis pandu penulisan tangan (handwriting lines) yang lapang.`).join('\n   ')}
+5. Bagian Footer Poster:
+   - Kotak Refleksi Pembelajaran Mandiri
+   - Kolom Catatan Guru & Tanda Tangan Verifikasi.
+
+Spesifikasi Visual Poster:
+- Format Kertas: Ukuran ${paperSize}, Orientasi ${orientation}.
+- Gaya Visual: ${visualStyle} (Gaya media pembelajaran visual interaktif, bukan screenshot dokumen biasa).
+- Tipografi: Hierarki sans-serif modern berdaya baca tinggi, kontras tajam, teks berbahasa Indonesia yang benar dan ramah siswa.
+- Keterbacaan & Ruang Kerja: Keseimbangan ruang kosong (negative space) 25% agar siswa memiliki ruang menulis yang memadai dan poster tidak terlihat sesak.
+- Ilustrasi: Vektor edukatif bersih yang mendukung materi secara kontekstual, tanpa ornamen dekoratif acak.
+- Kesiapan Cetak: Resolusi tajam 8K, margin cetak aman (print-ready), palet warna berdaya cetak tinggi.
+
+Negative Prompts & Larangan Keras:
+- no lorem ipsum, no distorted text, no illegible font, no cluttered layout, no commercial promotional advertisement feel, no missing answer lines, no random unrelated illustrations.
+- Desain harus berwujud dan berfungsi 100% sebagai POSTER LEMBAR KERJA PESERTA DIDIK (LKPD) yang siap digunakan di kelas nyata.`;
+}
+
+
 export type LkpdPaperSize = 'A4' | 'A3';
 
 export type LkpdOrientation = 'Portrait' | 'Landscape';

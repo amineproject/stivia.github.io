@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Home, 
   Palette, 
-  Sparkles, 
   FolderKanban, 
   Settings, 
   User,
   LogOut,
-  X
+  X,
+  BookOpen,
+  FileText,
+  Presentation,
+  GraduationCap,
+  Calendar,
+  Award,
+  ChevronDown
 } from 'lucide-react';
 import { NavigationTab } from '../types';
 import { APP_CURRENT_VERSION } from '../data/versionHistoryData';
@@ -41,6 +47,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isAdmin = false,
   onLogout,
 }) => {
+  const [asesmenOpen, setAsesmenOpen] = useState(true);
+
+  const isAsesmenActive = 
+    activeTab === 'asesmen' || 
+    activeTab === 'asesmen_harian' || 
+    activeTab === 'asesmen_sumatif';
+
   // Helper to determine if a sub-flow tab belongs to active section
   const isTabActive = (tabId: NavigationTab) => {
     if (activeTab === tabId) return true;
@@ -48,7 +61,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (tabId === 'beranda' && activeTab === 'dashboard') return true;
     if (tabId === 'proyek_saya' && activeTab === 'infografis_saya') return true;
     if (tabId === 'infografis_saya' && activeTab === 'proyek_saya') return true;
-    if (tabId === 'buat' && (activeTab === 'visual' || activeTab === 'hasil' || activeTab === 'preview')) {
+    if (tabId === 'infografis' && (activeTab === 'buat' || activeTab === 'visual' || activeTab === 'hasil' || activeTab === 'preview')) {
+      return true;
+    }
+    if (tabId === 'buat' && (activeTab === 'infografis' || activeTab === 'visual' || activeTab === 'hasil' || activeTab === 'preview')) {
       return true;
     }
     return false;
@@ -67,8 +83,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         key={id}
         id={`nav-btn-${id}`}
+        type="button"
         onClick={() => handleNavClick(id)}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all text-left cursor-pointer ${
+        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all text-left cursor-pointer ${
           active
             ? 'bg-[#3b49df] text-white shadow-md shadow-indigo-600/25 font-bold'
             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
@@ -98,16 +115,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <aside
         id="stivia-main-sidebar"
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col justify-between py-6 px-4 transition-transform duration-200 ease-in-out ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col justify-between py-5 px-4 transition-transform duration-200 ease-in-out ${
           isMobileLayout
             ? isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
             : isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Top Brand */}
-        <div>
-          <div className="flex items-center justify-between px-2 mb-7">
+        {/* Top Brand & Scrollable Navigation */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto pr-1">
+          <div className="flex items-center justify-between px-2 mb-5 shrink-0">
             <button 
+              type="button"
               onClick={() => handleNavClick('dashboard')}
               className="text-left focus:outline-hidden group cursor-pointer"
             >
@@ -126,6 +144,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Mobile close button */}
             <button 
+              type="button"
               onClick={onCloseMobile} 
               className={`p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer ${
                 isMobileLayout ? 'block' : 'lg:hidden'
@@ -136,23 +155,110 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Navigation Menu with clean layout */}
-          <nav className="space-y-1.5" aria-label="Menu Utama">
+          {/* Navigation Menu */}
+          <nav className="space-y-1" aria-label="Menu Utama">
             {/* 1. Dashboard */}
             {renderNavButton('dashboard', 'Dashboard', <Home className="w-5 h-5" />)}
 
-            {/* 2. Buat Prompt */}
-            {renderNavButton('buat', 'Buat Prompt', <Palette className="w-5 h-5" />)}
+            {/* STUDIO KONTEN SECTION */}
+            <div className="pt-3 pb-1 px-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                Studio Konten
+              </span>
+            </div>
 
-            {/* 3. Proyek Saya */}
+            {/* 2. Materi */}
+            {renderNavButton('materi', 'Materi', <BookOpen className="w-5 h-5" />)}
+
+            {/* 3. Infografis */}
+            {renderNavButton('infografis', 'Infografis', <Palette className="w-5 h-5" />)}
+
+            {/* 4. LKPD */}
+            {renderNavButton('lkpd', 'LKPD', <FileText className="w-5 h-5" />)}
+
+            {/* 5. Presentasi */}
+            {renderNavButton('presentasi', 'Presentasi', <Presentation className="w-5 h-5" />)}
+
+            {/* 6. Asesmen (dengan Submenu Harian & Sumatif) */}
+            <div className="space-y-1">
+              <button
+                type="button"
+                id="nav-btn-asesmen"
+                onClick={() => {
+                  setAsesmenOpen(!asesmenOpen);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all text-left cursor-pointer ${
+                  isAsesmenActive
+                    ? 'text-[#3b49df] font-bold bg-indigo-50/70'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <GraduationCap className={`w-5 h-5 ${isAsesmenActive ? 'text-[#3b49df]' : 'text-slate-500'}`} />
+                  <span>Asesmen</span>
+                </div>
+                <ChevronDown 
+                  className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+                    asesmenOpen ? 'rotate-180' : ''
+                  }`} 
+                />
+              </button>
+
+              {/* Submenu Harian & Sumatif */}
+              {asesmenOpen && (
+                <div className="pl-6 pr-1 pt-0.5 pb-1 space-y-1 relative">
+                  <div className="absolute left-6 top-1.5 bottom-1.5 w-px bg-slate-200" />
+                  
+                  {/* Submenu 1: Harian */}
+                  <button
+                    type="button"
+                    id="nav-btn-asesmen-harian"
+                    onClick={() => handleNavClick('asesmen_harian')}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer pl-4 relative ${
+                      activeTab === 'asesmen_harian' || activeTab === 'asesmen'
+                        ? 'bg-[#3b49df] text-white shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span>Harian</span>
+                  </button>
+
+                  {/* Submenu 2: Sumatif */}
+                  <button
+                    type="button"
+                    id="nav-btn-asesmen-sumatif"
+                    onClick={() => handleNavClick('asesmen_sumatif')}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer pl-4 relative ${
+                      activeTab === 'asesmen_sumatif'
+                        ? 'bg-[#3b49df] text-white shadow-xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                    }`}
+                  >
+                    <Award className="w-3.5 h-3.5 shrink-0" />
+                    <span>Sumatif</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* PENYIMPANAN SECTION */}
+            <div className="pt-3 pb-1 px-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                Penyimpanan
+              </span>
+            </div>
+
+            {/* 7. Proyek Saya */}
             {renderNavButton('infografis_saya', 'Proyek Saya', <FolderKanban className="w-5 h-5" />)}
           </nav>
         </div>
 
         {/* Bottom Section: Profil Saya, Pengaturan & Logout */}
-        <div className="space-y-2 pt-4 border-t border-slate-100">
+        <div className="space-y-2 pt-3 border-t border-slate-100 shrink-0">
           {/* Tombol Akses Profil Saya */}
           <button
+            type="button"
             id="nav-btn-profil-saya"
             onClick={() => handleNavClick('profil_saya')}
             className={`w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all text-left group cursor-pointer border ${
@@ -195,9 +301,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Tombol Pengaturan */}
           <button
+            type="button"
             id="nav-btn-pengaturan"
             onClick={() => handleNavClick('pengaturan')}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all text-left cursor-pointer ${
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all text-left cursor-pointer ${
               activeTab === 'pengaturan'
                 ? 'bg-[#3b49df] text-white shadow-md shadow-indigo-600/25 font-bold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
@@ -209,10 +316,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {onLogout && (
             <button
+              type="button"
               id="btn-sidebar-logout"
               onClick={onLogout}
               title="Keluar dari akun STIVIA"
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Keluar</span>

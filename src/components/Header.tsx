@@ -42,10 +42,42 @@ export const Header: React.FC<HeaderProps> = ({
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
         ];
       case 'buat':
+      case 'infografis':
         return [
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
-          { label: 'Buat Prompt', tab: 'buat' as NavigationTab },
-          { label: 'Form Konteks & Preferensi', tab: 'buat' as NavigationTab },
+          { label: 'Studio Konten', tab: 'infografis' as NavigationTab },
+          { label: 'Infografis', tab: 'infografis' as NavigationTab },
+        ];
+      case 'materi':
+        return [
+          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+          { label: 'Studio Konten', tab: 'materi' as NavigationTab },
+          { label: 'Materi', tab: 'materi' as NavigationTab },
+        ];
+      case 'lkpd':
+        return [
+          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+          { label: 'Studio Konten', tab: 'lkpd' as NavigationTab },
+          { label: 'LKPD', tab: 'lkpd' as NavigationTab },
+        ];
+      case 'presentasi':
+        return [
+          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+          { label: 'Studio Konten', tab: 'presentasi' as NavigationTab },
+          { label: 'Presentasi', tab: 'presentasi' as NavigationTab },
+        ];
+      case 'asesmen':
+      case 'asesmen_harian':
+        return [
+          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+          { label: 'Studio Konten', tab: 'asesmen_harian' as NavigationTab },
+          { label: 'Asesmen Harian', tab: 'asesmen_harian' as NavigationTab },
+        ];
+      case 'asesmen_sumatif':
+        return [
+          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+          { label: 'Studio Konten', tab: 'asesmen_sumatif' as NavigationTab },
+          { label: 'Asesmen Sumatif', tab: 'asesmen_sumatif' as NavigationTab },
         ];
       case 'rancangan':
         return [

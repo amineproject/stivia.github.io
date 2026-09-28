@@ -3,6 +3,11 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { BuatInfografisPage } from './components/pages/BuatInfografisPage';
+import { PosterLkpdPage } from './components/pages/PosterLkpdPage';
+import { MateriPage } from './components/pages/MateriPage';
+import { PresentasiPage } from './components/pages/PresentasiPage';
+import { AsesmenHarianPage } from './components/pages/AsesmenHarianPage';
+import { AsesmenSumatifPage } from './components/pages/AsesmenSumatifPage';
 import { RancanganVisualPage } from './components/pages/RancanganVisualPage';
 import { HasilInfografisPage } from './components/pages/HasilInfografisPage';
 import { PreviewInfografisPage } from './components/pages/PreviewInfografisPage';
@@ -521,7 +526,23 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'buat' && (
+          {/* STUDIO KONTEN: MATERI */}
+          {activeTab === 'materi' && (
+            <MateriPage
+              onNavigate={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              currentDraft={currentDraft}
+              userId={session?.user?.id}
+              subscriptionSummary={subscriptionSummary}
+              onUsageRecorded={() => refreshSubscriptionSummary()}
+              onSubmitForm={handleFormSubmit}
+            />
+          )}
+
+          {/* STUDIO KONTEN: INFOGRAFIS (dan backward-compat 'buat') */}
+          {(activeTab === 'buat' || activeTab === 'infografis') && (
             <BuatInfografisPage
               projects={projects}
               currentDraft={currentDraft}
@@ -535,6 +556,60 @@ export default function App() {
               userId={session?.user?.id}
               subscriptionSummary={subscriptionSummary}
               onUsageRecorded={() => refreshSubscriptionSummary()}
+              initialPromptType="infografis"
+            />
+          )}
+
+          {/* STUDIO KONTEN: LKPD (POSTER LKPD) */}
+          {activeTab === 'lkpd' && (
+            <PosterLkpdPage
+              projects={projects}
+              currentDraft={currentDraft}
+              onSelectProject={setCurrentDraft}
+              onSubmitForm={handleFormSubmit}
+              onLoadSampleData={handleLoadSample}
+              onNavigate={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              userId={session?.user?.id}
+              subscriptionSummary={subscriptionSummary}
+              onUsageRecorded={() => refreshSubscriptionSummary()}
+            />
+          )}
+
+          {/* STUDIO KONTEN: PRESENTASI (GAMMA AI 10 SLIDE) */}
+          {activeTab === 'presentasi' && (
+            <PresentasiPage
+              onNavigate={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              currentDraft={currentDraft}
+              userId={session?.user?.id}
+              subscriptionSummary={subscriptionSummary}
+              onUsageRecorded={() => refreshSubscriptionSummary()}
+              onSubmitForm={handleFormSubmit}
+            />
+          )}
+
+          {/* STUDIO KONTEN: ASESMEN HARIAN */}
+          {(activeTab === 'asesmen' || activeTab === 'asesmen_harian') && (
+            <AsesmenHarianPage
+              onNavigate={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          )}
+
+          {/* STUDIO KONTEN: ASESMEN SUMATIF */}
+          {activeTab === 'asesmen_sumatif' && (
+            <AsesmenSumatifPage
+              onNavigate={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
           )}
 

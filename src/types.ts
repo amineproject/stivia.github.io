@@ -584,7 +584,8 @@ export type InfographicContentComponent =
   | 'Perbandingan'
   | 'Langkah / Proses'
   | 'Tips'
-  | 'Kesimpulan';
+  | 'Kesimpulan'
+  | (string & {});
 
 export type InfographicDepth = 'Ringkas' | 'Sedang' | 'Mendalam';
 
@@ -687,12 +688,20 @@ export interface InfographicDraft {
   learningObjectivesList?: string[];
   infographicSettings?: InfographicSettings;
   previewStructureBlocks?: InfographicPreviewSection[];
+  materiDocumentConfig?: any;
 }
 
 export type NavigationTab = 
   | 'dashboard'
   | 'beranda'
   | 'buat'
+  | 'materi'
+  | 'infografis'
+  | 'lkpd'
+  | 'presentasi'
+  | 'asesmen'
+  | 'asesmen_harian'
+  | 'asesmen_sumatif'
   | 'rancangan'
   | 'visual'
   | 'hasil'
