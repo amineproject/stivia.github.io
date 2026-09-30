@@ -2,15 +2,9 @@ import React from 'react';
 import { 
   Sparkles, 
   Palette, 
-  FolderKanban, 
-  Plus, 
   ArrowRight, 
-  Clock, 
-  GraduationCap, 
   FileText, 
   Bookmark, 
-  Lock, 
-  CheckCircle2, 
   Play,
   Zap,
   ShieldCheck,
@@ -28,7 +22,7 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   projects,
-  onSelectProject,
+  onSelectProject: _onSelectProject,
   onNavigate,
   onLoadSample,
   subscriptionSummary,
@@ -37,7 +31,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const userProjects = (projects || []).filter(
     (p) => !['proj-002', 'proj-003', 'proj-004', 'sample-draft-001'].includes(p.id)
   );
-  const recentProjects = userProjects.slice(0, 4);
 
   // Perhitungan prompt murni berdasarkan proyek nyata milik pengguna
   const promptCount = userProjects.length * 2;
@@ -55,32 +48,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     ? Math.min(100, Math.round((usedTotal / totalGranted) * 100))
     : 100;
 
-  // Helper untuk menentukan status badge
-  const getStatusBadge = (status: string, isLocked?: boolean) => {
-    if (isLocked) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-          <Lock className="w-3 h-3" />
-          <span>Terkunci</span>
-        </span>
-      );
-    }
-    if (status === 'completed') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <CheckCircle2 className="w-3 h-3" />
-          <span>Selesai / Final</span>
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-        <Clock className="w-3 h-3" />
-        <span>Draft</span>
-      </span>
-    );
-  };
-
   return (
     <div className="max-w-6xl mx-auto pb-20 space-y-10">
       {/* Header Selamat Datang with Pill Badge */}
@@ -95,7 +62,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             Selamat Datang di STIVIA
           </h1>
           <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed">
-            Buat materi pembelajaran, infografis, dan prompt dalam satu alur kerja yang mulus dan terintegrasi.
+            Rancang infografis pembelajaran dan prompt visual terstruktur dengan mudah melalui analisis kerangka berpikir pedagogik STIVIA.
           </p>
         </div>
       </div>
@@ -269,112 +236,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </button>
           </div>
         </div>
-      </div>
-
-      {/* BAGIAN PROYEK TERBARU */}
-      <div className="space-y-6 pt-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-              <FolderKanban className="w-5 h-5 text-[#3b49df]" />
-              <span>Proyek Terbaru</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Kelola dan lanjutkan rancangan materi pembelajaran yang sedang berjalan.
-            </p>
-          </div>
-
-          {userProjects.length > 0 && (
-            <button
-              onClick={() => onNavigate('infografis_saya')}
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#3b49df] hover:text-indigo-800 transition-colors cursor-pointer"
-            >
-              <span>Lihat Semua ({userProjects.length})</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* List / Grid Proyek Terbaru */}
-        {recentProjects.length === 0 ? (
-          <div className="bg-white rounded-3xl p-10 sm:p-14 border border-slate-100 text-center space-y-4 shadow-2xs">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-[#3b49df] flex items-center justify-center mx-auto shadow-inner">
-              <FolderKanban className="w-8 h-8" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-bold text-slate-900">
-                Belum Ada Proyek
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                Proyek yang Anda buat akan muncul di sini. Mulai susun materi pembelajaran visual pertama Anda.
-              </p>
-            </div>
-            <div className="pt-2">
-              <button
-                type="button"
-                id="btn-empty-buat-proyek"
-                onClick={() => onNavigate('buat')}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#3b49df] hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-sm shadow-indigo-600/20 transition-all cursor-pointer transform hover:-translate-y-0.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Buat Proyek Baru</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentProjects.map((project) => {
-              const isLocked = project.isLocked;
-              const isFinal = project.status === 'completed' || isLocked;
-
-              return (
-                <div
-                  key={project.id}
-                  className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-indigo-200 transition-all flex flex-col justify-between group"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#3b49df] bg-indigo-50 px-2.5 py-1 rounded-lg inline-block mb-1.5">
-                          {project.subject || 'Umum'}
-                        </span>
-                        <h3 className="text-base font-bold text-slate-900 truncate group-hover:text-[#3b49df] transition-colors">
-                          {project.title}
-                        </h3>
-                      </div>
-                      {getStatusBadge(project.status, project.isLocked)}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                      <span className="flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-slate-400" />
-                        <span>{project.educationLevel} Kelas {project.grade}</span>
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span>Diperbarui {project.updatedAt || project.createdAt}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-400">
-                      {project.blocks?.length || 0} Blok Konten
-                    </span>
-                    <button
-                      onClick={() => onSelectProject(project, isFinal ? 'preview' : 'buat')}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-[#3b49df] hover:text-white text-[#3b49df] font-bold text-xs transition-all cursor-pointer"
-                    >
-                      <span>Buka Proyek</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
