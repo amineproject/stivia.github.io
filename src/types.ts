@@ -832,6 +832,59 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, PlanConfig> = {
   },
 };
 
+/**
+ * Identifier resmi fitur/produk generator STIVIA untuk perhitungan biaya saldo
+ */
+export type StiviaFeature =
+  | 'infographic'
+  | 'lkpd'
+  | 'material'
+  | 'assessment'
+  | 'assessment_sumatif'
+  | 'presentation';
+
+/**
+ * Konfigurasi Biaya Saldo Prompt Terpusat per Produk STIVIA
+ * Sumber kebenaran tunggal biaya fitur di aplikasi.
+ */
+export const FEATURE_COSTS: Record<StiviaFeature, number> = {
+  infographic: 1,
+  lkpd: 2,
+  material: 2,
+  assessment: 2,
+  assessment_sumatif: 3,
+  presentation: 3,
+} as const;
+
+/**
+ * Label ramah pendidik untuk masing-masing fitur generator STIVIA
+ */
+export const FEATURE_LABELS: Record<StiviaFeature, string> = {
+  infographic: 'Infografis Edukatif',
+  lkpd: 'Lembar Kerja Peserta Didik (LKPD)',
+  material: 'Dokumen Materi Ajar A4',
+  assessment: 'Asesmen Harian / Formatif',
+  assessment_sumatif: 'Asesmen Sumatif / Evaluasi',
+  presentation: 'Presentasi Gamma AI (10 Slide)',
+} as const;
+
+/**
+ * Helper untuk mendapatkan biaya fitur dengan normalisasi alias nama fitur
+ */
+export function resolveFeatureCost(feature: string, costOverride?: number): number {
+  if (costOverride !== undefined && costOverride > 0) {
+    return costOverride;
+  }
+  const clean = (feature || '').toLowerCase().trim();
+  if (clean === 'infographic' || clean === 'infografis' || clean === 'infographic_prompt') return 1;
+  if (clean === 'lkpd' || clean === 'poster_lkpd') return 2;
+  if (clean === 'material' || clean === 'materi' || clean === 'material_document' || clean === 'materi_ajar') return 2;
+  if (clean === 'assessment' || clean === 'asesmen' || clean === 'asesmen_harian') return 2;
+  if (clean === 'assessment_sumatif' || clean === 'asesmen_sumatif') return 3;
+  if (clean === 'presentation' || clean === 'presentasi') return 3;
+  return (FEATURE_COSTS as any)[clean] ?? 2;
+}
+
 export interface UserSubscription {
   userId: string;
   plan: SubscriptionPlan;

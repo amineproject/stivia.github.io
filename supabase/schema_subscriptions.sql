@@ -238,8 +238,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Function: Catat pengurangan kuota generate secara atomik (-1 saldo)
-CREATE OR REPLACE FUNCTION public.record_prompt_usage(p_feature TEXT DEFAULT 'infographic_prompt')
+-- Function: Catat pengurangan kuota generate secara atomik berdasarkan fitur (Feature-Based Cost)
+DROP FUNCTION IF EXISTS public.record_prompt_usage();
+DROP FUNCTION IF EXISTS public.record_prompt_usage(TEXT);
+DROP FUNCTION IF EXISTS public.record_prompt_usage(TEXT, INT);
+
+CREATE OR REPLACE FUNCTION public.record_prompt_usage(
+    p_feature TEXT DEFAULT 'infographic',
+    p_cost INT DEFAULT NULL
+)
 RETURNS JSONB AS $$
 DECLARE
     v_user_id UUID := auth.uid();
@@ -247,12 +254,41 @@ DECLARE
     v_balance INT;
     v_used INT;
     v_period VARCHAR(7) := TO_CHAR(NOW(), 'YYYY-MM');
+    v_cost INT := 1;
+    v_clean_feature TEXT := LOWER(TRIM(COALESCE(p_feature, 'infographic')));
 BEGIN
     IF v_user_id IS NULL THEN
         RAISE EXCEPTION 'Akses ditolak: Pengguna belum terautentikasi';
     END IF;
 
-    -- Ambil data subscription saat ini dengan row lock atomik (cegah race condition)
+    -- 1. Tentukan biaya (cost) di level server berdasarkan feature ID
+    -- Anti-tampering: Server memvalidasi biaya fitur secara ketat
+    CASE v_clean_feature
+        WHEN 'infographic' THEN v_cost := 1;
+        WHEN 'infografis' THEN v_cost := 1;
+        WHEN 'infographic_prompt' THEN v_cost := 1;
+        WHEN 'lkpd' THEN v_cost := 2;
+        WHEN 'poster_lkpd' THEN v_cost := 2;
+        WHEN 'material' THEN v_cost := 2;
+        WHEN 'materi' THEN v_cost := 2;
+        WHEN 'material_document' THEN v_cost := 2;
+        WHEN 'materi_ajar' THEN v_cost := 2;
+        WHEN 'assessment' THEN v_cost := 2;
+        WHEN 'asesmen' THEN v_cost := 2;
+        WHEN 'asesmen_harian' THEN v_cost := 2;
+        WHEN 'assessment_sumatif' THEN v_cost := 3;
+        WHEN 'asesmen_sumatif' THEN v_cost := 3;
+        WHEN 'presentation' THEN v_cost := 3;
+        WHEN 'presentasi' THEN v_cost := 3;
+        ELSE 
+            IF p_cost IS NOT NULL AND p_cost > 0 THEN
+                v_cost := p_cost;
+            ELSE
+                v_cost := 1;
+            END IF;
+    END CASE;
+
+    -- 2. Ambil data subscription saat ini dengan row lock atomik (cegah race condition)
     SELECT role, prompt_balance, used_count INTO v_role, v_balance, v_used
     FROM public.user_subscriptions
     WHERE user_id = v_user_id
@@ -262,36 +298,45 @@ BEGIN
         RAISE EXCEPTION 'Record subscription tidak ditemukan untuk pengguna ini';
     END IF;
 
-    -- Jika admin, bypass pengurangan kuota (unlimited) namun tetap catat log
+    -- 3. Jika admin, bypass pengurangan kuota (unlimited permanen) namun tetap catat log analitik
     IF v_role = 'admin' THEN
         INSERT INTO public.usage_logs (user_id, period, feature, created_at)
-        VALUES (v_user_id, v_period, p_feature, NOW());
+        VALUES (v_user_id, v_period, v_clean_feature, NOW());
         
-        RETURN jsonb_build_object('success', true, 'role', 'admin', 'prompt_balance', 999999);
+        RETURN jsonb_build_object(
+            'success', true, 
+            'role', 'admin', 
+            'prompt_balance', 999999,
+            'cost', 0,
+            'feature', v_clean_feature
+        );
     END IF;
 
-    -- Validasi kuota untuk user reguler
-    IF v_balance <= 0 THEN
-        RAISE EXCEPTION 'Saldo kuota prompt Anda telah habis (0 prompt tersisa)';
+    -- 4. Validasi kuota untuk user reguler: pastikan saldo mencukupi biaya fitur
+    IF v_balance < v_cost THEN
+        RAISE EXCEPTION 'Saldo kuota prompt Anda tidak mencukupi untuk membuat % (Kebutuhan: % saldo, Tersisa: % saldo)', 
+            v_clean_feature, v_cost, v_balance;
     END IF;
 
-    -- Kurangi saldo -1 dan tambah used_count +1
+    -- 5. Kurangi saldo sejumlah v_cost dan catat pertambahan transaksi generate (+1 used_count)
     UPDATE public.user_subscriptions
     SET 
-        prompt_balance = prompt_balance - 1,
+        prompt_balance = prompt_balance - v_cost,
         used_count = used_count + 1,
         updated_at = NOW()
     WHERE user_id = v_user_id;
 
-    -- Catat log penggunaan
+    -- 6. Catat log penggunaan pada usage_logs
     INSERT INTO public.usage_logs (user_id, period, feature, created_at)
-    VALUES (v_user_id, v_period, p_feature, NOW());
+    VALUES (v_user_id, v_period, v_clean_feature, NOW());
 
     RETURN jsonb_build_object(
         'success', true,
         'role', v_role,
-        'prompt_balance', v_balance - 1,
-        'used_count', v_used + 1
+        'prompt_balance', v_balance - v_cost,
+        'used_count', v_used + 1,
+        'cost', v_cost,
+        'feature', v_clean_feature
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

@@ -198,11 +198,14 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
   const executeGeneratePresentation = async () => {
     if (!validateForm()) return;
 
-    // 1. Pengecekan limit & saldo STIVIA
+    // 1. Pengecekan limit & saldo STIVIA (Biaya: 3 Saldo Prompt untuk Presentasi 10 Slide)
     if (userId) {
-      const check = await checkCanGenerate(userId);
+      const check = await checkCanGenerate(userId, 'presentation');
       if (!check.allowed) {
-        setLimitReason(check.reason || 'Saldo koin generate Anda tidak mencukupi.');
+        setLimitReason(
+          check.reason || 
+          'Saldo koin generate Anda tidak mencukupi untuk membuat Presentasi (Kebutuhan: 3 Saldo Prompt).'
+        );
         setShowLimitModal(true);
         return;
       }
@@ -231,11 +234,11 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
       // 3. Susun Prompt Gamma AI yang sangat ketat (Strict 10 Slides Only)
       const gammaPrompt = buildStrictGammaPrompt(blueprint, slides);
 
-      // 4. Catat transaksi koin di database via Supabase RPC jika terautentikasi
+      // 4. Catat transaksi koin (Biaya: 3 Saldo Prompt) di database via Supabase RPC jika terautentikasi
       if (userId) {
-        const usageSuccess = await recordGenerateUsage(userId);
+        const usageSuccess = await recordGenerateUsage(userId, 'presentation');
         if (!usageSuccess) {
-          throw new Error('Gagal memverifikasi pemotongan saldo generate.');
+          throw new Error('Gagal memverifikasi pemotongan saldo generate presentasi.');
         }
         if (onUsageRecorded) onUsageRecorded();
       }
@@ -731,7 +734,7 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
             )}
           </button>
           <p className="text-center text-[11px] text-slate-500 mt-2">
-            ✨ Menggunakan 1 koin generate STIVIA • Menghasilkan naskah prompt instruksi lengkap & terkunci untuk Gamma AI
+            ✨ Biaya Generate: 3 Saldo Prompt • Menghasilkan naskah prompt instruksi lengkap & terkunci untuk Gamma AI
           </p>
         </div>
       </div>

@@ -64,8 +64,13 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({ onNaviga
           <h2 className="text-base sm:text-lg font-bold text-slate-900">
             Menu Asesmen Sumatif Segera Hadir
           </h2>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-800 text-xs font-bold my-1">
+            <span>🪙 Biaya Generate: 3 Saldo Prompt</span>
+            <span className="text-purple-400">•</span>
+            <span className="text-purple-600 font-mono text-[11px]">Feature: assessment_sumatif</span>
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-            Struktur navigasi submenu <strong>Asesmen Sumatif</strong> telah aktif pada Studio Konten. Fungsionalitas pembuatan instrumen asesmen sumatif akan dikembangkan secara bertahap pada tahap berikutnya sesuai roadmap STIVIA.
+            Struktur navigasi submenu <strong>Asesmen Sumatif</strong> telah aktif pada Studio Konten. Fungsionalitas pembuatan evaluasi akhir bab, ujian, dan rubrik akan menggunakan alokasi 3 Saldo Prompt per generate.
           </p>
         </div>
       </div>

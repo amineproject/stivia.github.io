@@ -395,13 +395,13 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     if (isGenerating) return;
     if (!validateForm()) return;
 
-    // 1. Pengecekan limit & saldo STIVIA via subscriptionService (Identik dengan Infografis, LKPD, Presentasi)
+    // 1. Pengecekan limit & saldo STIVIA via subscriptionService (Biaya: 2 Saldo Prompt untuk Materi)
     if (userId) {
-      const check = await checkCanGenerate(userId);
+      const check = await checkCanGenerate(userId, 'material', 2);
       if (!check.allowed) {
         setLimitReason(
           check.reason ||
-          'Saldo kuota koin/prompt akun Anda tidak mencukupi untuk menyusun dokumen materi pembelajaran.'
+          'Saldo kuota koin/prompt akun Anda tidak mencukupi untuk menyusun dokumen materi pembelajaran (Kebutuhan: 2 Saldo Prompt).'
         );
         setShowLimitModal(true);
         return;
@@ -411,9 +411,9 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     setIsGenerating(true);
 
     try {
-      // 2. Konsumsi saldo 1 prompt secara atomik di Supabase (Admin otomatis bypass unlimited)
+      // 2. Konsumsi saldo (Biaya: 2 Saldo Prompt) secara atomik di Supabase (Admin otomatis bypass unlimited)
       if (userId) {
-        const usageSuccess = await recordGenerateUsage(userId);
+        const usageSuccess = await recordGenerateUsage(userId, 'material', 2);
         if (!usageSuccess) {
           throw new Error('Gagal memverifikasi pemotongan saldo generate materi.');
         }
@@ -1324,14 +1324,14 @@ export const MateriPage: React.FC<MateriPageProps> = ({
                   <Sparkles className="w-5 h-5 text-amber-300" />
                   <span>
                     {hasGenerated
-                      ? 'GENERATE ULANG DOKUMEN MATERI AJAR A4 (1 KOIN)'
-                      : 'SUSUN & GENERATE DOKUMEN MATERI AJAR A4 (1 KOIN)'}
+                      ? 'GENERATE ULANG DOKUMEN MATERI AJAR A4 (2 KOIN)'
+                      : 'SUSUN & GENERATE DOKUMEN MATERI AJAR A4 (2 KOIN)'}
                   </span>
                 </>
               )}
             </button>
             <p className="text-center text-[11px] text-slate-500 mt-2">
-              ✨ Menggunakan 1 koin generate STIVIA • Menghasilkan dokumen materi pembelajaran profesional siap cetak A4
+              ✨ Biaya Generate: 2 Saldo Prompt • Menghasilkan dokumen materi pembelajaran profesional siap cetak A4
             </p>
           </div>
         </div>

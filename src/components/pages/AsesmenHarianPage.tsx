@@ -64,8 +64,13 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({ onNavigate
           <h2 className="text-base sm:text-lg font-bold text-slate-900">
             Menu Asesmen Harian Segera Hadir
           </h2>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold my-1">
+            <span>🪙 Biaya Generate: 2 Saldo Prompt</span>
+            <span className="text-teal-400">•</span>
+            <span className="text-teal-600 font-mono text-[11px]">Feature: assessment</span>
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-            Struktur navigasi submenu <strong>Asesmen Harian</strong> telah aktif pada Studio Konten. Fungsionalitas pembuatan instrumen asesmen harian akan dikembangkan secara bertahap pada tahap berikutnya sesuai roadmap STIVIA.
+            Struktur navigasi submenu <strong>Asesmen Harian</strong> telah aktif pada Studio Konten. Fungsionalitas pembuatan instrumen asesmen formatif harian akan menggunakan alokasi standar 2 Saldo Prompt per generate.
           </p>
         </div>
       </div>

@@ -748,13 +748,13 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     if (isGenerating) return; // Synchronous Lock (Security Fix #5A)
     if (!validateForm()) return;
 
-    // 1. Validasi Akses & Limit Subscription
+    // 1. Validasi Akses & Limit Subscription (Biaya: 2 Saldo Prompt untuk LKPD)
     if (userId) {
-      const check = await checkCanGenerate(userId);
+      const check = await checkCanGenerate(userId, 'lkpd');
       if (!check.allowed) {
         setLimitReason(
           check.reason ||
-          'Saldo kuota percobaan gratis akun Free Anda telah habis (3 prompt percobaan awal). Silakan lakukan isi ulang saldo prompt Anda untuk melanjutkan pembuatan prompt LKPD.'
+          'Saldo kuota akun Anda tidak mencukupi untuk membuat LKPD (Kebutuhan: 2 Saldo Prompt). Silakan lakukan isi ulang saldo prompt Anda.'
         );
         setShowLimitModal(true);
         return;
@@ -793,10 +793,10 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         }
       );
 
-      // 3. Catat penambahan penggunaan (+1 generate) jika pengguna login (Security Fix #5A + #5B)
+      // 3. Catat penambahan penggunaan (Biaya: 2 Saldo Prompt) jika pengguna login (Security Fix #5A + #5B)
       if (userId) {
         try {
-          await recordGenerateUsage(userId);
+          await recordGenerateUsage(userId, 'lkpd');
           if (onUsageRecorded) {
             onUsageRecorded();
           }
@@ -845,13 +845,13 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     if (isGenerating) return; // Synchronous Lock (Security Fix #5A)
     if (!validateForm()) return;
 
-    // 1. Validasi Akses & Limit Subscription
+    // 1. Validasi Akses & Limit Subscription (Biaya: 1 Saldo Prompt untuk Infografis)
     if (userId) {
-      const check = await checkCanGenerate(userId);
+      const check = await checkCanGenerate(userId, 'infographic');
       if (!check.allowed) {
         setLimitReason(
           check.reason ||
-          'Saldo kuota percobaan gratis akun Free Anda telah habis (3 prompt percobaan awal). Silakan lakukan isi ulang saldo prompt Anda untuk melanjutkan pembuatan rancangan infografis.'
+          'Saldo kuota akun Anda tidak mencukupi untuk membuat Infografis (Kebutuhan: 1 Saldo Prompt). Silakan lakukan isi ulang saldo prompt Anda.'
         );
         setShowLimitModal(true);
         return;
@@ -909,10 +909,10 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         visualStyleName: finalStyle,
       });
 
-      // 3. Validasi & Potong Saldo via RPC jika authenticated user (Security Fix #5A + #5B)
+      // 3. Validasi & Potong Saldo (Biaya: 1 Saldo Prompt) via RPC jika authenticated user (Security Fix #5A + #5B)
       if (userId) {
         try {
-          await recordGenerateUsage(userId);
+          await recordGenerateUsage(userId, 'infographic');
           if (onUsageRecorded) {
             onUsageRecorded();
           }
@@ -1978,7 +1978,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                   )}
                 </button>
                 <p className="text-center text-[11px] text-slate-500 mt-2">
-                  ✨ Menghasilkan Universal Educational Poster Prompt & Poster Visual Terstruktur
+                  ✨ Biaya Generate: 1 Saldo Prompt • Menghasilkan Universal Educational Poster Prompt & Poster Visual Terstruktur
                 </p>
               </div>
             </div>
@@ -2239,6 +2239,9 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                     </>
                   )}
                 </button>
+                <p className="text-center sm:text-left text-[11px] text-slate-500 mt-2">
+                  ✨ Biaya Generate: 2 Saldo Prompt • Menggunakan kerangka pedagogik kontekstual STIVIA
+                </p>
               </div>
             </div>
           )}

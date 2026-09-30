@@ -7,6 +7,10 @@ import {
   UserSubscription,
   MonthlyUsage,
   SubscriptionSummary,
+  StiviaFeature,
+  FEATURE_COSTS,
+  FEATURE_LABELS,
+  resolveFeatureCost,
 } from '../types';
 
 const MONTH_NAMES_ID = [
@@ -591,28 +595,46 @@ export async function getSubscriptionSummary(userId: string): Promise<Subscripti
 }
 
 /**
- * Validasi apakah pengguna diizinkan untuk melakukan Generate Prompt Infografis
- * Alur: User Login? -> Check Admin (Unlimited bypass) -> Check Saldo Prompt
+ * Validasi apakah pengguna diizinkan untuk melakukan Generate Prompt/Dokumen
+ * Menghitung kelayakan kuota berdasarkan biaya fitur (FEATURE_COSTS):
+ * - Infografis: 1
+ * - LKPD: 2
+ * - Materi: 2
+ * - Asesmen: 2
+ * - Asesmen Sumatif: 3
+ * - Presentasi: 3
+ * Alur: User Login? -> Check Admin (Unlimited bypass) -> Check Status -> Check Saldo >= Cost
  */
 export async function checkCanGenerate(
-  userId: string
-): Promise<{ allowed: boolean; reason?: string; summary: SubscriptionSummary }> {
+  userId: string,
+  feature: StiviaFeature | string = 'infographic',
+  costOverride?: number
+): Promise<{ allowed: boolean; reason?: string; summary: SubscriptionSummary; requiredCost: number }> {
+  const normalizedFeature = (feature || 'infographic').toLowerCase().trim();
+  const cost = resolveFeatureCost(normalizedFeature, costOverride);
+  const featureLabel =
+    (FEATURE_LABELS as any)[normalizedFeature] ||
+    FEATURE_LABELS[feature as StiviaFeature] ||
+    (normalizedFeature === 'material' || normalizedFeature === 'materi' ? 'Dokumen Materi Ajar A4' : 'produk ini');
+
   if (!userId) {
     const fallbackSummary = createFallbackSummary('guest');
     return {
       allowed: false,
       reason: 'Anda harus masuk/login ke akun STIVIA terlebih dahulu.',
       summary: fallbackSummary,
+      requiredCost: cost,
     };
   }
 
   const summary = await getSubscriptionSummary(userId);
 
-  // 1. Akun Admin memiliki hak akses Unlimited Permanen
+  // 1. Akun Admin memiliki hak akses Unlimited Permanen (Bypass biaya)
   if (summary.isAdmin) {
     return {
       allowed: true,
       summary,
+      requiredCost: cost,
     };
   }
 
@@ -622,30 +644,45 @@ export async function checkCanGenerate(
       allowed: false,
       reason: `Status akun Anda saat ini tidak aktif (${summary.status}).`,
       summary,
+      requiredCost: cost,
     };
   }
 
-  // 3. Cek Saldo Prompt
-  if (summary.promptBalance <= 0) {
+  // 3. Cek Saldo Prompt: Saldo harus mencukupi biaya fitur yang dipilih
+  if (summary.promptBalance < cost) {
+    const available = Math.max(0, summary.promptBalance);
     return {
       allowed: false,
-      reason: 'Saldo kuota prompt Anda telah habis (0 prompt tersisa). Silakan lakukan isi ulang saldo prompt Anda untuk melanjutkan pembuatan prompt.',
+      reason: `Saldo kuota prompt Anda tidak mencukupi untuk membuat ${featureLabel}. Kebutuhan: ${cost} Saldo Prompt, sedangkan saldo tersedia: ${available} Saldo Prompt. Silakan lakukan isi ulang saldo Anda.`,
       summary,
+      requiredCost: cost,
     };
   }
 
   return {
     allowed: true,
     summary,
+    requiredCost: cost,
   };
 }
 
 /**
- * Mencatat penggunaan (-1 saldo prompt) setelah generator berhasil menghasilkan prompt.
- * Memastikan saldo tersimpan aman di Supabase dan disinkronkan ke cache lokal.
- * Mencegah manipulasi kuota dan validasi status aktif pengguna.
+ * Mencatat penggunaan saldo prompt setelah generator berhasil menghasilkan produk.
+ * Pengurangan dilakukan secara atomik di Supabase via RPC record_prompt_usage.
+ * Biaya (cost) dihitung secara aman berdasarkan feature ID:
+ * - infographic: 1
+ * - lkpd: 2
+ * - material: 2
+ * - assessment: 2
+ * - assessment_sumatif: 3
+ * - presentation: 3
+ * Admin unlimited (bypass pengurangan saldo).
  */
-export async function recordGenerateUsage(userId: string): Promise<SubscriptionSummary> {
+export async function recordGenerateUsage(
+  userId: string,
+  feature: StiviaFeature | string = 'infographic',
+  costOverride?: number
+): Promise<SubscriptionSummary> {
   if (!userId || userId === 'guest') {
     return createFallbackSummary('guest');
   }
@@ -658,23 +695,29 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
   const sub = await getUserSubscription(authUser.id);
   const isAdmin = sub.role === 'admin';
   const period = getCurrentBillingPeriod();
+  const normalizedFeature = (feature || 'infographic').toLowerCase().trim();
+  const cost = resolveFeatureCost(normalizedFeature, costOverride);
+  const featureKey = (normalizedFeature === 'materi' ? 'material' : normalizedFeature) as StiviaFeature;
 
-  // Validasi saldo: User reguler tidak boleh menggunakan prompt jika saldo telah habis
-  if (!isAdmin && sub.promptBalance <= 0) {
-    throw new Error('Saldo kuota prompt Anda telah habis (0 prompt tersisa).');
+  // Validasi saldo lokal: User reguler tidak boleh menggunakan prompt jika saldo < cost
+  if (!isAdmin && sub.promptBalance < cost) {
+    throw new Error(
+      `Saldo kuota prompt Anda tidak mencukupi (Kebutuhan: ${cost} Saldo Prompt, Tersisa: ${sub.promptBalance} Saldo Prompt).`
+    );
   }
 
   const freeDefault = SUBSCRIPTION_PLANS.free.initialPrompts; // 3 Prompt
   const currentBalance = sub.promptBalance ?? freeDefault;
-  const newBalance = isAdmin ? Infinity : Math.max(0, currentBalance - 1);
+  let newBalance = isAdmin ? Infinity : Math.max(0, currentBalance - cost);
   const newUsedCount = (sub.usedCount ?? 0) + 1;
 
   let rpcHandled = false;
 
   // 1. Pemanggilan RPC database atomik dengan hak SECURITY DEFINER di Supabase
+  // Server menentukan nilai biaya berdasarkan feature ID (anti-tampering client)
   if (isSupabaseConfigured) {
     const { data: rpcRes, error: rpcErr } = await supabase.rpc('record_prompt_usage', {
-      p_feature: 'infographic_prompt',
+      p_feature: featureKey,
     });
     if (rpcErr) {
       console.error('[Subscription] Gagal eksekusi RPC record_prompt_usage:', rpcErr);
@@ -682,6 +725,12 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
     }
     if (rpcRes && typeof rpcRes === 'object' && (rpcRes as any).success === false) {
       throw new Error((rpcRes as any).message || 'Saldo kuota prompt tidak mencukupi.');
+    }
+    // Jika RPC server mengembalikan saldo terbaru, gunakan sebagai acuan konsisten
+    if (rpcRes && typeof rpcRes === 'object' && typeof (rpcRes as any).prompt_balance === 'number') {
+      if (!isAdmin) {
+        newBalance = (rpcRes as any).prompt_balance;
+      }
     }
     rpcHandled = true;
   }
@@ -707,7 +756,13 @@ export async function recordGenerateUsage(userId: string): Promise<SubscriptionS
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('stivia_usage_updated', {
-        detail: { userId: authUser.id, remaining: newBalance, usedCount: newUsedCount },
+        detail: { 
+          userId: authUser.id, 
+          remaining: isAdmin ? Infinity : newBalance, 
+          usedCount: newUsedCount,
+          cost: isAdmin ? 0 : cost,
+          feature: featureKey
+        },
       })
     );
   }

@@ -307,9 +307,12 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
     if (!validateBlueprint()) return;
 
     if (userId) {
-      const check = await checkCanGenerate(userId);
+      const check = await checkCanGenerate(userId, 'lkpd');
       if (!check.allowed) {
-        setLimitReason(check.reason || 'Saldo koin tidak mencukupi.');
+        setLimitReason(
+          check.reason ||
+          `Saldo kuota akun Anda tidak mencukupi untuk membuat LKPD (Kebutuhan: 2 Saldo Prompt). Silakan lakukan isi ulang saldo Anda.`
+        );
         setShowLimitModal(true);
         return;
       }
@@ -347,11 +350,11 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
       const generatedDoc = generateLkpdFromBlueprint(blueprint);
       setGeneratedDocument(generatedDoc);
 
-      // 2. Potong saldo atomik di Supabase jika terautentikasi
+      // 2. Potong saldo (Biaya: 2 Saldo Prompt) atomik di Supabase jika terautentikasi
       if (userId) {
-        const usageSuccess = await recordGenerateUsage(userId);
+        const usageSuccess = await recordGenerateUsage(userId, 'lkpd');
         if (!usageSuccess) {
-          throw new Error('Gagal mencatat penggunaan saldo.');
+          throw new Error('Gagal mencatat penggunaan saldo LKPD.');
         }
         if (onUsageRecorded) onUsageRecorded();
       }
@@ -1129,8 +1132,8 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
                   </>
                 )}
               </button>
-              <p className="text-center text-[11px] text-white/60 mt-2">
-                ✨ Menghasilkan LKPD berpedagogi tinggi yang 100% patuh pada stimulus & komposisi soal yang telah Anda tentukan.
+              <p className="text-center text-[11px] text-white/70 mt-2">
+                ✨ Biaya Generate: 2 Saldo Prompt • Menghasilkan LKPD berpedagogi tinggi yang 100% patuh pada stimulus & komposisi soal yang telah Anda tentukan.
               </p>
             </div>
           </div>
@@ -1169,7 +1172,7 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
                 className="px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Generate Ulang</span>
+                <span>Generate Ulang (2 Koin)</span>
               </button>
               <button
                 type="button"

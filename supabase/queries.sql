@@ -81,3 +81,107 @@ ORDER BY total_generate_bulan_ini DESC;
 --     status = 'active',
 --     updated_at = NOW()
 -- WHERE user_id = (SELECT id FROM auth.users WHERE email = 'alamat_email_user@gmail.com');
+
+
+-- 6. UPDATE RPC RECORD_PROMPT_USAGE (BIAYA FITUR MATERI = 2 SALDO PROMPT)
+-- Eksekusi di Supabase SQL Editor jika Menu Materi pada database live masih memotong 1 koin:
+DROP FUNCTION IF EXISTS public.record_prompt_usage();
+DROP FUNCTION IF EXISTS public.record_prompt_usage(TEXT);
+DROP FUNCTION IF EXISTS public.record_prompt_usage(TEXT, INT);
+
+CREATE OR REPLACE FUNCTION public.record_prompt_usage(
+    p_feature TEXT DEFAULT 'infographic',
+    p_cost INT DEFAULT NULL
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
+    v_role VARCHAR(20);
+    v_balance INT;
+    v_used INT;
+    v_period VARCHAR(7) := TO_CHAR(NOW(), 'YYYY-MM');
+    v_cost INT := 1;
+    v_clean_feature TEXT := LOWER(TRIM(COALESCE(p_feature, 'infographic')));
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Akses ditolak: Pengguna belum terautentikasi';
+    END IF;
+
+    -- Tentukan biaya (cost) di level server berdasarkan feature ID
+    CASE v_clean_feature
+        WHEN 'infographic' THEN v_cost := 1;
+        WHEN 'infografis' THEN v_cost := 1;
+        WHEN 'infographic_prompt' THEN v_cost := 1;
+        WHEN 'lkpd' THEN v_cost := 2;
+        WHEN 'poster_lkpd' THEN v_cost := 2;
+        WHEN 'material' THEN v_cost := 2;
+        WHEN 'materi' THEN v_cost := 2;
+        WHEN 'material_document' THEN v_cost := 2;
+        WHEN 'materi_ajar' THEN v_cost := 2;
+        WHEN 'assessment' THEN v_cost := 2;
+        WHEN 'asesmen' THEN v_cost := 2;
+        WHEN 'asesmen_harian' THEN v_cost := 2;
+        WHEN 'assessment_sumatif' THEN v_cost := 3;
+        WHEN 'asesmen_sumatif' THEN v_cost := 3;
+        WHEN 'presentation' THEN v_cost := 3;
+        WHEN 'presentasi' THEN v_cost := 3;
+        ELSE 
+            IF p_cost IS NOT NULL AND p_cost > 0 THEN
+                v_cost := p_cost;
+            ELSE
+                v_cost := 1;
+            END IF;
+    END CASE;
+
+    -- Ambil data subscription saat ini dengan row lock atomik
+    SELECT role, prompt_balance, used_count INTO v_role, v_balance, v_used
+    FROM public.user_subscriptions
+    WHERE user_id = v_user_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Record subscription tidak ditemukan untuk pengguna ini';
+    END IF;
+
+    -- Bypass untuk admin (unlimited)
+    IF v_role = 'admin' THEN
+        INSERT INTO public.usage_logs (user_id, period, feature, created_at)
+        VALUES (v_user_id, v_period, v_clean_feature, NOW());
+        
+        RETURN jsonb_build_object(
+            'success', true, 
+            'role', 'admin', 
+            'prompt_balance', 999999,
+            'cost', 0,
+            'feature', v_clean_feature
+        );
+    END IF;
+
+    -- Validasi kuota user reguler
+    IF v_balance < v_cost THEN
+        RAISE EXCEPTION 'Saldo kuota prompt Anda tidak mencukupi untuk membuat % (Kebutuhan: % saldo, Tersisa: % saldo)', 
+            v_clean_feature, v_cost, v_balance;
+    END IF;
+
+    -- Kurangi saldo sejumlah v_cost
+    UPDATE public.user_subscriptions
+    SET 
+        prompt_balance = prompt_balance - v_cost,
+        used_count = used_count + 1,
+        updated_at = NOW()
+    WHERE user_id = v_user_id;
+
+    -- Catat log penggunaan
+    INSERT INTO public.usage_logs (user_id, period, feature, created_at)
+    VALUES (v_user_id, v_period, v_clean_feature, NOW());
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'role', v_role,
+        'prompt_balance', v_balance - v_cost,
+        'used_count', v_used + 1,
+        'cost', v_cost,
+        'feature', v_clean_feature
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
