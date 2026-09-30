@@ -27,13 +27,17 @@ import {
   Clock,
   Layers,
   Info,
-  Maximize2
+  Maximize2,
+  Coins,
+  MessageCircle,
+  Loader2
 } from 'lucide-react';
 import {
   EducationLevel,
   InfographicDraft,
   NavigationTab,
-  SubscriptionSummary
+  SubscriptionSummary,
+  PROMPT_PACKAGES
 } from '../../types';
 import {
   MateriDocument,
@@ -47,6 +51,8 @@ import {
   exportMateriToDocx
 } from '../../services/materiDocumentEngine';
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
+import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
+import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
 
 interface MateriPageProps {
   onNavigate?: (tab: NavigationTab) => void;
@@ -131,6 +137,12 @@ export const MateriPage: React.FC<MateriPageProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isExportingDocx, setIsExportingDocx] = useState<boolean>(false);
+
+  // Status Eksekusi Saldo & Limit Koin STIVIA
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [hasGenerated, setHasGenerated] = useState<boolean>(false);
+  const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
+  const [limitReason, setLimitReason] = useState<string>('');
 
   const documentPrintRef = useRef<HTMLDivElement>(null);
 
@@ -379,11 +391,68 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     return true;
   };
 
-  const handleGenerateDocument = () => {
+  const handleGenerateDocument = async () => {
+    if (isGenerating) return;
     if (!validateForm()) return;
-    setViewMode('preview');
-    showToast('📄 Dokumen Materi Ajar A4 siap cetak berhasil disusun!');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 1. Pengecekan limit & saldo STIVIA via subscriptionService (Identik dengan Infografis, LKPD, Presentasi)
+    if (userId) {
+      const check = await checkCanGenerate(userId);
+      if (!check.allowed) {
+        setLimitReason(
+          check.reason ||
+          'Saldo kuota koin/prompt akun Anda tidak mencukupi untuk menyusun dokumen materi pembelajaran.'
+        );
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
+    setIsGenerating(true);
+
+    try {
+      // 2. Konsumsi saldo 1 prompt secara atomik di Supabase (Admin otomatis bypass unlimited)
+      if (userId) {
+        const usageSuccess = await recordGenerateUsage(userId);
+        if (!usageSuccess) {
+          throw new Error('Gagal memverifikasi pemotongan saldo generate materi.');
+        }
+        if (onUsageRecorded) {
+          onUsageRecorded();
+        }
+      }
+
+      setHasGenerated(true);
+      setViewMode('preview');
+      showToast('📄 Dokumen Materi Ajar A4 siap cetak berhasil disusun!');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Sinkronkan ke parent jika ada onSubmitForm
+      if (onSubmitForm) {
+        onSubmitForm({
+          ...currentDraft,
+          educationLevel,
+          grade,
+          subject: activeSubj,
+          title: title.trim(),
+          rawTopic: title.trim(),
+          bab: bab.trim(),
+          pertemuan: pertemuan.trim(),
+          userNotes: teacherNotes.trim(),
+          learningObjectivesList: learningObjectives,
+          updatedAt: new Date().toISOString().split('T')[0],
+        });
+      }
+    } catch (err: any) {
+      console.error('[Menu Materi Generate Error]', err);
+      setLimitReason(
+        err?.message ||
+        'Gagal memproses kuota saldo prompt di server. Dokumen materi ajar belum dapat ditampilkan.'
+      );
+      setShowLimitModal(true);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // ============================================================================
@@ -570,14 +639,33 @@ export const MateriPage: React.FC<MateriPageProps> = ({
               >
                 <span>Contoh Graph</span>
               </button>
-              <button
-                type="button"
-                onClick={handleGenerateDocument}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Lihat Dokumen A4</span>
-              </button>
+              {hasGenerated ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode('preview');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Lihat Dokumen A4</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleGenerateDocument}
+                  disabled={isGenerating}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 cursor-wait"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5" />
+                  )}
+                  <span>Lihat Dokumen A4</span>
+                </button>
+              )}
             </>
           )}
 
@@ -1219,13 +1307,31 @@ export const MateriPage: React.FC<MateriPageProps> = ({
             <button
               type="button"
               onClick={handleGenerateDocument}
-              className="w-full py-4 px-6 rounded-2xl font-black text-sm sm:text-base transition-all cursor-pointer shadow-lg flex items-center justify-center gap-3 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:to-blue-700 text-white shadow-indigo-500/20 active:scale-[0.99]"
+              disabled={isGenerating}
+              className={`w-full py-4 px-6 rounded-2xl font-black text-sm sm:text-base transition-all shadow-lg flex items-center justify-center gap-3 ${
+                isGenerating
+                  ? 'bg-indigo-700/80 text-white cursor-wait'
+                  : 'bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:to-blue-700 text-white shadow-indigo-500/20 active:scale-[0.99] cursor-pointer'
+              }`}
             >
-              <Eye className="w-5 h-5" />
-              <span>SUSUN & TAMPILKAN DOKUMEN MATERI AJAR A4 (SIAP CETAK)</span>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Sedang Memproses & Menyusun Dokumen Materi...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 text-amber-300" />
+                  <span>
+                    {hasGenerated
+                      ? 'GENERATE ULANG DOKUMEN MATERI AJAR A4 (1 KOIN)'
+                      : 'SUSUN & GENERATE DOKUMEN MATERI AJAR A4 (1 KOIN)'}
+                  </span>
+                </>
+              )}
             </button>
             <p className="text-center text-[11px] text-slate-500 mt-2">
-              ✨ Output berupa dokumen materi ajar profesional siap cetak A4 • Bukan prompt AI
+              ✨ Menggunakan 1 koin generate STIVIA • Menghasilkan dokumen materi pembelajaran profesional siap cetak A4
             </p>
           </div>
         </div>
@@ -1572,6 +1678,63 @@ export const MateriPage: React.FC<MateriPageProps> = ({
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* ====================================================================== */}
+      {/* 5. MODAL LIMIT SALDO / TOP UP WHATSAPP */}
+      {/* ====================================================================== */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+              <Coins className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1">
+              <h3 className="text-base sm:text-lg font-black text-slate-900">
+                Batas Penggunaan Koin Tercapai
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {limitReason || 'Saldo koin akun Anda telah habis untuk periode saat ini.'}
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <span className="font-bold text-slate-800 block">Pilihan Paket Koin Pendidik:</span>
+              <ul className="space-y-1 text-slate-600 text-[11px]">
+                {PROMPT_PACKAGES.map((pkg) => (
+                  <li key={pkg.id} className="flex items-center justify-between">
+                    <span>{pkg.name} ({pkg.prompts} Koin)</span>
+                    <span className="font-bold text-amber-700">{pkg.priceLabel}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLimitModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Tutup
+              </button>
+              <a
+                href={getWhatsAppTopUpUrl({
+                  planName: 'Paket Pendidik Materi Ajar',
+                  prompts: 50,
+                  priceLabel: 'Top Up Koin STIVIA'
+                })}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition-colors text-center shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Top Up WhatsApp</span>
+              </a>
+            </div>
+          </div>
         </div>
       )}
     </div>
