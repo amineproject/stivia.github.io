@@ -33,6 +33,8 @@ interface DashboardPageProps {
   onNavigate: (tab: NavigationTab) => void;
   onLoadSample: () => void;
   subscriptionSummary?: SubscriptionSummary | null;
+  isCloudSyncing?: boolean;
+  cloudSyncStatus?: 'synced' | 'local' | 'syncing' | 'error';
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -43,6 +45,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onLoadSample,
   subscriptionSummary,
+  isCloudSyncing = false,
+  cloudSyncStatus = 'local',
 }) => {
   // Hanya ambil proyek yang dibuat/disimpan oleh pengguna (tanpa data contoh bawaan)
   const userProjects = (projects || []).filter(
@@ -143,9 +147,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <Layers className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 shrink-0">
                   Konteks Aktif
+                </span>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                  cloudSyncStatus === 'synced'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : cloudSyncStatus === 'syncing'
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse'
+                    : cloudSyncStatus === 'error'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}>
+                  <span>{cloudSyncStatus === 'synced' ? '☁️ Cloud Synced' : cloudSyncStatus === 'syncing' ? '🔄 Menyinkronkan...' : cloudSyncStatus === 'error' ? '⚠️ Sync Pending' : '💾 Mode Lokal'}</span>
                 </span>
                 <span className="text-xs font-bold text-slate-800 truncate">
                   {activeProject.name}

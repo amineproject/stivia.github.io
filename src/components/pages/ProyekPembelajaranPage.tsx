@@ -27,7 +27,8 @@ import {
   Coins,
   RefreshCw,
   Sliders,
-  CheckSquare
+  CheckSquare,
+  FolderPlus
 } from 'lucide-react';
 import {
   InfographicDraft,
@@ -69,6 +70,11 @@ interface ProyekPembelajaranPageProps {
   onDuplicateLegacyProject: (project: InfographicDraft) => void;
   onNavigate: (tab: NavigationTab) => void;
   onSaveToast: (msg: string) => void;
+  onDeleteLearningProject?: (projectId: string) => void;
+  onRefreshCloud?: () => Promise<void>;
+  isCloudSyncing?: boolean;
+  cloudSyncStatus?: 'synced' | 'local' | 'syncing' | 'error';
+  userId?: string;
 }
 
 export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
@@ -82,7 +88,12 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   onDeleteLegacyProject,
   onDuplicateLegacyProject,
   onNavigate,
-  onSaveToast
+  onSaveToast,
+  onDeleteLearningProject,
+  onRefreshCloud,
+  isCloudSyncing = false,
+  cloudSyncStatus = 'local',
+  userId,
 }) => {
   // Mode Tampilan: 'hierarki' (Sistem Proyek & Pertemuan Baru) atau 'legacy' (Arsip Draft Lama)
   const [activeMainTab, setActiveMainTab] = useState<'hierarki' | 'legacy'>('hierarki');
@@ -508,32 +519,89 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
           </p>
         </div>
 
-        {/* Tab Switcher: Hierarki Baru vs Arsip Lama */}
-        <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setActiveMainTab('hierarki')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeMainTab === 'hierarki'
-                ? 'bg-white text-indigo-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Struktur Proyek & Pertemuan</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveMainTab('legacy')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeMainTab === 'legacy'
-                ? 'bg-white text-indigo-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <FolderKanban className="w-3.5 h-3.5" />
-            <span>Arsip Rancangan Lama ({projects.length})</span>
-          </button>
+        {/* Tab Switcher & Cloud Sync Indicator */}
+        <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+          {/* Cloud Sync Status Pill */}
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+              cloudSyncStatus === 'synced'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : cloudSyncStatus === 'syncing'
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse'
+                : cloudSyncStatus === 'error'
+                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                : 'bg-slate-100 text-slate-600 border-slate-200'
+            }`}>
+              {cloudSyncStatus === 'synced' ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Cloud Synced</span>
+                </>
+              ) : cloudSyncStatus === 'syncing' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                  <span>Menyinkronkan...</span>
+                </>
+              ) : cloudSyncStatus === 'error' ? (
+                <>
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Sync Pending</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Lokal</span>
+                </>
+              )}
+            </span>
+
+            {onRefreshCloud && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await onRefreshCloud();
+                    onSaveToast('Data pembelajaran berhasil disinkronkan dari Cloud Supabase!');
+                  } catch (e) {
+                    onSaveToast('Gagal menyinkronkan data cloud.');
+                  }
+                }}
+                disabled={isCloudSyncing}
+                title="Muat Ulang / Sinkronkan Data dari Supabase Cloud"
+                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isCloudSyncing ? 'animate-spin text-indigo-600' : ''}`} />
+              </button>
+            )}
+          </div>
+
+          {/* Switcher Tab */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('hierarki')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeMainTab === 'hierarki'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Struktur Proyek & Pertemuan</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('legacy')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeMainTab === 'legacy'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <FolderKanban className="w-3.5 h-3.5" />
+              <span>Arsip Rancangan Lama ({projects.length})</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -575,12 +643,38 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
 
                   <button
                     type="button"
+                    onClick={() => onNavigate('buat_proyek')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#3b49df] text-xs font-bold cursor-pointer transition-colors border border-indigo-200"
+                    title="Buat Proyek Baru dengan Master Learning Data (1 Data -> Banyak Produk)"
+                  >
+                    <FolderPlus className="w-3.5 h-3.5" />
+                    <span>Buat Proyek Baru</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setShowAddProjectModal(true)}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+                    title="Tambah Cepat Struktur Proyek Baru"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Proyek Baru</span>
+                    <span>Tambah Cepat</span>
                   </button>
+
+                  {onDeleteLearningProject && learningProjects.length > 1 && activeProject && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Hapus proyek pembelajaran "${activeProject.name}"? Data di Supabase Cloud juga akan dihapus.`)) {
+                          onDeleteLearningProject(activeProject.id);
+                        }
+                      }}
+                      className="p-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
+                      title="Hapus Proyek Ini"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 

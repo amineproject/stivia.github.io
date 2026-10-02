@@ -1,6 +1,6 @@
 {
   "name": "STIVIA 3.2",
-  "description": "Platform pendidikan STIVIA - AI Prompt Generator untuk merancang prompt infografis edukasi dan Lembar Kerja Peserta Didik (LKPD) berbasis kurikulum dan analisis 7 tahap terstruktur.",
+  "description": "Platform perancangan perangkat ajar STIVIA — 1 Master Learning Data untuk Dokumen Materi A4, Infografis Visual, Lembar Kerja LKPD, Presentasi 10 Slide, dan Asesmen.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
