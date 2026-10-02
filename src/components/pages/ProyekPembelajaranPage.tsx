@@ -24,11 +24,14 @@ import {
   HelpCircle,
   Award,
   ArrowRight,
+  ArrowUp,
+  ArrowDown,
   Coins,
   RefreshCw,
   Sliders,
   CheckSquare,
-  FolderPlus
+  FolderPlus,
+  Info
 } from 'lucide-react';
 import {
   InfographicDraft,
@@ -48,7 +51,11 @@ import {
   updateMeetingMasterLearningData,
   updateMeetingStatus,
   updateMeetingProductState,
-  syncMeetingToCurrentDraft
+  syncMeetingToCurrentDraft,
+  insertMeetingIntoProject,
+  removeMeetingFromProject,
+  reorderMeetingInProject,
+  deleteLearningMeetingFromSupabase
 } from '../../services/learningProjectService';
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 
@@ -71,6 +78,7 @@ interface ProyekPembelajaranPageProps {
   onNavigate: (tab: NavigationTab) => void;
   onSaveToast: (msg: string) => void;
   onDeleteLearningProject?: (projectId: string) => void;
+  onDeleteLearningMeeting?: (meetingId: string) => Promise<void> | void;
   onRefreshCloud?: () => Promise<void>;
   isCloudSyncing?: boolean;
   cloudSyncStatus?: 'synced' | 'local' | 'syncing' | 'error';
@@ -90,6 +98,7 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   onNavigate,
   onSaveToast,
   onDeleteLearningProject,
+  onDeleteLearningMeeting,
   onRefreshCloud,
   isCloudSyncing = false,
   cloudSyncStatus = 'local',
@@ -132,8 +141,43 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   const [newChapterTitle, setNewChapterTitle] = useState('');
 
   const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
-  const [newMeetingNumber, setNewMeetingNumber] = useState('Pertemuan 3');
+  const [newMeetingPosition, setNewMeetingPosition] = useState<number>(1);
+  const [newMeetingNumber, setNewMeetingNumber] = useState('Pertemuan 1');
   const [newMeetingTitle, setNewMeetingTitle] = useState('');
+  const [newMeetingTema, setNewMeetingTema] = useState('');
+  const [newMeetingMateri, setNewMeetingMateri] = useState('');
+  const [newMeetingCakupan, setNewMeetingCakupan] = useState('');
+  const [newMeetingNotes, setNewMeetingNotes] = useState('');
+  const [meetingFormErrors, setMeetingFormErrors] = useState<Record<string, string>>({});
+  const [meetingToDelete, setMeetingToDelete] = useState<MeetingSession | null>(null);
+  const [isDeletingMeeting, setIsDeletingMeeting] = useState<boolean>(false);
+
+  const handleOpenAddMeetingModal = () => {
+    const nextIdx = (activeChapter?.meetings.length || 0) + 1;
+    setNewMeetingPosition(nextIdx);
+    setNewMeetingNumber(`Pertemuan ${nextIdx}`);
+    setNewMeetingTitle('');
+    setNewMeetingTema('');
+    setNewMeetingMateri('');
+    setNewMeetingCakupan('');
+    setNewMeetingNotes('');
+    setMeetingFormErrors({});
+    setShowAddMeetingModal(true);
+  };
+
+  const handleFillSampleMeeting = () => {
+    setNewMeetingTitle('Mengenal Teks Iklan');
+    setNewMeetingTema('Memahami karakteristik teks iklan');
+    setNewMeetingMateri('Pengertian, tujuan, fungsi, dan ciri-ciri iklan');
+    setNewMeetingCakupan(
+      '1. Pengertian, tujuan, dan fungsi sosial teks iklan.\n' +
+      '2. Ciri-ciri bahasa persuasif dalam slogan dan poster iklan.\n' +
+      '3. Unsur pembentuk naskah iklan (Headline, Body text, CTA).\n' +
+      '4. Contoh analisis iklan komersial vs layanan masyarakat.'
+    );
+    setNewMeetingNotes('Fokus pada iklan komersial dan layanan masyarakat di media digital.');
+    setMeetingFormErrors({});
+  };
 
   // Search & Filter untuk Legacy Tab
   const [searchQuery, setSearchQuery] = useState('');
@@ -229,7 +273,7 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     }
   };
 
-  // Handler Buat Proyek Baru
+  // Handler Buat Proyek Baru (Wadah Pembelajaran)
   const handleCreateProject = () => {
     if (!newProjectName.trim()) return;
     const now = new Date().toISOString().split('T')[0];
@@ -252,22 +296,23 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
             {
               id: `ch-${Date.now()}`,
               chapterNumber: 'Bab 1',
-              title: 'Pengenalan Materi Awal',
+              title: 'Bab 1',
               createdAt: now,
               updatedAt: now,
               meetings: [
                 {
                   id: `meet-${Date.now()}`,
                   meetingNumber: 'Pertemuan 1',
-                  title: 'Konsep Dasar',
+                  title: 'Pertemuan 1 (Belum Diatur)',
                   status: 'draft',
                   createdAt: now,
                   updatedAt: now,
                   masterLearningData: {
-                    temaKegiatan: 'Konsep Dasar Pembelajaran',
-                    materiDiajarkan: 'Konsep Dasar Pembelajaran',
-                    cakupanMateri: '1. Pengantar dan definisi.\n2. Ciri pokok.\n3. Contoh pengenalan.',
-                    learningObjectives: ['Memahami konsep dasar materi secara tepat.'],
+                    temaKegiatan: '',
+                    materiDiajarkan: '',
+                    cakupanMateri: '',
+                    learningObjectives: [],
+                    userNotes: '',
                     version: 1,
                     updatedAt: now
                   },
@@ -297,7 +342,7 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     });
     setShowAddProjectModal(false);
     setNewProjectName('');
-    onSaveToast('Proyek pembelajaran baru berhasil dibuat!');
+    onSaveToast('Wadah proyek pembelajaran baru berhasil dibuat! Silakan tentukan bab dan pertemuan.');
   };
 
   // Handler Tambah Kelas Baru pada Proyek Aktif
@@ -315,21 +360,23 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
         {
           id: `ch-${Date.now()}`,
           chapterNumber: 'Bab 1',
-          title: `Bab 1: Pengantar ${newClassSubject}`,
+          title: 'Bab 1',
           createdAt: now,
           updatedAt: now,
           meetings: [
             {
               id: `meet-${Date.now()}`,
               meetingNumber: 'Pertemuan 1',
-              title: 'Pengantar Materi',
+              title: 'Pertemuan 1 (Belum Diatur)',
               status: 'draft',
               createdAt: now,
               updatedAt: now,
               masterLearningData: {
-                temaKegiatan: `Pengantar ${newClassSubject}`,
-                materiDiajarkan: `Konsep Dasar ${newClassSubject}`,
-                cakupanMateri: '1. Definisi dan ruang lingkup.\n2. Manfaat dan aplikasi nyata.',
+                temaKegiatan: '',
+                materiDiajarkan: '',
+                cakupanMateri: '',
+                learningObjectives: [],
+                userNotes: '',
                 version: 1,
                 updatedAt: now
               },
@@ -367,7 +414,7 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     onSaveToast(`Kelas ${newClassGrade} (${newClassSubject}) berhasil ditambahkan.`);
   };
 
-  // Handler Tambah Bab Baru
+  // Handler Tambah Bab Baru (Wadah Pembahasan)
   const handleAddChapter = () => {
     if (!activeProject || !activeClassSubject) return;
     if (!newChapterTitle.trim()) return;
@@ -383,14 +430,16 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
         {
           id: `meet-${Date.now()}`,
           meetingNumber: 'Pertemuan 1',
-          title: newChapterTitle.trim(),
+          title: 'Pertemuan 1 (Belum Diatur)',
           status: 'draft',
           createdAt: now,
           updatedAt: now,
           masterLearningData: {
-            temaKegiatan: newChapterTitle.trim(),
-            materiDiajarkan: newChapterTitle.trim(),
-            cakupanMateri: '1. Pengantar konsep.\n2. Ciri utama.\n3. Contoh dan latihan.',
+            temaKegiatan: '',
+            materiDiajarkan: '',
+            cakupanMateri: '',
+            learningObjectives: [],
+            userNotes: '',
             version: 1,
             updatedAt: now
           },
@@ -428,26 +477,42 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     });
     setShowAddChapterModal(false);
     setNewChapterTitle('');
-    onSaveToast(`Bab baru berhasil ditambahkan.`);
+    onSaveToast(`Bab "${newChapterTitle}" berhasil ditambahkan.`);
   };
 
-  // Handler Tambah Pertemuan Baru
+  // Handler Tambah/Buat Pertemuan Baru (Unit Pembelajaran dengan Master Learning Data)
   const handleAddMeeting = () => {
     if (!activeProject || !activeClassSubject || !activeChapter) return;
-    if (!newMeetingTitle.trim()) return;
+
+    const errors: Record<string, string> = {};
+    if (!newMeetingTitle.trim()) errors.title = 'Judul pertemuan wajib diisi.';
+    if (!newMeetingTema.trim()) errors.tema = 'Tema pembelajaran wajib diisi.';
+    if (!newMeetingMateri.trim()) errors.materi = 'Materi pelajaran wajib diisi.';
+    if (!newMeetingCakupan.trim()) errors.cakupan = 'Cakupan materi wajib diisi.';
+
+    if (Object.keys(errors).length > 0) {
+      setMeetingFormErrors(errors);
+      onSaveToast('Mohon lengkapi seluruh field wajib data pertemuan.');
+      return;
+    }
+
     const now = new Date().toISOString().split('T')[0];
+    // ID pertemuan permanen dan mandiri, tidak bergantung pada nomor pertemuan
+    const meetingId = `meet-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
     const newMeeting: MeetingSession = {
-      id: `meet-${Date.now()}`,
-      meetingNumber: newMeetingNumber.trim(),
+      id: meetingId,
+      meetingNumber: `Pertemuan ${newMeetingPosition}`,
       title: newMeetingTitle.trim(),
-      status: 'draft',
+      status: 'ready',
       createdAt: now,
       updatedAt: now,
       masterLearningData: {
-        temaKegiatan: newMeetingTitle.trim(),
-        materiDiajarkan: newMeetingTitle.trim(),
-        cakupanMateri: '1. Pengantar pertemuan.\n2. Pembahasan materi pokok.\n3. Rangkuman dan refleksi.',
+        temaKegiatan: newMeetingTema.trim(),
+        materiDiajarkan: newMeetingMateri.trim(),
+        cakupanMateri: newMeetingCakupan.trim(),
+        learningObjectives: [],
+        userNotes: newMeetingNotes.trim(),
         version: 1,
         updatedAt: now
       },
@@ -461,34 +526,75 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
       }
     };
 
-    const updated = learningProjects.map(p => {
-      if (p.id !== activeProject.id) return p;
-      return {
-        ...p,
-        classSubjects: p.classSubjects.map(cs => {
-          if (cs.id !== activeClassSubject.id) return cs;
-          return {
-            ...cs,
-            chapters: cs.chapters.map(ch => {
-              if (ch.id !== activeChapter.id) return ch;
-              return {
-                ...ch,
-                meetings: [...ch.meetings, newMeeting]
-              };
-            })
-          };
-        })
-      };
-    });
+    // Sisipkan pertemuan pada posisi pilihan guru dan normalkan urutan seluruh pertemuan di bab ini
+    const { updatedProjects } = insertMeetingIntoProject(
+      learningProjects,
+      activeChapter.id,
+      newMeeting,
+      newMeetingPosition
+    );
 
-    onUpdateLearningProjects(updated);
+    onUpdateLearningProjects(updatedProjects);
     onUpdateActiveContext({
       ...activeContext,
       activeMeetingId: newMeeting.id
     });
     setShowAddMeetingModal(false);
     setNewMeetingTitle('');
-    onSaveToast(`${newMeetingNumber} berhasil ditambahkan!`);
+    setNewMeetingTema('');
+    setNewMeetingMateri('');
+    setNewMeetingCakupan('');
+    setNewMeetingNotes('');
+    setMeetingFormErrors({});
+    onSaveToast(`Pertemuan "${newMeeting.title}" berhasil disimpan di posisi ${newMeetingPosition}!`);
+  };
+
+  // Handler Konfirmasi Penghapusan Pertemuan
+  const handleConfirmDeleteMeeting = async () => {
+    if (!meetingToDelete) return;
+    const targetId = meetingToDelete.id;
+    const targetTitle = meetingToDelete.title;
+
+    setIsDeletingMeeting(true);
+    try {
+      if (onDeleteLearningMeeting) {
+        await onDeleteLearningMeeting(targetId);
+      } else {
+        const { updatedProjects, nextActiveMeetingId } =
+          removeMeetingFromProject(learningProjects, targetId);
+
+        onUpdateLearningProjects(updatedProjects);
+        if (activeMeeting?.id === targetId) {
+          onUpdateActiveContext({
+            ...activeContext,
+            activeMeetingId: nextActiveMeetingId
+          });
+        }
+        if (userId) {
+          await deleteLearningMeetingFromSupabase(targetId);
+        }
+        onSaveToast(`Pertemuan "${targetTitle}" berhasil dihapus.`);
+      }
+    } catch (err) {
+      console.warn('Gagal menghapus pertemuan:', err);
+      onSaveToast('Gagal menghapus pertemuan.');
+    } finally {
+      setIsDeletingMeeting(false);
+      setMeetingToDelete(null);
+    }
+  };
+
+  // Handler Geser Urutan Pertemuan (Move Up / Down)
+  const handleReorderMeeting = (meetingId: string, direction: 'up' | 'down') => {
+    if (!activeChapter) return;
+    const { updatedProjects } = reorderMeetingInProject(
+      learningProjects,
+      activeChapter.id,
+      meetingId,
+      direction
+    );
+    onUpdateLearningProjects(updatedProjects);
+    onSaveToast(`Urutan pertemuan berhasil digeser ke ${direction === 'up' ? 'atas' : 'bawah'}.`);
   };
 
   // Filter untuk Legacy Drafts
@@ -793,76 +899,174 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => setShowAddMeetingModal(true)}
+                    onClick={handleOpenAddMeetingModal}
                     className="text-xs font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
-                    <span>Tambah Pertemuan</span>
+                    <span>Buat Pertemuan</span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
-                  {activeChapter?.meetings.map(m => {
-                    const isActive = m.id === activeMeeting?.id;
-                    const statusBadgeColor =
-                      m.status === 'completed'
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : m.status === 'ready'
-                        ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
-                        : m.status === 'in_progress'
-                        ? 'bg-amber-100 text-amber-800 border-amber-300'
-                        : 'bg-slate-100 text-slate-600 border-slate-300';
+                {(!activeChapter?.meetings || activeChapter.meetings.length === 0) ? (
+                  <div className="p-6 rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-2">
+                    <p className="text-xs font-semibold text-slate-500">Belum ada pertemuan di bab ini.</p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddMeetingModal}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Buat Pertemuan Pertama</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                    {activeChapter.meetings.map((m, mIdx) => {
+                      const isActive = m.id === activeMeeting?.id;
+                      const hasData = Boolean(m.masterLearningData.materiDiajarkan || m.masterLearningData.temaKegiatan);
+                      const statusBadgeColor =
+                        m.status === 'completed'
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : m.status === 'ready'
+                          ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
+                          : m.status === 'in_progress'
+                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                          : 'bg-slate-100 text-slate-600 border-slate-300';
 
-                    const statusLabel =
-                      m.status === 'completed'
-                        ? 'Selesai'
-                        : m.status === 'ready'
-                        ? 'Siap'
-                        : m.status === 'in_progress'
-                        ? 'Menyusun'
-                        : 'Draf';
+                      const statusLabel =
+                        m.status === 'completed'
+                          ? 'Selesai'
+                          : m.status === 'ready'
+                          ? 'Siap'
+                          : m.status === 'in_progress'
+                          ? 'Menyusun'
+                          : 'Draf';
 
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => {
-                          onUpdateActiveContext({
-                            ...activeContext,
-                            activeMeetingId: m.id
-                          });
-                        }}
-                        className={`text-left p-3.5 rounded-2xl text-xs transition-all border flex flex-col justify-between gap-2 cursor-pointer ${
-                          isActive
-                            ? 'bg-[#3b49df] text-white border-[#3b49df] shadow-md shadow-indigo-600/20'
-                            : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className={`font-black uppercase tracking-wider text-[11px] ${isActive ? 'text-indigo-100' : 'text-[#3b49df]'}`}>
-                            {m.meetingNumber}
-                          </span>
-                          <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${
-                            isActive ? 'bg-white/20 text-white border-white/30' : statusBadgeColor
-                          }`}>
-                            {statusLabel}
-                          </span>
+                      return (
+                        <div
+                          key={m.id}
+                          onClick={() => {
+                            onUpdateActiveContext({
+                              ...activeContext,
+                              activeMeetingId: m.id
+                            });
+                          }}
+                          className={`text-left p-3.5 rounded-2xl text-xs transition-all border flex flex-col justify-between gap-2 cursor-pointer ${
+                            isActive
+                              ? 'bg-[#3b49df] text-white border-[#3b49df] shadow-md shadow-indigo-600/20'
+                              : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className={`font-black uppercase tracking-wider text-[11px] truncate ${isActive ? 'text-indigo-100' : 'text-[#3b49df]'}`}>
+                                {m.meetingNumber}
+                              </span>
+                              {/* Reorder Buttons (Move Up / Down) */}
+                              {activeChapter.meetings.length > 1 && (
+                                <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  {mIdx > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReorderMeeting(m.id, 'up')}
+                                      className={`p-0.5 rounded transition-colors cursor-pointer ${
+                                        isActive ? 'text-white/80 hover:bg-white/20' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                                      }`}
+                                      title="Geser posisi ke atas"
+                                    >
+                                      <ArrowUp className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                  {mIdx < activeChapter.meetings.length - 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReorderMeeting(m.id, 'down')}
+                                      className={`p-0.5 rounded transition-colors cursor-pointer ${
+                                        isActive ? 'text-white/80 hover:bg-white/20' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                                      }`}
+                                      title="Geser posisi ke bawah"
+                                    >
+                                      <ArrowDown className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${
+                                isActive ? 'bg-white/20 text-white border-white/30' : statusBadgeColor
+                              }`}>
+                                {statusLabel}
+                              </span>
+                              {/* Hapus Pertemuan Button */}
+                              <button
+                                type="button"
+                                onClick={() => setMeetingToDelete(m)}
+                                className={`p-1 rounded-md transition-colors cursor-pointer ${
+                                  isActive ? 'text-white/80 hover:text-white hover:bg-white/20' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                                }`}
+                                title={`Hapus ${m.meetingNumber}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <p className={`line-clamp-2 font-semibold ${isActive ? 'text-white' : 'text-slate-800'}`}>
+                            {hasData ? (m.masterLearningData.materiDiajarkan || m.title) : `${m.title} (Belum diisi)`}
+                          </p>
                         </div>
-                        <p className={`line-clamp-2 font-semibold ${isActive ? 'text-white' : 'text-slate-800'}`}>
-                          {m.masterLearningData.materiDiajarkan || m.title}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* ================================================================ */}
-          {/* LEVEL 5: MASTER LEARNING DATA EDITOR (SINGLE SOURCE OF TRUTH)     */}
+          {/* LEVEL 5 & 6: MASTER LEARNING DATA & STUDIO PRODUK                */}
           {/* ================================================================ */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs space-y-6">
+          {!activeMeeting ? (
+            <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/90 text-center space-y-4 shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#3b49df] mx-auto">
+                <Layers className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                  Belum Ada Pertemuan di Bab Ini
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Pertemuan adalah unit pembelajaran untuk menentukan materi yang diajarkan. Buat pertemuan baru untuk mulai menyusun Master Learning Data dan menghasilkan produk pembelajaran.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenAddMeetingModal}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3b49df] hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 cursor-pointer transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Buat Pertemuan Baru</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* LEVEL 5: MASTER LEARNING DATA EDITOR (SINGLE SOURCE OF TRUTH)     */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs space-y-6">
+            {/* Banner peringatan jika pertemuan aktif belum diatur materinya */}
+            {activeMeeting && (!activeMeeting.masterLearningData.materiDiajarkan && !activeMeeting.masterLearningData.temaKegiatan) && (
+              <div className="bg-amber-50/90 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-amber-900">
+                    Pertemuan ini belum memiliki data materi pembelajaran.
+                  </p>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Tentukan materi yang akan diajarkan pada pertemuan ini. Data ini akan menjadi dasar pembuatan produk pembelajaran (Materi, Infografis, LKPD, Presentasi, Asesmen).
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#3b49df] shrink-0">
@@ -883,8 +1087,20 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                 </div>
               </div>
 
-              {/* Status Pertemuan Selector & Aksi Selesai */}
-              <div className="flex items-center gap-2">
+              {/* Status Pertemuan Selector, Hapus Pertemuan & Aksi Selesai */}
+              <div className="flex flex-wrap items-center gap-2">
+                {activeMeeting && (
+                  <button
+                    type="button"
+                    onClick={() => setMeetingToDelete(activeMeeting)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold cursor-pointer transition-colors"
+                    title={`Hapus ${activeMeeting.meetingNumber} dari proyek`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span className="hidden sm:inline">Hapus Pertemuan</span>
+                  </button>
+                )}
+
                 {activeMeeting?.status === 'completed' ? (
                   <button
                     type="button"
@@ -1573,48 +1789,259 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* MODAL 4: TAMBAH PERTEMUAN                                            */}
+      {/* MODAL 4: BUAT PERTEMUAN (UNIT PEMBELAJARAN & MASTER LEARNING DATA)    */}
       {/* ==================================================================== */}
       {showAddMeetingModal && (
         <div className="fixed inset-0 bg-slate-900/40 z-50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Tambah Pertemuan Pembelajaran</h3>
-            <div className="space-y-3 text-xs">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nomor Pertemuan</label>
-                <input
-                  type="text"
-                  value={newMeetingNumber}
-                  onChange={(e) => setNewMeetingNumber(e.target.value)}
-                  placeholder="Misal: Pertemuan 3"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium focus:bg-white"
-                />
+                <h3 className="text-base sm:text-lg font-black text-slate-900">
+                  Buat Pertemuan Pembelajaran
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Tentukan materi yang akan diajarkan pada pertemuan ini. Data ini akan menjadi dasar pembuatan produk pembelajaran.
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={handleFillSampleMeeting}
+                className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold shrink-0 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                title="Isi contoh cepat data pertemuan teks iklan"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Contoh Cepat</span>
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* 1. Posisi / Urutan Pertemuan */}
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Posisi / Urutan <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={newMeetingPosition}
+                    onChange={(e) => {
+                      const pos = Number(e.target.value);
+                      setNewMeetingPosition(pos);
+                      setNewMeetingNumber(`Pertemuan ${pos}`);
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold focus:bg-white text-xs cursor-pointer"
+                  >
+                    {Array.from({ length: (activeChapter?.meetings.length || 0) + 1 }, (_, i) => i + 1).map((pos) => {
+                      const total = activeChapter?.meetings.length || 0;
+                      const isLast = pos === total + 1;
+                      const isFirst = pos === 1;
+                      return (
+                        <option key={pos} value={pos}>
+                          {isLast
+                            ? `Urutan ${pos} (Akhir)`
+                            : isFirst
+                            ? `Urutan 1 (Awal)`
+                            : `Urutan ${pos}`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* 2. Judul Pertemuan */}
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Judul Pertemuan <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newMeetingTitle}
+                    onChange={(e) => {
+                      setNewMeetingTitle(e.target.value);
+                      if (meetingFormErrors.title) setMeetingFormErrors(prev => ({ ...prev, title: undefined }));
+                    }}
+                    placeholder="Misal: Mengenal Teks Iklan"
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 font-bold focus:bg-white text-xs ${
+                      meetingFormErrors.title ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/40' : 'border-slate-200'
+                    }`}
+                  />
+                  {meetingFormErrors.title && (
+                    <p className="text-[10px] text-rose-500 font-semibold mt-1">{meetingFormErrors.title}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Notice jika pertemuan disisipkan di tengah urutan */}
+              {activeChapter && newMeetingPosition <= activeChapter.meetings.length && activeChapter.meetings.length > 0 && !(activeChapter.meetings.length === 1 && activeChapter.meetings[0].status === 'draft' && !activeChapter.meetings[0].masterLearningData.materiDiajarkan) && (
+                <div className="bg-indigo-50 border border-indigo-200/80 rounded-xl p-2.5 flex items-start gap-2">
+                  <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-indigo-900 leading-relaxed">
+                    Pertemuan baru akan disisipkan di <strong>Posisi ke-{newMeetingPosition}</strong>. Pertemuan yang sebelumnya berada di urutan ke-{newMeetingPosition} dan setelahnya otomatis bergeser menjadi Pertemuan {newMeetingPosition + 1}, Pertemuan {newMeetingPosition + 2}, dst.
+                  </p>
+                </div>
+              )}
+
+              {/* 3. Tema Pembelajaran */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Fokus / Judul Pertemuan</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Tema Pembelajaran <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={newMeetingTitle}
-                  onChange={(e) => setNewMeetingTitle(e.target.value)}
-                  placeholder="Misal: Praktik Penulisan Naskah Iklan"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium focus:bg-white"
+                  value={newMeetingTema}
+                  onChange={(e) => {
+                    setNewMeetingTema(e.target.value);
+                    if (meetingFormErrors.tema) setMeetingFormErrors(prev => ({ ...prev, tema: undefined }));
+                  }}
+                  placeholder="Misal: Memahami karakteristik teks iklan"
+                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 font-medium focus:bg-white text-xs ${
+                    meetingFormErrors.tema ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/40' : 'border-slate-200'
+                  }`}
+                />
+                {meetingFormErrors.tema && (
+                  <p className="text-[10px] text-rose-500 font-semibold mt-1">{meetingFormErrors.tema}</p>
+                )}
+              </div>
+
+              {/* 4. Materi Pelajaran */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Materi Pelajaran <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newMeetingMateri}
+                  onChange={(e) => {
+                    setNewMeetingMateri(e.target.value);
+                    if (meetingFormErrors.materi) setMeetingFormErrors(prev => ({ ...prev, materi: undefined }));
+                  }}
+                  placeholder="Misal: Pengertian, tujuan, fungsi, dan ciri-ciri iklan"
+                  className={`w-full px-3 py-2.5 rounded-xl border bg-slate-50 font-medium focus:bg-white text-xs ${
+                    meetingFormErrors.materi ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/40' : 'border-slate-200'
+                  }`}
+                />
+                {meetingFormErrors.materi && (
+                  <p className="text-[10px] text-rose-500 font-semibold mt-1">{meetingFormErrors.materi}</p>
+                )}
+              </div>
+
+              {/* 5. Cakupan Materi */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Cakupan Materi (Poin-poin Bahasan) <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={newMeetingCakupan}
+                  onChange={(e) => {
+                    setNewMeetingCakupan(e.target.value);
+                    if (meetingFormErrors.cakupan) setMeetingFormErrors(prev => ({ ...prev, cakupan: undefined }));
+                  }}
+                  placeholder="Contoh:&#10;1. Pengertian dan fungsi iklan&#10;2. Ciri bahasa persuasif&#10;3. Contoh iklan komersial vs layanan masyarakat"
+                  className={`w-full p-3 rounded-xl border bg-slate-50 font-medium focus:bg-white text-xs leading-relaxed ${
+                    meetingFormErrors.cakupan ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/40' : 'border-slate-200'
+                  }`}
+                />
+                {meetingFormErrors.cakupan && (
+                  <p className="text-[10px] text-rose-500 font-semibold mt-1">{meetingFormErrors.cakupan}</p>
+                )}
+              </div>
+
+              {/* 6. Catatan Pedagogis */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Catatan (Opsional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={newMeetingNotes}
+                  onChange={(e) => setNewMeetingNotes(e.target.value)}
+                  placeholder="Misal: Fokus pada iklan komersial dan layanan masyarakat"
+                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 font-medium focus:bg-white text-xs leading-relaxed"
                 />
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 pt-2">
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setShowAddMeetingModal(false)}
-                className="px-4 py-2 rounded-xl text-slate-600 font-bold text-xs"
+                className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleAddMeeting}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                className="px-6 py-2.5 rounded-xl bg-[#3b49df] hover:bg-indigo-700 text-white font-black text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center gap-1.5"
               >
-                Tambah Pertemuan
+                <Check className="w-4 h-4" />
+                <span>Simpan Pertemuan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL 5: KONFIRMASI HAPUS PERTEMUAN (AMANKAN DARI ORPHAN DATA)       */}
+      {/* ==================================================================== */}
+      {meetingToDelete && (
+        <div className="fixed inset-0 bg-slate-900/50 z-50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900">
+                  Hapus Pertemuan?
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Pertemuan ini akan dihapus dari proyek beserta data pembelajaran yang secara langsung terkait dengan pertemuan tersebut. Tindakan ini tidak dapat dibatalkan.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/90 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Target Pertemuan
+                </span>
+                <span className="font-extrabold text-[#3b49df] bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                  {meetingToDelete.meetingNumber}
+                </span>
+              </div>
+              <p className="font-bold text-slate-900 text-sm truncate">
+                {meetingToDelete.title || 'Pertemuan (Belum Diatur)'}
+              </p>
+              {meetingToDelete.masterLearningData?.materiDiajarkan && (
+                <p className="text-slate-600 text-[11px] line-clamp-2">
+                  <span className="font-semibold text-slate-700">Materi:</span> {meetingToDelete.masterLearningData.materiDiajarkan}
+                </p>
+              )}
+            </div>
+
+            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-[11px] text-amber-900">
+              💡 <strong>Otomatis Normalisasi:</strong> Seluruh nomor pertemuan setelahnya akan otomatis dinormalisasi ulang (Pertemuan 1, Pertemuan 2, dst.) dan disinkronkan ke Supabase.
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setMeetingToDelete(null)}
+                disabled={isDeletingMeeting}
+                className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteMeeting}
+                disabled={isDeletingMeeting}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingMeeting ? 'Menghapus...' : 'Hapus Pertemuan'}</span>
               </button>
             </div>
           </div>

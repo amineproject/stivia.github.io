@@ -37,6 +37,8 @@ import {
   fetchLearningProjectsFromSupabase,
   saveLearningProjectToSupabase,
   deleteLearningProjectFromSupabase,
+  deleteLearningMeetingFromSupabase,
+  removeMeetingFromProject,
   syncLearningProjectsOnLogin,
   saveLegacyProjectToSupabase,
   DEFAULT_INITIAL_LEARNING_PROJECT
@@ -362,6 +364,7 @@ export default function App() {
       saveStoredActiveContext(defaultContext);
       setProjects([]);
       localStorage.removeItem('stivia_projects');
+      localStorage.removeItem('stivia_last_user_id');
       setCurrentDraft(INITIAL_SAMPLE_DRAFT);
       setCloudSyncStatus('local');
       showToast('Berhasil keluar dari akun STIVIA.');
@@ -618,6 +621,46 @@ export default function App() {
     }
 
     showToast(`Proyek "${target?.name || 'Pembelajaran'}" berhasil dihapus.`);
+  };
+
+  // Handler menghapus sesi pertemuan pembelajaran (Multi-device sync delete & normalisasi nomor pertemuan)
+  const handleDeleteLearningMeeting = async (meetingId: string) => {
+    const { updatedProjects, deletedMeeting, targetProjectId, nextActiveMeetingId } =
+      removeMeetingFromProject(learningProjects, meetingId);
+
+    if (!deletedMeeting) return;
+
+    setLearningProjects(updatedProjects);
+    saveStoredLearningProjects(updatedProjects);
+
+    if (activeLearningContext.activeMeetingId === meetingId) {
+      const newContext: ActiveLearningContext = {
+        ...activeLearningContext,
+        activeMeetingId: nextActiveMeetingId,
+      };
+      setActiveLearningContext(newContext);
+      saveStoredActiveContext(newContext);
+    }
+
+    if (session?.user?.id && isSupabaseConfigured) {
+      setIsCloudSyncing(true);
+      setCloudSyncStatus('syncing');
+      try {
+        await deleteLearningMeetingFromSupabase(meetingId);
+        const targetProj = updatedProjects.find((p) => p.id === targetProjectId);
+        if (targetProj) {
+          await saveLearningProjectToSupabase(targetProj, session.user.id);
+        }
+        setCloudSyncStatus('synced');
+      } catch (err) {
+        console.warn('[STIVIA Supabase] Gagal sinkronisasi hapus meeting ke Supabase:', err);
+        setCloudSyncStatus('local');
+      } finally {
+        setIsCloudSyncing(false);
+      }
+    }
+
+    showToast(`Pertemuan "${deletedMeeting.title}" berhasil dihapus.`);
   };
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -934,6 +977,9 @@ export default function App() {
           onSetViewMode={setViewMode}
           effectiveMode={effectiveMode}
           activeMeetingBreadcrumb={activeBreadcrumbInfo}
+          cloudSyncStatus={cloudSyncStatus}
+          isCloudSyncing={isCloudSyncing}
+          onRefreshCloud={() => session?.user?.id ? loadUserLearningProjectsFromCloud(session.user.id) : undefined}
         />
 
         {/* Dynamic Page Views with Responsive Spacing */}
@@ -1112,6 +1158,7 @@ export default function App() {
               onDeleteLegacyProject={handleDeleteProject}
               onDuplicateLegacyProject={handleDuplicateProject}
               onDeleteLearningProject={handleDeleteLearningProject}
+              onDeleteLearningMeeting={handleDeleteLearningMeeting}
               onRefreshCloud={() => session?.user?.id ? loadUserLearningProjectsFromCloud(session.user.id) : Promise.resolve()}
               isCloudSyncing={isCloudSyncing}
               cloudSyncStatus={cloudSyncStatus}

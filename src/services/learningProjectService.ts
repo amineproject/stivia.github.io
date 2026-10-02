@@ -470,22 +470,282 @@ export function updateMeetingProductState(
   }));
 }
 
-export interface CreateProjectFormInput {
-  tingkat: EducationLevel;
-  kelas: string;
-  mapel: string;
-  babTeks: string;
-  temaPembelajaran: string;
-  materiPelajaran: string;
-  cakupanMateri: string;
-  catatan?: string;
-  teacherName?: string;
-  schoolName?: string;
+/**
+ * Membandingkan nomor pertemuan secara alami/numerik (Pertemuan 1, Pertemuan 2, ... Pertemuan 10).
+ */
+export function compareMeetingNumbers(
+  aNum?: string,
+  bNum?: string,
+  aCreated?: string,
+  bCreated?: string
+): number {
+  const parseNum = (str?: string): number | null => {
+    if (!str) return null;
+    const match = str.match(/\d+/);
+    return match ? parseInt(match[0], 10) : null;
+  };
+  const numA = parseNum(aNum);
+  const numB = parseNum(bNum);
+  if (numA !== null && numB !== null) {
+    if (numA !== numB) return numA - numB;
+  }
+  if (aNum && bNum && aNum !== bNum) {
+    return aNum.localeCompare(bNum, undefined, { numeric: true });
+  }
+  return (aCreated || '').localeCompare(bCreated || '');
 }
 
 /**
- * Membuat entitas LearningProject lengkap dan terstruktur secara deterministik
- * dari input form sederhana "Buat Proyek" (1 Data -> Banyak Produk).
+ * Menormalkan nomor urut pertemuan (meetingNumber) dalam sebuah chapter
+ * menjadi "Pertemuan 1", "Pertemuan 2", ..., "Pertemuan N".
+ * PENTING:
+ * - meeting.id (UUID/identitas permanen) TIDAK BERUBAH.
+ * - masterLearningData TIDAK BERUBAH.
+ * - productStates TIDAK BERUBAH.
+ * - Hanya properti `meetingNumber` yang diselaraskan dengan indeks 1-based.
+ */
+export function normalizeMeetingNumbers(meetings: MeetingSession[]): MeetingSession[] {
+  return meetings.map((m, index) => {
+    const expectedNumber = `Pertemuan ${index + 1}`;
+    if (m.meetingNumber === expectedNumber) {
+      return m;
+    }
+    return {
+      ...m,
+      meetingNumber: expectedNumber
+    };
+  });
+}
+
+/**
+ * Menyisipkan pertemuan baru ke dalam chapter pada posisi tertentu (1-based),
+ * kemudian menormalkan urutan nomor pertemuan secara berurutan.
+ * Jika targetPosition tidak ditentukan atau lebih besar dari panjang array,
+ * pertemuan akan ditambahkan sebagai pertemuan terakhir.
+ */
+export function insertMeetingIntoProject(
+  projects: LearningProject[],
+  targetChapterId: string,
+  newMeeting: MeetingSession,
+  targetPosition?: number
+): { updatedProjects: LearningProject[]; targetProjectId?: string } {
+  const now = new Date().toISOString().split('T')[0];
+  let targetProjectId: string | undefined;
+
+  const updatedProjects = projects.map(p => {
+    let pModified = false;
+    const updatedClasses = p.classSubjects.map(cs => {
+      let csModified = false;
+      const updatedChapters = cs.chapters.map(ch => {
+        if (ch.id !== targetChapterId) return ch;
+
+        pModified = true;
+        csModified = true;
+        targetProjectId = p.id;
+
+        const currentMeetings = [...ch.meetings];
+        // Jika pertemuan yang ada saat ini hanya 1 draft kosong ("Pertemuan 1 (Belum Diatur)"),
+        // gantikan draft kosong tersebut agar alur langsung rapi
+        const hasOnlyOneEmptyDraft =
+          currentMeetings.length === 1 &&
+          currentMeetings[0].status === 'draft' &&
+          !currentMeetings[0].masterLearningData.materiDiajarkan &&
+          !currentMeetings[0].masterLearningData.temaKegiatan;
+
+        if (hasOnlyOneEmptyDraft) {
+          return {
+            ...ch,
+            updatedAt: now,
+            meetings: [{ ...newMeeting, meetingNumber: 'Pertemuan 1' }]
+          };
+        }
+
+        // Tentukan posisi index 0-based
+        const pos = (targetPosition && targetPosition >= 1 && targetPosition <= currentMeetings.length + 1)
+          ? targetPosition - 1
+          : currentMeetings.length;
+
+        currentMeetings.splice(pos, 0, newMeeting);
+        const normalized = normalizeMeetingNumbers(currentMeetings);
+
+        return {
+          ...ch,
+          updatedAt: now,
+          meetings: normalized
+        };
+      });
+
+      if (!csModified) return cs;
+      return {
+        ...cs,
+        chapters: updatedChapters,
+        updatedAt: now
+      };
+    });
+
+    if (!pModified) return p;
+    return {
+      ...p,
+      classSubjects: updatedClasses,
+      updatedAt: now
+    };
+  });
+
+  return { updatedProjects, targetProjectId };
+}
+
+/**
+ * Mengubah posisi urutan pertemuan ke atas ('up') atau ke bawah ('down') dalam chapter,
+ * lalu menormalkan penomoran seluruh pertemuan yang tersisa.
+ */
+export function reorderMeetingInProject(
+  projects: LearningProject[],
+  targetChapterId: string,
+  targetMeetingId: string,
+  direction: 'up' | 'down'
+): { updatedProjects: LearningProject[]; targetProjectId?: string } {
+  let targetProjectId: string | undefined;
+  const now = new Date().toISOString().split('T')[0];
+
+  const updatedProjects = projects.map(p => {
+    let pModified = false;
+    const updatedClasses = p.classSubjects.map(cs => {
+      let csModified = false;
+      const updatedChapters = cs.chapters.map(ch => {
+        if (ch.id !== targetChapterId) return ch;
+
+        const idx = ch.meetings.findIndex(m => m.id === targetMeetingId);
+        if (idx === -1) return ch;
+        if (direction === 'up' && idx === 0) return ch;
+        if (direction === 'down' && idx === ch.meetings.length - 1) return ch;
+
+        pModified = true;
+        csModified = true;
+        targetProjectId = p.id;
+
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        const list = [...ch.meetings];
+        const temp = list[idx];
+        list[idx] = list[swapIdx];
+        list[swapIdx] = temp;
+
+        const normalized = normalizeMeetingNumbers(list);
+
+        return {
+          ...ch,
+          updatedAt: now,
+          meetings: normalized
+        };
+      });
+
+      if (!csModified) return cs;
+      return {
+        ...cs,
+        chapters: updatedChapters,
+        updatedAt: now
+      };
+    });
+
+    if (!pModified) return p;
+    return {
+      ...p,
+      classSubjects: updatedClasses,
+      updatedAt: now
+    };
+  });
+
+  return { updatedProjects, targetProjectId };
+}
+
+/**
+ * Menghapus pertemuan dari proyek dan menormalkan kembali nomor urut pertemuan yang tersisa.
+ * Menghasilkan proyek terbarukan, ID pertemuan aktif berikutnya, dan data pertemuan yang dihapus.
+ */
+export function removeMeetingFromProject(
+  projects: LearningProject[],
+  targetMeetingId: string
+): {
+  updatedProjects: LearningProject[];
+  nextActiveMeetingId?: string;
+  deletedMeeting?: MeetingSession;
+  targetProjectId?: string;
+} {
+  let nextActiveMeetingId: string | undefined;
+  let deletedMeeting: MeetingSession | undefined;
+  let targetProjectId: string | undefined;
+  const now = new Date().toISOString().split('T')[0];
+
+  const updatedProjects = projects.map(p => {
+    let pModified = false;
+    const updatedClasses = p.classSubjects.map(cs => {
+      let csModified = false;
+      const updatedChapters = cs.chapters.map(ch => {
+        const meetingIndex = ch.meetings.findIndex(m => m.id === targetMeetingId);
+        if (meetingIndex === -1) return ch;
+
+        pModified = true;
+        csModified = true;
+        targetProjectId = p.id;
+        deletedMeeting = ch.meetings[meetingIndex];
+
+        const remaining = ch.meetings.filter(m => m.id !== targetMeetingId);
+        const normalized = normalizeMeetingNumbers(remaining);
+
+        if (normalized.length > 0) {
+          // Pilih pertemuan pada posisi yang sama, atau pertemuan terakhir jika yang dihapus adalah paling belakang
+          const newActiveIndex = Math.min(meetingIndex, normalized.length - 1);
+          nextActiveMeetingId = normalized[newActiveIndex].id;
+        } else {
+          nextActiveMeetingId = undefined;
+        }
+
+        return {
+          ...ch,
+          updatedAt: now,
+          meetings: normalized
+        };
+      });
+
+      if (!csModified) return cs;
+      return {
+        ...cs,
+        chapters: updatedChapters,
+        updatedAt: now
+      };
+    });
+
+    if (!pModified) return p;
+    return {
+      ...p,
+      classSubjects: updatedClasses,
+      updatedAt: now
+    };
+  });
+
+  return { updatedProjects, nextActiveMeetingId, deletedMeeting, targetProjectId };
+}
+
+export interface CreateProjectFormInput {
+  namaProyek: string;
+  tingkat: EducationLevel;
+  kelas: string;
+  mapel: string;
+  teacherName?: string;
+  schoolName?: string;
+  // Properti backward compatibility opsional
+  babTeks?: string;
+  temaPembelajaran?: string;
+  materiPelajaran?: string;
+  cakupanMateri?: string;
+  catatan?: string;
+}
+
+/**
+ * Membuat entitas LearningProject (Wadah Pembelajaran) dari input "Buat Proyek".
+ * Sesuai prinsip STIVIA:
+ * - PROYEK = Wadah Pembelajaran (Nama Proyek, Tingkat, Kelas, Mata Pelajaran)
+ * - PERTEMUAN = Unit Pembelajaran (Materi, Tema, Cakupan, TP, Catatan)
+ * Proyek baru TIDAK membuat Master Learning Data palsu/dummy.
  */
 export function createLearningProjectFromFormData(
   input: CreateProjectFormInput
@@ -498,36 +758,42 @@ export function createLearningProjectFromFormData(
   const chapterId = `ch-${ts}-${entropy}`;
   const meetingId = `meet-${ts}-${entropy}`;
 
-  const cleanBab = input.babTeks.trim();
-  const cleanMateri = input.materiPelajaran.trim();
-  const cleanTema = input.temaPembelajaran.trim();
-  const cleanCakupan = input.cakupanMateri.trim();
+  const cleanNamaProyek = input.namaProyek?.trim() || `${input.mapel} ${input.kelas} (${input.tingkat})`;
+  const cleanBab = input.babTeks?.trim() || 'Bab 1';
 
-  // Rekomendasi otomatis TP dari AI STIVIA jika belum ada
-  const suggestedObjectives = suggestLearningObjectives(input.mapel, cleanMateri, cleanBab);
-  const objectives = suggestedObjectives && suggestedObjectives.length > 0
-    ? suggestedObjectives
-    : [
-        `Memahami konsep dasar dan karakteristik utama dari materi ${cleanMateri}.`,
-        `Menganalisis keterkaitan materi ${cleanMateri} dalam konteks kehidupan nyata.`,
-        `Menerapkan pemahaman untuk menyelesaikan persoalan kontekstual secara kritis.`
-      ];
+  // Periksa apakah ada input materi kustom (untuk backward compatibility)
+  const hasCustomLearningData = Boolean(
+    input.materiPelajaran?.trim() || input.temaPembelajaran?.trim() || input.cakupanMateri?.trim()
+  );
 
-  const masterLearningData: MasterLearningData = {
-    temaKegiatan: cleanTema,
-    materiDiajarkan: cleanMateri,
-    cakupanMateri: cleanCakupan,
-    learningObjectives: objectives,
-    userNotes: input.catatan?.trim() || '',
-    version: 1,
-    updatedAt: now
-  };
+  // Jika input murni dari Buat Proyek baru: JANGAN membuat data pembelajaran dummy/palsu!
+  const masterLearningData: MasterLearningData = hasCustomLearningData
+    ? {
+        temaKegiatan: input.temaPembelajaran?.trim() || '',
+        materiDiajarkan: input.materiPelajaran?.trim() || '',
+        cakupanMateri: input.cakupanMateri?.trim() || '',
+        learningObjectives: [],
+        userNotes: input.catatan?.trim() || '',
+        version: 1,
+        updatedAt: now
+      }
+    : {
+        temaKegiatan: '',
+        materiDiajarkan: '',
+        cakupanMateri: '',
+        learningObjectives: [],
+        userNotes: '',
+        version: 1,
+        updatedAt: now
+      };
 
   const meeting: MeetingSession = {
     id: meetingId,
     meetingNumber: 'Pertemuan 1',
-    title: cleanTema || cleanMateri,
-    status: 'ready',
+    title: hasCustomLearningData 
+      ? (input.temaPembelajaran?.trim() || input.materiPelajaran?.trim() || 'Pertemuan 1')
+      : 'Pertemuan 1 (Belum Diatur)',
+    status: hasCustomLearningData ? 'ready' : 'draft',
     masterLearningData,
     productStates: {
       material: 'not_started',
@@ -553,8 +819,8 @@ export function createLearningProjectFromFormData(
   const classSubject: ClassSubjectNode = {
     id: classSubjectId,
     educationLevel: input.tingkat,
-    grade: input.kelas,
-    subject: input.mapel,
+    grade: input.kelas.trim(),
+    subject: input.mapel.trim(),
     chapters: [chapter],
     createdAt: now,
     updatedAt: now
@@ -562,7 +828,7 @@ export function createLearningProjectFromFormData(
 
   const project: LearningProject = {
     id: projectId,
-    name: `${cleanBab} (${input.mapel} • ${input.kelas})`,
+    name: cleanNamaProyek,
     academicYear: '2026/2027',
     semester: 'Ganjil',
     teacherName: input.teacherName || 'Pendidik STIVIA',
@@ -673,7 +939,7 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
             .map((ch: any) => {
               const meetings: MeetingSession[] = ((ch.learning_meetings || []) as any[])
                 .slice()
-                .sort((a, b) => (a.meeting_number || a.created_at || '').localeCompare(b.meeting_number || b.created_at || ''))
+                .sort((a, b) => compareMeetingNumbers(a.meeting_number, b.meeting_number, a.created_at, b.created_at))
                 .map((m: any) => {
                 const mldRaw = Array.isArray(m.master_learning_data) 
                   ? m.master_learning_data[0] 
@@ -869,6 +1135,28 @@ export async function saveLearningProjectToSupabase(
             }
           }
         }
+
+        // Pruning meeting yatim: Bersihkan meeting di database yang sudah dihapus dari array chapter lokal
+        try {
+          const validMeetingIds = ch.meetings.map(m => m.id);
+          const { data: existingDbMeetings } = await supabase
+            .from('learning_meetings')
+            .select('id')
+            .eq('chapter_id', ch.id);
+
+          if (existingDbMeetings && existingDbMeetings.length > 0) {
+            const orphanMeetingIds = existingDbMeetings
+              .map((row: any) => row.id)
+              .filter((id: string) => !validMeetingIds.includes(id));
+
+            if (orphanMeetingIds.length > 0) {
+              await supabase.from('master_learning_data').delete().in('meeting_id', orphanMeetingIds);
+              await supabase.from('learning_meetings').delete().in('id', orphanMeetingIds);
+            }
+          }
+        } catch (pruneErr) {
+          console.warn('[STIVIA Supabase] Catatan saat pruning meeting yatim:', pruneErr);
+        }
       }
     }
 
@@ -903,6 +1191,47 @@ export async function deleteLearningProjectFromSupabase(
   } catch (err) {
     console.warn('[STIVIA Supabase] Error saat delete project di Supabase:', err);
     return false;
+  }
+}
+
+/**
+ * Menghapus sebuah record pertemuan pembelajaran dari Supabase secara langsung.
+ * Menghapus master_learning_data terkait dan record di public.learning_meetings
+ * tanpa meninggalkan orphan/data yatim.
+ */
+export async function deleteLearningMeetingFromSupabase(
+  meetingId: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: false, error: 'Supabase belum dikonfigurasi.' };
+  }
+
+  try {
+    // 1. Bersihkan master_learning_data secara eksplisit
+    const { error: mldErr } = await supabase
+      .from('master_learning_data')
+      .delete()
+      .eq('meeting_id', meetingId);
+
+    if (mldErr && mldErr.code !== 'PGRST116') {
+      console.warn('[STIVIA Supabase] Catatan saat hapus master_learning_data:', mldErr);
+    }
+
+    // 2. Hapus record pertemuan dari public.learning_meetings
+    const { error: meetErr } = await supabase
+      .from('learning_meetings')
+      .delete()
+      .eq('id', meetingId);
+
+    if (meetErr) {
+      console.error('[STIVIA Supabase] Gagal menghapus meeting dari Supabase:', meetErr);
+      return { success: false, error: meetErr.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('[STIVIA Supabase] Error saat delete meeting di Supabase:', err);
+    return { success: false, error: err?.message || 'Gagal menghapus pertemuan di cloud.' };
   }
 }
 
@@ -1219,6 +1548,9 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
     if (cloudProjects.length > 0) {
       // Supabase adalah Source of Truth: update local cache agar instan saat offline
       saveStoredLearningProjects(cloudProjects);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('stivia_last_user_id', userId);
+      }
       return {
         learningProjects: cloudProjects,
         legacyProjects: cloudLegacyDrafts,
@@ -1226,26 +1558,50 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
       };
     }
 
-    // Jika di Supabase belum ada data, periksa local storage untuk backfill aman
-    const localProjects = getStoredLearningProjects();
-    const hasCustomLocal = localProjects.some(p => !p.id.startsWith('proj-lp-001'));
+    // Jika di Supabase belum ada data:
+    // Cek apakah data lokal benar-benar milik user ini (bukan user sebelumnya) untuk menjamin User Isolation
+    const lastUserId = typeof window !== 'undefined' ? localStorage.getItem('stivia_last_user_id') : null;
+    const isSameUserOrFreshSession = !lastUserId || lastUserId === userId;
 
-    if (hasCustomLocal) {
-      // Backfill proyek lokal kustom ke akun pengguna di Supabase
-      for (const p of localProjects) {
-        if (!p.id.startsWith('proj-lp-001')) {
-          await saveLearningProjectToSupabase(p, userId);
+    if (isSameUserOrFreshSession) {
+      const localProjects = getStoredLearningProjects();
+      const hasCustomLocal = localProjects.some(p => !p.id.startsWith('proj-lp-001'));
+
+      if (hasCustomLocal) {
+        // Backfill proyek lokal kustom milik user ini ke akunnya di Supabase
+        for (const p of localProjects) {
+          if (!p.id.startsWith('proj-lp-001')) {
+            await saveLearningProjectToSupabase(p, userId);
+          }
         }
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('stivia_last_user_id', userId);
+        }
+        return {
+          learningProjects: localProjects,
+          legacyProjects: cloudLegacyDrafts,
+          syncStatus: 'supabase_synced'
+        };
+      }
+    } else {
+      // Akun user lain login pada browser yang sama: Reset working state lokal agar data tidak bocor antar-pengguna
+      const cleanDefault = [DEFAULT_INITIAL_LEARNING_PROJECT];
+      saveStoredLearningProjects(cleanDefault);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('stivia_last_user_id', userId);
       }
       return {
-        learningProjects: localProjects,
+        learningProjects: cleanDefault,
         legacyProjects: cloudLegacyDrafts,
         syncStatus: 'supabase_synced'
       };
     }
 
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('stivia_last_user_id', userId);
+    }
     return {
-      learningProjects: localProjects,
+      learningProjects: getStoredLearningProjects(),
       legacyProjects: cloudLegacyDrafts,
       syncStatus: 'local_fallback'
     };

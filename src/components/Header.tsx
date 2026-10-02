@@ -8,7 +8,10 @@ import {
   Sparkles,
   Info,
   X,
-  Sparkle
+  Sparkle,
+  Cloud,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { NavigationTab, ResponsiveViewMode } from '../types';
 
@@ -26,6 +29,9 @@ interface HeaderProps {
     chapterName?: string;
     meetingName?: string;
   };
+  cloudSyncStatus?: 'synced' | 'local' | 'syncing' | 'error';
+  isCloudSyncing?: boolean;
+  onRefreshCloud?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,6 +40,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileMenu,
   currentDraftTitle,
   activeMeetingBreadcrumb,
+  cloudSyncStatus = 'local',
+  isCloudSyncing = false,
+  onRefreshCloud,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -248,8 +257,57 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
       </div>
 
-      {/* Right: Search Action & Notification Icons */}
+      {/* Right: Cloud Sync, Search Action & Notification Icons */}
       <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Cloud Sync Status Indicator */}
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={onRefreshCloud}
+            disabled={isCloudSyncing || !onRefreshCloud}
+            title={
+              cloudSyncStatus === 'synced'
+                ? 'Data pembelajaran tersinkron di Cloud Supabase (Klik untuk refresh)'
+                : cloudSyncStatus === 'syncing'
+                ? 'Sedang menyinkronkan data dengan Cloud Supabase...'
+                : cloudSyncStatus === 'error'
+                ? 'Koneksi cloud tertunda (Klik untuk mencoba ulang)'
+                : 'Mode lokal aktif (Klik untuk sinkronkan ke Cloud Supabase)'
+            }
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer disabled:cursor-default ${
+              cloudSyncStatus === 'synced'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                : cloudSyncStatus === 'syncing'
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse'
+                : cloudSyncStatus === 'error'
+                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+            }`}
+          >
+            {cloudSyncStatus === 'synced' ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="hidden sm:inline">Cloud Synced</span>
+              </>
+            ) : cloudSyncStatus === 'syncing' ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                <span className="hidden sm:inline">Sinkronisasi...</span>
+              </>
+            ) : cloudSyncStatus === 'error' ? (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Sync Tertunda</span>
+              </>
+            ) : (
+              <>
+                <Cloud className="w-3.5 h-3.5 text-slate-500" />
+                <span className="hidden sm:inline">Lokal</span>
+              </>
+            )}
+          </button>
+        </div>
+
         {/* Search trigger */}
         <button
           onClick={() => setShowSearchModal(true)}
