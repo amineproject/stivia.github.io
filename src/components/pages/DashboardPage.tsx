@@ -5,15 +5,30 @@ import {
   ArrowRight, 
   FileText, 
   Bookmark, 
-  Play,
-  Zap,
-  ShieldCheck,
-  Crown
+  Play, 
+  Zap, 
+  ShieldCheck, 
+  Crown,
+  FolderPlus,
+  FolderKanban,
+  BookOpen,
+  Presentation,
+  GraduationCap,
+  Layers,
+  ChevronRight
 } from 'lucide-react';
-import { InfographicDraft, NavigationTab, SubscriptionSummary } from '../../types';
+import { 
+  InfographicDraft, 
+  NavigationTab, 
+  SubscriptionSummary,
+  LearningProject,
+  ActiveLearningContext
+} from '../../types';
 
 interface DashboardPageProps {
   projects: InfographicDraft[];
+  learningProjects?: LearningProject[];
+  activeContext?: ActiveLearningContext;
   onSelectProject: (project: InfographicDraft, targetTab: 'buat' | 'hasil' | 'preview') => void;
   onNavigate: (tab: NavigationTab) => void;
   onLoadSample: () => void;
@@ -22,6 +37,8 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   projects,
+  learningProjects,
+  activeContext,
   onSelectProject: _onSelectProject,
   onNavigate,
   onLoadSample,
@@ -32,8 +49,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     (p) => !['proj-002', 'proj-003', 'proj-004', 'sample-draft-001'].includes(p.id)
   );
 
-  // Perhitungan prompt murni berdasarkan proyek nyata milik pengguna
-  const promptCount = userProjects.length * 2;
+  const totalLearningProjects = (learningProjects || []).length;
+
+  // Resolusi Konteks Aktif
+  const activeProject = (learningProjects || []).find(p => p.id === activeContext?.activeProjectId) || learningProjects?.[0];
+  const activeClassSubject = activeProject?.classSubjects.find(cs => cs.id === activeContext?.activeClassSubjectId) || activeProject?.classSubjects[0];
+  const activeChapter = activeClassSubject?.chapters.find(ch => ch.id === activeContext?.activeChapterId) || activeClassSubject?.chapters[0];
+  const activeMeeting = activeChapter?.meetings.find(m => m.id === activeContext?.activeMeetingId) || activeChapter?.meetings[0];
 
   // Data langganan fallback & perlakuan role Saldo Prompt
   const isAdmin = Boolean(subscriptionSummary?.isAdmin);
@@ -61,76 +83,261 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
             Selamat Datang di STIVIA
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed">
-            Rancang infografis pembelajaran dan prompt visual terstruktur dengan mudah melalui analisis kerangka berpikir pedagogik STIVIA.
+          <p className="text-sm sm:text-base text-slate-600 max-w-3xl leading-relaxed">
+            Platform perancangan perangkat ajar terintegrasi — Dokumen Materi A4, Infografis Visual, Lembar Kerja LKPD, Presentasi 10 Slide, dan Asesmen — dari satu <strong>Master Learning Data</strong>.
           </p>
         </div>
       </div>
 
-      {/* KARTU HERO UTAMA (SESUAI ALUR BARU STIVIA 3.1) */}
+      {/* KARTU HERO UTAMA: ALUR 1 DATA -> BANYAK PRODUK */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#3b49df] via-indigo-700 to-indigo-800 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-lg shadow-indigo-600/15 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-4 max-w-2xl relative z-10">
           <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white shadow-xs">
-            <Palette className="w-6 h-6" />
+            <FolderPlus className="w-6 h-6" />
           </div>
 
           <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/20 border border-white/30 text-white backdrop-blur-xs">
+              <span>⚡ 1 DATA → BANYAK PRODUK</span>
+            </div>
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
-              <span>🎨</span>
-              <span>Buat Prompt Infografis</span>
+              <span>Buat Proyek Pembelajaran</span>
             </h2>
             <p className="text-indigo-100 text-xs sm:text-sm leading-relaxed">
-              Input data pembelajaran, jalankan analisis 7 Tahap Kerangka Berpikir STIVIA, dan langsung hasilkan Prompt Infografis terstruktur siap pakai.
+              Cukup definisikan materi pelajaran satu kali. Data Master Learning otomatis terhubung ke seluruh studio: Dokumen Materi A4, Infografis Visual, Lembar Kerja LKPD, Presentasi Gamma 10 Slide, dan Asesmen.
             </p>
           </div>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
-              onClick={() => onNavigate('buat')}
+              onClick={() => onNavigate('buat_proyek')}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#34d399] hover:bg-[#2bd094] active:bg-[#20b881] text-slate-950 font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/15 transition-all cursor-pointer transform hover:-translate-y-0.5"
             >
-              <span>Mulai Buat Prompt</span>
+              <FolderPlus className="w-4 h-4" />
+              <span>Buat Proyek Baru</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={onLoadSample}
+              onClick={() => onNavigate('proyek_saya')}
               className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs sm:text-sm border border-white/25 transition-all cursor-pointer backdrop-blur-xs"
             >
-              <Play className="w-3.5 h-3.5 fill-current text-white/90" />
-              <span>Lihat Contoh Data</span>
+              <FolderKanban className="w-4 h-4" />
+              <span>Buka Ruang Proyek</span>
             </button>
+            <button
+              onClick={onLoadSample}
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 font-medium text-xs sm:text-sm border border-white/15 transition-all cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5 fill-current text-white/80" />
+              <span>Contoh Cepat</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* BANNER KONTEKS PEMBELAJARAN AKTIF (JIKA ADA PROYEK TERPILIH) */}
+      {activeMeeting && activeProject && (
+        <div className="bg-white rounded-2xl p-5 border border-indigo-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#3b49df] flex items-center justify-center shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 shrink-0">
+                  Konteks Aktif
+                </span>
+                <span className="text-xs font-bold text-slate-800 truncate">
+                  {activeProject.name}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5 truncate">
+                {activeClassSubject?.grade} • {activeClassSubject?.subject} • {activeMeeting.meetingNumber}: <strong className="text-slate-800 font-semibold">{activeMeeting.title || activeMeeting.masterLearningData?.temaKegiatan}</strong>
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onNavigate('proyek_saya')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer shadow-xs self-start md:self-auto shrink-0"
+          >
+            <span>Lanjutkan Proyek Ini</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* SECTION STUDIO PRODUK PEMBELAJARAN (5 PRODUK DARI 1 MASTER DATA) */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">
+              Studio Produk Pembelajaran
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500">
+              5 Generator terpadu yang terhubung langsung dengan Master Learning Data Anda.
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('buat_proyek')}
+            className="text-xs font-bold text-[#3b49df] hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+          >
+            <span>+ Buat Proyek Baru</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {/* 1. Materi A4 */}
+          <div 
+            onClick={() => onNavigate('materi')}
+            className="bg-white rounded-2xl p-5 border border-slate-200/80 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+          >
+            <div className="space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  Materi A4
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Modul bahan ajar terstruktur A4 rapi, uji pemahaman, dan ekspor DOCX.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-indigo-600 pt-2 border-t border-slate-100">
+              <span>Buka Studio</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* 2. Infografis */}
+          <div 
+            onClick={() => onNavigate('infografis')}
+            className="bg-white rounded-2xl p-5 border border-slate-200/80 hover:border-purple-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+          >
+            <div className="space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Palette className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
+                  Infografis
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Prompt visual terstruktur 7 Tahap Berpikir Pedagogis STIVIA.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-purple-600 pt-2 border-t border-slate-100">
+              <span>Buka Studio</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* 3. LKPD */}
+          <div 
+            onClick={() => onNavigate('lkpd')}
+            className="bg-white rounded-2xl p-5 border border-slate-200/80 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+          >
+            <div className="space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                  LKPD
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Aktivitas kognitif, situasi nyata, stimulus & poster LKPD siap pakai.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-blue-600 pt-2 border-t border-slate-100">
+              <span>Buka Studio</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* 4. Presentasi */}
+          <div 
+            onClick={() => onNavigate('presentasi')}
+            className="bg-white rounded-2xl p-5 border border-slate-200/80 hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+          >
+            <div className="space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Presentation className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                  Presentasi
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Naskah terstruktur 10 slide Gamma AI teradaptasi dari Master Context.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-emerald-600 pt-2 border-t border-slate-100">
+              <span>Buka Studio</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+
+          {/* 5. Asesmen */}
+          <div 
+            onClick={() => onNavigate('asesmen_harian')}
+            className="bg-white rounded-2xl p-5 border border-slate-200/80 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+          >
+            <div className="space-y-2.5">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-teal-600 transition-colors">
+                  Asesmen
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Kuis formatif harian & asesmen sumatif capaian pembelajaran bab.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs font-bold text-teal-600 pt-2 border-t border-slate-100">
+              <span>Buka Studio</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
           </div>
         </div>
       </div>
 
       {/* KARTU STATISTIK & PENGGUNAAN (DATA NYATA PENGGUNA & SUBSCRIPTION) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* STAT 1: TOTAL INFOGRAFIS */}
+        {/* STAT 1: TOTAL PROYEK PEMBELAJARAN */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-indigo-200 transition-colors">
           <div className="w-11 h-11 rounded-xl bg-[#edf2fe] text-[#3b49df] flex items-center justify-center shrink-0">
-            <FileText className="w-5 h-5" />
+            <FolderKanban className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              TOTAL INFOGRAFIS
+              TOTAL PROYEK
             </span>
             <span className="text-2xl font-black text-slate-900 tracking-tight">
-              {userProjects.length}
+              {totalLearningProjects}
             </span>
           </div>
         </div>
 
-        {/* STAT 2: PROMPT TERSIMPAN */}
+        {/* STAT 2: PRODUK / ARSIP TERSIMPAN */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-center gap-4 hover:border-emerald-200 transition-colors">
           <div className="w-11 h-11 rounded-xl bg-[#dcfce7] text-[#16a34a] flex items-center justify-center shrink-0">
             <Bookmark className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              PROMPT TERSIMPAN
+              DRAFT TERSIMPAN
             </span>
             <span className="text-2xl font-black text-slate-900 tracking-tight">
-              {promptCount}
+              {userProjects.length}
             </span>
           </div>
         </div>

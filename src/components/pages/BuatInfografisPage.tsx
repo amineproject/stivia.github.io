@@ -58,7 +58,8 @@ import {
   InfographicDesignStyle,
   InfographicPaperSize,
   InfographicOrientation,
-  InfographicPreviewSection
+  InfographicPreviewSection,
+  InfographicProductContext
 } from '../../types';
 import { 
   GRADE_OPTIONS_BY_LEVEL, 
@@ -79,14 +80,15 @@ import {
   LkpdDifficulty, 
   LkpdTimeAllocation, 
   LkpdStudentOutput, 
-  LkpdPaperSize,
-  LkpdOrientation,
-  LkpdVisualStyle,
+  LkpdPaperSize, 
+  LkpdOrientation, 
+  LkpdVisualStyle, 
   LkpdThinkingResult, 
   runLkpdThinkingFramework 
 } from '../../services/lkpdEngine';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
+import { isInfographicContextOutdated } from '../../services/productContextAdapter';
 
 // ==========================================
 // PENGEMBANGAN FITUR INFOGRAFIS STIVIA: KONSTANTA PILIHAN
@@ -252,6 +254,8 @@ interface BuatInfografisPageProps {
   subscriptionSummary?: SubscriptionSummary | null;
   onUsageRecorded?: () => void;
   initialPromptType?: 'infografis' | 'lkpd';
+  infographicContext?: InfographicProductContext | null;
+  onRefreshFromMasterContext?: () => void;
 }
 
 export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
@@ -265,29 +269,55 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   subscriptionSummary,
   onUsageRecorded,
   initialPromptType,
+  infographicContext,
+  onRefreshFromMasterContext
 }) => {
-  // Form state
-  const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft.educationLevel || 'SMA');
-  const [grade, setGrade] = useState<string>(currentDraft.grade || 'Kelas X');
-  const [subject, setSubject] = useState<string>(currentDraft.subject || 'Informatika');
+  // Tracking Provenance Master Context (Tahap 3B)
+  const [draftMasterVersion, setDraftMasterVersion] = useState<number>(
+    () => infographicContext?.sourceMasterVersion || currentDraft.sourceMasterVersion || 1
+  );
+  const [draftMeetingId, setDraftMeetingId] = useState<string>(
+    () => infographicContext?.sourceMeetingId || currentDraft.sourceMeetingId || ''
+  );
+
+  const isOutdated = Boolean(
+    infographicContext &&
+    isInfographicContextOutdated(draftMasterVersion, infographicContext.sourceMasterVersion)
+  );
+
+  // Form state (Pre-filled dari Master Context jika ada)
+  const [educationLevel, setEducationLevel] = useState<EducationLevel>(
+    infographicContext?.educationLevel || currentDraft.educationLevel || 'SMA'
+  );
+  const [grade, setGrade] = useState<string>(
+    infographicContext?.grade || currentDraft.grade || 'Kelas X'
+  );
+  const [subject, setSubject] = useState<string>(
+    infographicContext?.subject || currentDraft.subject || 'Informatika'
+  );
   const [customSubject, setCustomSubject] = useState<string>('');
   const [isCustomSubject, setIsCustomSubject] = useState<boolean>(false);
 
   const [materiDiajarkan, setMateriDiajarkan] = useState<string>(
-    currentDraft.rawTopic || currentDraft.title || currentDraft.theme || 'Struktur Data Graph'
+    infographicContext?.materiDiajarkan || currentDraft.rawTopic || currentDraft.title || currentDraft.theme || 'Struktur Data Graph'
   );
-  const [bab, setBab] = useState<string>(currentDraft.bab || '');
+  const [bab, setBab] = useState<string>(
+    infographicContext?.bab || currentDraft.bab || ''
+  );
   const [temaKegiatan, setTemaKegiatan] = useState<string>(
-    currentDraft.theme && currentDraft.theme !== (currentDraft.rawTopic || currentDraft.title)
-      ? currentDraft.theme
-      : ''
+    infographicContext?.temaKegiatan || 
+    (currentDraft.theme && currentDraft.theme !== (currentDraft.rawTopic || currentDraft.title) ? currentDraft.theme : '')
   );
-  const [pertemuan, setPertemuan] = useState<string>(currentDraft.pertemuan || 'Pertemuan 1');
+  const [pertemuan, setPertemuan] = useState<string>(
+    infographicContext?.pertemuan || currentDraft.pertemuan || 'Pertemuan 1'
+  );
   const [scope, setScope] = useState<string>(
-    currentDraft.scope || 
+    infographicContext?.cakupanMateri || currentDraft.scope || 
     '1. Pengantar dan definisi Graph sebagai struktur data non-linear.\n2. Komponen penyusun Graph (Node/Vertex dan Edge/Sisi).\n3. Variasi konsep Graph berbobot dan terarah.\n4. Penerapan nyata pada navigasi rute dan pertemanan media sosial.\n5. Ringkasan visual.'
   );
-  const [userNotes, setUserNotes] = useState<string>(currentDraft.userNotes || '');
+  const [userNotes, setUserNotes] = useState<string>(
+    infographicContext?.userNotes || currentDraft.userNotes || ''
+  );
 
   const [format, setFormat] = useState<InfographicFormat>(currentDraft.format || 'portrait');
   const [visualLevel, setVisualLevel] = useState<VisualLevel>(currentDraft.visualLevel || 'seimbang');
@@ -315,6 +345,9 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
   // Pengaturan Khusus Infografis (Pengembangan Fitur Infografis STIVIA)
   const [learningObjectivesList, setLearningObjectivesList] = useState<string[]>(() => {
+    if (infographicContext?.learningObjectives && infographicContext.learningObjectives.length > 0) {
+      return infographicContext.learningObjectives;
+    }
     if (currentDraft.learningObjectivesList && currentDraft.learningObjectivesList.length > 0) {
       return currentDraft.learningObjectivesList;
     }
@@ -368,7 +401,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     currentDraft.infographicSettings?.paperSize || 'A4'
   );
   const [teacherNotes, setTeacherNotes] = useState<string>(
-    currentDraft.infographicSettings?.teacherNotes || currentDraft.userNotes || ''
+    infographicContext?.userNotes || currentDraft.infographicSettings?.teacherNotes || currentDraft.userNotes || ''
   );
 
   // Preview Rancangan Infografis State (In-Memory, Bebas Saldo)
@@ -635,6 +668,56 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
     setVisualLevel(INITIAL_SAMPLE_DRAFT.visualLevel);
   };
 
+  // Sinkronisasi Ulang dari Master Learning Data (Tahap 3B)
+  const handleSyncToLatestMasterContext = () => {
+    if (!infographicContext) return;
+    setEducationLevel(infographicContext.educationLevel);
+    setGrade(infographicContext.grade);
+    setSubject(infographicContext.subject);
+    setIsCustomSubject(false);
+    setCustomSubject('');
+    setBab(infographicContext.bab);
+    setPertemuan(infographicContext.pertemuan);
+    setMateriDiajarkan(infographicContext.materiDiajarkan);
+    setTemaKegiatan(infographicContext.temaKegiatan);
+    if (infographicContext.cakupanMateri) {
+      setScope(infographicContext.cakupanMateri);
+    }
+    if (infographicContext.userNotes) {
+      setUserNotes(infographicContext.userNotes);
+      setTeacherNotes(infographicContext.userNotes);
+    }
+    if (infographicContext.learningObjectives && infographicContext.learningObjectives.length > 0) {
+      setLearningObjectivesList(infographicContext.learningObjectives);
+    }
+    setDraftMasterVersion(infographicContext.sourceMasterVersion);
+    setDraftMeetingId(infographicContext.sourceMeetingId);
+
+    // Perbarui rancangan preview struktur infografis
+    const freshPreview = buildPreviewInfographicStructure(
+      infographicContext.materiDiajarkan,
+      infographicContext.subject,
+      structureShape,
+      selectedComponents,
+      depth
+    );
+    setPreviewStructure(freshPreview);
+
+    if (onRefreshFromMasterContext) {
+      onRefreshFromMasterContext();
+    }
+
+    setCopyToast(`🔄 Form Infografis berhasil diselaraskan dengan Master Learning Data v${infographicContext.sourceMasterVersion}!`);
+    setTimeout(() => setCopyToast(null), 3000);
+  };
+
+  // Deteksi pergantian pertemuan aktif secara otomatis
+  useEffect(() => {
+    if (infographicContext && infographicContext.sourceMeetingId && infographicContext.sourceMeetingId !== draftMeetingId) {
+      handleSyncToLatestMasterContext();
+    }
+  }, [infographicContext?.sourceMeetingId]);
+
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     const finalSubject = isCustomSubject ? customSubject.trim() : subject.trim();
@@ -888,6 +971,8 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         typographyMode: 'otomatis',
         learningObjectivesList: activeObjectives,
         previewStructureBlocks: previewStructure,
+        sourceMeetingId: infographicContext?.sourceMeetingId || draftMeetingId,
+        sourceMasterVersion: infographicContext?.sourceMasterVersion || draftMasterVersion,
         infographicSettings: {
           structureShape,
           selectedComponents,
@@ -1048,6 +1133,71 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
               >
                 <Coins className="w-3.5 h-3.5 text-amber-600" />
                 <span>Lihat Pilihan Paket Saldo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH - TAHAP 3B) */}
+      {infographicContext && (
+        <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
+          isOutdated 
+            ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 
+            : 'bg-white border-slate-200/90 text-slate-800 shadow-xs'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${
+                isOutdated 
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300' 
+                  : 'bg-indigo-50 text-[#3b49df] border border-indigo-100'
+              }`}>
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-50 text-[#3b49df] border border-indigo-200">
+                    📌 Terhubung dengan Master Learning Data
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-600">
+                    {infographicContext.pertemuan} • {infographicContext.grade} ({infographicContext.subject})
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                    isOutdated 
+                      ? 'bg-amber-200 text-amber-900 border-amber-300 font-extrabold'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    Versi Master: v{infographicContext.sourceMasterVersion} {isOutdated ? `(Form saat ini: v${draftMasterVersion})` : ''}
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed">
+                  {isOutdated ? (
+                    <span className="text-amber-900 font-semibold">
+                      ⚠️ <strong>Master Context telah diperbarui:</strong> Cakupan atau materi pertemuan ini telah diubah ke versi <strong>v{infographicContext.sourceMasterVersion}</strong>. Form versi sebelumnya tetap aman dan tidak diubah paksa.
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">
+                      Fokus Tema: <strong className="text-slate-900">{infographicContext.temaKegiatan}</strong> — Bab: <strong className="text-slate-900">{infographicContext.bab}</strong>. Seluruh identitas & cakupan materi otomatis dialirkan tanpa perlu input ulang.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={handleSyncToLatestMasterContext}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 ${
+                  isOutdated
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                }`}
+                title="Terapkan cakupan dan data materi terbaru dari Master Context ke form infografis"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isOutdated ? `Selaraskan ke Master v${infographicContext.sourceMasterVersion}` : 'Sinkronkan Ulang Master'}</span>
               </button>
             </div>
           </div>

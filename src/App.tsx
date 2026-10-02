@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DashboardPage } from './components/pages/DashboardPage';
+import { BuatProyekPage } from './components/pages/BuatProyekPage';
 import { BuatInfografisPage } from './components/pages/BuatInfografisPage';
 import { PosterLkpdPage } from './components/pages/PosterLkpdPage';
 import { MateriPage } from './components/pages/MateriPage';
@@ -12,6 +13,7 @@ import { RancanganVisualPage } from './components/pages/RancanganVisualPage';
 import { HasilInfografisPage } from './components/pages/HasilInfografisPage';
 import { PreviewInfografisPage } from './components/pages/PreviewInfografisPage';
 import { InfografisSayaPage } from './components/pages/InfografisSayaPage';
+import { ProyekPembelajaranPage } from './components/pages/ProyekPembelajaranPage';
 import { PanduanPage } from './components/pages/PanduanPage';
 import { PengaturanPage } from './components/pages/PengaturanPage';
 import { ProfilSayaPage } from './components/pages/ProfilSayaPage';
@@ -22,12 +24,35 @@ import { AuthPage } from './components/auth/AuthPage';
 import { getUserProfile, signOutUser } from './services/authService';
 import { getSubscriptionSummary, invalidateSubscriptionCache } from './services/subscriptionService';
 import { 
+  getStoredLearningProjects, 
+  saveStoredLearningProjects, 
+  getStoredActiveContext, 
+  saveStoredActiveContext,
+  adaptLegacyProjectToLearningProject,
+  syncMeetingToCurrentDraft,
+  resolveActiveHierarchy,
+  updateMeetingProductState,
+  createLearningProjectFromFormData,
+  CreateProjectFormInput
+} from './services/learningProjectService';
+import { 
+  buildMateriProductContext, 
+  buildInfographicProductContext, 
+  buildLKPDProductContext,
+  buildPresentationProductContext 
+} from './services/productContextAdapter';
+import { 
   InfographicDraft, 
   NavigationTab, 
   UserSettings,
   ResponsiveViewMode,
   SupabaseUserProfile,
-  SubscriptionSummary
+  SubscriptionSummary,
+  LearningProject,
+  ActiveLearningContext,
+  MeetingSession,
+  ChapterNode,
+  ClassSubjectNode
 } from './types';
 import { 
   INITIAL_SAMPLE_DRAFT, 
@@ -274,6 +299,109 @@ export default function App() {
     return DEFAULT_USER_SETTINGS;
   });
 
+  // STIVIA Tahap 2: Hierarki Proyek Pembelajaran & Active Context
+  const [learningProjects, setLearningProjects] = useState<LearningProject[]>(() => {
+    const stored = getStoredLearningProjects();
+    return stored;
+  });
+
+  const [activeLearningContext, setActiveLearningContext] = useState<ActiveLearningContext>(() => {
+    return getStoredActiveContext();
+  });
+
+  // Auto-adapt legacy projects non-destructively so all user drafts appear in project hierarchy
+  useEffect(() => {
+    if (projects.length === 0) return;
+    setLearningProjects(prev => {
+      let modified = false;
+      const existingIds = new Set(prev.map(p => p.id));
+      const adaptedList = [...prev];
+
+      for (const draft of projects) {
+        const adaptedId = `lp-adapted-${draft.id}`;
+        if (!existingIds.has(adaptedId)) {
+          const adapted = adaptLegacyProjectToLearningProject(draft);
+          adaptedList.push(adapted);
+          existingIds.add(adaptedId);
+          modified = true;
+        }
+      }
+
+      return modified ? adaptedList : prev;
+    });
+  }, [projects]);
+
+  useEffect(() => {
+    saveStoredLearningProjects(learningProjects);
+  }, [learningProjects]);
+
+  useEffect(() => {
+    saveStoredActiveContext(activeLearningContext);
+  }, [activeLearningContext]);
+
+  // Handler memilih produk dari sebuah pertemuan aktif
+  const handleSelectMeetingProduct = (
+    productTab: NavigationTab,
+    meeting: MeetingSession,
+    chapter: ChapterNode,
+    classSubject: ClassSubjectNode,
+    project: LearningProject
+  ) => {
+    // 1. Sinkronkan Master Learning Data dari Pertemuan ke currentDraft
+    const syncedDraft = syncMeetingToCurrentDraft(meeting, chapter, classSubject, project, currentDraft);
+    setCurrentDraft(syncedDraft);
+
+    // 2. Set active learning context
+    setActiveLearningContext({
+      activeProjectId: project.id,
+      activeClassSubjectId: classSubject.id,
+      activeChapterId: chapter.id,
+      activeMeetingId: meeting.id
+    });
+
+    // 3. Arahkan pengguna ke studio produk yang dipilih
+    setActiveTab(productTab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast(`Master Context ${meeting.meetingNumber} dimuat ke Studio ${productTab.toUpperCase()}!`);
+  };
+
+  // Handler membuat proyek pembelajaran baru dari form Buat Proyek (1 Data -> Banyak Produk)
+  const handleCreateLearningProject = (input: CreateProjectFormInput) => {
+    const { project, activeContext } = createLearningProjectFromFormData(input);
+
+    // 1. Tambahkan ke daftar proyek hierarki
+    setLearningProjects((prev) => [project, ...prev]);
+
+    // 2. Set konteks pembelajaran aktif
+    setActiveLearningContext(activeContext);
+
+    // 3. Sinkronkan Master Learning Data dari pertemuan pertama ke currentDraft
+    const firstClass = project.classSubjects[0];
+    const firstChapter = firstClass?.chapters[0];
+    const firstMeeting = firstChapter?.meetings[0];
+    if (firstMeeting && firstChapter && firstClass) {
+      const syncedDraft = syncMeetingToCurrentDraft(
+        firstMeeting,
+        firstChapter,
+        firstClass,
+        project,
+        currentDraft
+      );
+      setCurrentDraft(syncedDraft);
+
+      // Simpan juga ke daftar user projects legacy untuk kompatibilitas
+      setProjects((prev) => {
+        const filtered = prev.filter((p) => p.id !== syncedDraft.id);
+        return [syncedDraft, ...filtered];
+      });
+    }
+
+    // 4. Arahkan pengguna ke halaman Proyek Pembelajaran (Proyek Saya)
+    setActiveTab('proyek_saya');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast(`Proyek "${project.name}" berhasil dibuat! Siap digunakan untuk semua produk.`);
+  };
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Persist to localStorage
@@ -337,20 +465,55 @@ export default function App() {
 
     const sanitizedDraft = validateAndSanitizeDraft(fullDraft);
 
-    setCurrentDraft(sanitizedDraft);
+    const finalDraft: InfographicDraft = {
+      ...sanitizedDraft,
+      ...(formData.id ? { id: formData.id } : {}),
+      ...(formData.title ? { title: formData.title } : {}),
+      ...(formData.stiviaPrompt ? { stiviaPrompt: formData.stiviaPrompt } : {}),
+      sourceMeetingId: formData.sourceMeetingId || currentDraft.sourceMeetingId,
+      sourceMasterVersion: formData.sourceMasterVersion || currentDraft.sourceMasterVersion,
+      learningObjectivesList: formData.learningObjectivesList || currentDraft.learningObjectivesList
+    };
+
+    setCurrentDraft(finalDraft);
     
     // Also sync to projects list
     setProjects((prev) => {
-      const filtered = prev.filter((p) => p.id !== sanitizedDraft.id);
-      return [sanitizedDraft, ...filtered];
+      const filtered = prev.filter((p) => p.id !== finalDraft.id);
+      return [finalDraft, ...filtered];
     });
+
+    // Perbarui status lifecycle produk pertemuan jika terhubung dengan master context
+    const targetMeetingId = formData.sourceMeetingId || activeLearningContext.activeMeetingId;
+    if (targetMeetingId) {
+      const productKey = activeTab === 'materi' 
+        ? 'material' 
+        : activeTab === 'lkpd' 
+        ? 'lkpd' 
+        : activeTab === 'presentasi'
+        ? 'presentation'
+        : 'infographic';
+      setLearningProjects((prev) => updateMeetingProductState(
+        prev,
+        targetMeetingId,
+        productKey,
+        'ready'
+      ));
+    }
 
     if (options?.navigateToStudio) {
       setActiveTab('buat');
       showToast('Data materi berhasil disimpan!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      showToast('Prompt Infografis STIVIA berhasil dibuat dan tersimpan!');
+      const successMessage = activeTab === 'presentasi'
+        ? 'Prompt Presentasi Gamma AI berhasil disimpan!'
+        : activeTab === 'lkpd'
+        ? 'Poster LKPD berhasil disimpan!'
+        : activeTab === 'materi'
+        ? 'Dokumen Materi A4 berhasil disimpan!'
+        : 'Prompt Infografis STIVIA berhasil dibuat dan tersimpan!';
+      showToast(successMessage);
     }
   };
 
@@ -425,6 +588,55 @@ export default function App() {
       }));
     }
   };
+
+  // Resolusi hierarki aktif untuk breadcrumbs konteks pembelajaran
+  const resolvedHierarchy = resolveActiveHierarchy(learningProjects, activeLearningContext);
+  const activeBreadcrumbInfo = resolvedHierarchy.meeting ? {
+    projectName: resolvedHierarchy.project?.name,
+    classSubjectName: resolvedHierarchy.classSubject ? `${resolvedHierarchy.classSubject.grade} • ${resolvedHierarchy.classSubject.subject}` : undefined,
+    chapterName: resolvedHierarchy.chapter?.chapterNumber || resolvedHierarchy.chapter?.title,
+    meetingName: resolvedHierarchy.meeting?.meetingNumber,
+  } : undefined;
+
+  // Context Adapter untuk Menu Materi Dokumen A4 (Tahap 3A)
+  const activeMateriContext = resolvedHierarchy.meeting
+    ? buildMateriProductContext(
+        resolvedHierarchy.meeting,
+        resolvedHierarchy.chapter,
+        resolvedHierarchy.classSubject,
+        resolvedHierarchy.project
+      )
+    : null;
+
+  // Context Adapter untuk Menu Infografis (Tahap 3B)
+  const activeInfographicContext = resolvedHierarchy.meeting
+    ? buildInfographicProductContext(
+        resolvedHierarchy.meeting,
+        resolvedHierarchy.chapter,
+        resolvedHierarchy.classSubject,
+        resolvedHierarchy.project
+      )
+    : null;
+
+  // Context Adapter untuk Menu LKPD (Tahap 3C)
+  const activeLkpdContext = resolvedHierarchy.meeting
+    ? buildLKPDProductContext(
+        resolvedHierarchy.meeting,
+        resolvedHierarchy.chapter,
+        resolvedHierarchy.classSubject,
+        resolvedHierarchy.project
+      )
+    : null;
+
+  // Context Adapter untuk Menu Presentasi (Tahap 3D)
+  const activePresentationContext = resolvedHierarchy.meeting
+    ? buildPresentationProductContext(
+        resolvedHierarchy.meeting,
+        resolvedHierarchy.chapter,
+        resolvedHierarchy.classSubject,
+        resolvedHierarchy.project
+      )
+    : null;
 
   // Layar Loading Pengecekan Sesi
   if (isAuthChecking) {
@@ -503,6 +715,7 @@ export default function App() {
           viewMode={viewMode}
           onSetViewMode={setViewMode}
           effectiveMode={effectiveMode}
+          activeMeetingBreadcrumb={activeBreadcrumbInfo}
         />
 
         {/* Dynamic Page Views with Responsive Spacing */}
@@ -516,6 +729,8 @@ export default function App() {
           {(activeTab === 'dashboard' || activeTab === 'beranda') && (
             <DashboardPage
               projects={projects}
+              learningProjects={learningProjects}
+              activeContext={activeLearningContext}
               onSelectProject={handleSelectProject}
               onNavigate={(tab) => {
                 setActiveTab(tab);
@@ -523,6 +738,19 @@ export default function App() {
               }}
               onLoadSample={handleLoadSample}
               subscriptionSummary={subscriptionSummary}
+            />
+          )}
+
+          {/* ALUR UTAMA: BUAT PROYEK PEMBELAJARAN (1 DATA -> BANYAK PRODUK) */}
+          {activeTab === 'buat_proyek' && (
+            <BuatProyekPage
+              onNavigate={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onCreateProject={handleCreateLearningProject}
+              authorName={currentUserName}
+              authorSchool={currentUserSchool}
             />
           )}
 
@@ -538,6 +766,7 @@ export default function App() {
               subscriptionSummary={subscriptionSummary}
               onUsageRecorded={() => refreshSubscriptionSummary()}
               onSubmitForm={handleFormSubmit}
+              materiContext={activeMateriContext}
             />
           )}
 
@@ -557,6 +786,7 @@ export default function App() {
               subscriptionSummary={subscriptionSummary}
               onUsageRecorded={() => refreshSubscriptionSummary()}
               initialPromptType="infografis"
+              infographicContext={activeInfographicContext}
             />
           )}
 
@@ -575,6 +805,7 @@ export default function App() {
               userId={session?.user?.id}
               subscriptionSummary={subscriptionSummary}
               onUsageRecorded={() => refreshSubscriptionSummary()}
+              lkpdContext={activeLkpdContext}
             />
           )}
 
@@ -590,6 +821,7 @@ export default function App() {
               subscriptionSummary={subscriptionSummary}
               onUsageRecorded={() => refreshSubscriptionSummary()}
               onSubmitForm={handleFormSubmit}
+              presentationContext={activePresentationContext}
             />
           )}
 
@@ -649,11 +881,16 @@ export default function App() {
           )}
 
           {(activeTab === 'infografis_saya' || activeTab === 'proyek_saya') && (
-            <InfografisSayaPage
+            <ProyekPembelajaranPage
               projects={projects}
-              onSelectProject={handleSelectProject}
-              onDeleteProject={handleDeleteProject}
-              onDuplicateProject={handleDuplicateProject}
+              learningProjects={learningProjects}
+              activeContext={activeLearningContext}
+              onUpdateLearningProjects={setLearningProjects}
+              onUpdateActiveContext={setActiveLearningContext}
+              onSelectMeetingProduct={handleSelectMeetingProduct}
+              onSelectLegacyProject={handleSelectProject}
+              onDeleteLegacyProject={handleDeleteProject}
+              onDuplicateLegacyProject={handleDuplicateProject}
               onNavigate={(tab) => {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

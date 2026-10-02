@@ -63,6 +63,8 @@ export interface MateriDocument {
   includeStudentNotesSheet?: boolean;
   institutionName?: string;
   teacherName?: string;
+  sourceMeetingId?: string;
+  sourceMasterVersion?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -37,7 +37,8 @@ import {
   InfographicDraft,
   NavigationTab,
   SubscriptionSummary,
-  PROMPT_PACKAGES
+  PROMPT_PACKAGES,
+  MateriProductContext
 } from '../../types';
 import {
   MateriDocument,
@@ -53,6 +54,10 @@ import {
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
+import {
+  generateSectionsFromCakupan,
+  isMateriContextOutdated
+} from '../../services/productContextAdapter';
 
 interface MateriPageProps {
   onNavigate?: (tab: NavigationTab) => void;
@@ -61,6 +66,8 @@ interface MateriPageProps {
   subscriptionSummary?: SubscriptionSummary | null;
   onUsageRecorded?: () => void;
   onSubmitForm?: (draft: InfographicDraft) => void;
+  materiContext?: MateriProductContext | null;
+  onRefreshFromMasterContext?: () => void;
 }
 
 export const MateriPage: React.FC<MateriPageProps> = ({
@@ -69,40 +76,71 @@ export const MateriPage: React.FC<MateriPageProps> = ({
   userId,
   subscriptionSummary,
   onUsageRecorded,
-  onSubmitForm
+  onSubmitForm,
+  materiContext,
+  onRefreshFromMasterContext
 }) => {
   // Mode Tampilan: 'form' (Perancangan) atau 'preview' (Dokumen A4 Siap Cetak)
   const [viewMode, setViewMode] = useState<'form' | 'preview'>('form');
 
+  // Tracking Provenance Master Context
+  const [docMasterVersion, setDocMasterVersion] = useState<number>(() => materiContext?.sourceMasterVersion || 1);
+  const [docMeetingId, setDocMeetingId] = useState<string>(() => materiContext?.sourceMeetingId || '');
+
   // ============================================================================
-  // FORM STATE: DOKUMEN MATERI
+  // FORM STATE: DOKUMEN MATERI (PRE-FILLED DARI MASTER CONTEXT JIKA TERSEDIA)
   // ============================================================================
-  const [subject, setSubject] = useState<string>(currentDraft?.subject || 'Bahasa Indonesia');
+  const [subject, setSubject] = useState<string>(
+    materiContext?.subject || currentDraft?.subject || 'Bahasa Indonesia'
+  );
   const [customSubject, setCustomSubject] = useState<string>('');
   const [isCustomSubject, setIsCustomSubject] = useState<boolean>(false);
-  const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft?.educationLevel || 'SMP');
-  const [grade, setGrade] = useState<string>(currentDraft?.grade || 'Kelas VIII');
-  const [bab, setBab] = useState<string>(currentDraft?.bab || 'Bab 2: Menemukan Pola Pesan dalam Iklan');
-  const [pertemuan, setPertemuan] = useState<string>(currentDraft?.pertemuan || 'Pertemuan 1');
-  const [title, setTitle] = useState<string>(currentDraft?.rawTopic || 'Konsep Dasar, Ciri, dan Unsur-Unsur Teks Iklan');
-  const [institutionName, setInstitutionName] = useState<string>('SMP NEGERI 2 JETIS KABUPATEN MOJOKERTO');
-  const [teacherName, setTeacherName] = useState<string>('Amin Wahyudi, S.Pd.');
+  const [educationLevel, setEducationLevel] = useState<EducationLevel>(
+    materiContext?.educationLevel || currentDraft?.educationLevel || 'SMP'
+  );
+  const [grade, setGrade] = useState<string>(
+    materiContext?.grade || currentDraft?.grade || 'Kelas VIII'
+  );
+  const [bab, setBab] = useState<string>(
+    materiContext?.bab || currentDraft?.bab || 'Bab 2: Menemukan Pola Pesan dalam Iklan'
+  );
+  const [pertemuan, setPertemuan] = useState<string>(
+    materiContext?.pertemuan || currentDraft?.pertemuan || 'Pertemuan 1'
+  );
+  const [title, setTitle] = useState<string>(
+    materiContext?.materiDiajarkan || currentDraft?.rawTopic || 'Konsep Dasar, Ciri, dan Unsur-Unsur Teks Iklan'
+  );
+  const [institutionName, setInstitutionName] = useState<string>(
+    materiContext?.schoolName || 'SMP NEGERI 2 JETIS KABUPATEN MOJOKERTO'
+  );
+  const [teacherName, setTeacherName] = useState<string>(
+    materiContext?.teacherName || 'Amin Wahyudi, S.Pd.'
+  );
 
   // Tujuan Pembelajaran
-  const [learningObjectives, setLearningObjectives] = useState<string[]>(
-    currentDraft?.learningObjectivesList && currentDraft.learningObjectivesList.length > 0
-      ? currentDraft.learningObjectivesList
-      : [
-          'Peserta didik mampu mengidentifikasi pengertian dan fungsi sosial teks iklan dengan tepat.',
-          'Peserta didik mampu membedakan ciri bahasa persuasif pada berbagai jenis iklan di media massa.',
-          'Peserta didik mampu menganalisis 4 unsur utama pembentuk iklan yang efektif dan menarik.'
-        ]
-  );
+  const [learningObjectives, setLearningObjectives] = useState<string[]>(() => {
+    if (materiContext?.learningObjectives && materiContext.learningObjectives.length > 0) {
+      return materiContext.learningObjectives;
+    }
+    if (currentDraft?.learningObjectivesList && currentDraft.learningObjectivesList.length > 0) {
+      return currentDraft.learningObjectivesList;
+    }
+    return [
+      'Peserta didik mampu mengidentifikasi pengertian dan fungsi sosial teks iklan dengan tepat.',
+      'Peserta didik mampu membedakan ciri bahasa persuasif pada berbagai jenis iklan di media massa.',
+      'Peserta didik mampu menganalisis 4 unsur utama pembentuk iklan yang efektif dan menarik.'
+    ];
+  });
   const [newObjectiveInput, setNewObjectiveInput] = useState<string>('');
   const [isSuggestingObjectives, setIsSuggestingObjectives] = useState<boolean>(false);
 
-  // Bagian-Bagian Materi Pembelajaran (Dinamis)
-  const [sections, setSections] = useState<MateriSection[]>(DEFAULT_SAMPLE_MATERI.sections);
+  // Bagian-Bagian Materi Pembelajaran (Dinamis dari Cakupan Materi jika ada)
+  const [sections, setSections] = useState<MateriSection[]>(() => {
+    if (materiContext?.cakupanMateri) {
+      return generateSectionsFromCakupan(materiContext.cakupanMateri, materiContext.materiDiajarkan);
+    }
+    return DEFAULT_SAMPLE_MATERI.sections;
+  });
 
   // Materi Pendukung (Opsional)
   const [supportingItems, setSupportingItems] = useState<SupportingItem[]>(
@@ -124,7 +162,9 @@ export const MateriPage: React.FC<MateriPageProps> = ({
 
   // Catatan Guru (Opsional)
   const [teacherNotes, setTeacherNotes] = useState<string>(
-    currentDraft?.userNotes || 'Berikan penekanan pada perbedaan kalimat persuasif iklan komersial dan ajakan sosial iklan layanan masyarakat.'
+    materiContext?.userNotes ||
+    currentDraft?.userNotes ||
+    'Berikan penekanan pada perbedaan kalimat persuasif iklan komersial dan ajakan sosial iklan layanan masyarakat.'
   );
   const [includeTeacherNotesInDoc, setIncludeTeacherNotesInDoc] = useState<boolean>(false);
   const [includeStudentNotesSheet, setIncludeStudentNotesSheet] = useState<boolean>(false);
@@ -146,9 +186,35 @@ export const MateriPage: React.FC<MateriPageProps> = ({
 
   const documentPrintRef = useRef<HTMLDivElement>(null);
 
-  // Sinkronisasi dengan currentDraft bila ada perubahan eksternal
+  // Sinkronisasi data ketika materiContext berubah (misal berpindah pertemuan atau master context diupdate)
   useEffect(() => {
-    if (currentDraft) {
+    if (materiContext) {
+      setSubject(materiContext.subject);
+      setEducationLevel(materiContext.educationLevel);
+      setGrade(materiContext.grade);
+      setBab(materiContext.bab);
+      setPertemuan(materiContext.pertemuan);
+      setTitle(materiContext.materiDiajarkan);
+      if (materiContext.schoolName) setInstitutionName(materiContext.schoolName);
+      if (materiContext.teacherName) setTeacherName(materiContext.teacherName);
+      if (materiContext.learningObjectives && materiContext.learningObjectives.length > 0) {
+        setLearningObjectives(materiContext.learningObjectives);
+      }
+      if (materiContext.userNotes) {
+        setTeacherNotes(materiContext.userNotes);
+      }
+
+      // Jika pertemuan berganti secara eksplisit, muat ulang sections sesuai cakupan materi baru
+      if (materiContext.sourceMeetingId !== docMeetingId) {
+        setDocMeetingId(materiContext.sourceMeetingId);
+        setDocMasterVersion(materiContext.sourceMasterVersion);
+        if (materiContext.cakupanMateri) {
+          const autoSections = generateSectionsFromCakupan(materiContext.cakupanMateri, materiContext.materiDiajarkan);
+          setSections(autoSections);
+        }
+      }
+    } else if (currentDraft) {
+      // Fallback Legacy Mode (jika tidak ada active meeting context)
       if (currentDraft.subject) setSubject(currentDraft.subject);
       if (currentDraft.educationLevel) setEducationLevel(currentDraft.educationLevel);
       if (currentDraft.grade) setGrade(currentDraft.grade);
@@ -157,7 +223,43 @@ export const MateriPage: React.FC<MateriPageProps> = ({
       if (currentDraft.pertemuan) setPertemuan(currentDraft.pertemuan);
       if (currentDraft.userNotes) setTeacherNotes(currentDraft.userNotes);
     }
-  }, [currentDraft]);
+  }, [
+    materiContext?.sourceMeetingId, 
+    materiContext?.sourceMasterVersion,
+    materiContext?.materiDiajarkan,
+    materiContext?.cakupanMateri,
+    currentDraft
+  ]);
+
+  // Handler sinkronisasi ulang eksplisit dari Master Context terbaru
+  const handleSyncToLatestMasterContext = () => {
+    if (!materiContext) return;
+    setTitle(materiContext.materiDiajarkan);
+    setBab(materiContext.bab);
+    setSubject(materiContext.subject);
+    setGrade(materiContext.grade);
+    setEducationLevel(materiContext.educationLevel);
+    setPertemuan(materiContext.pertemuan);
+    if (materiContext.schoolName) setInstitutionName(materiContext.schoolName);
+    if (materiContext.teacherName) setTeacherName(materiContext.teacherName);
+    if (materiContext.learningObjectives && materiContext.learningObjectives.length > 0) {
+      setLearningObjectives(materiContext.learningObjectives);
+    }
+    if (materiContext.userNotes) {
+      setTeacherNotes(materiContext.userNotes);
+    }
+    if (materiContext.cakupanMateri) {
+      const autoSections = generateSectionsFromCakupan(materiContext.cakupanMateri, materiContext.materiDiajarkan);
+      setSections(autoSections);
+    }
+    setDocMasterVersion(materiContext.sourceMasterVersion);
+    setDocMeetingId(materiContext.sourceMeetingId);
+    showToast(`Struktur materi telah diselaraskan dengan Master Context v${materiContext.sourceMasterVersion}!`);
+  };
+
+  const isOutdated = Boolean(
+    materiContext && isMateriContextOutdated(docMasterVersion, materiContext.sourceMasterVersion)
+  );
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -479,6 +581,8 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     includeStudentNotesSheet,
     institutionName,
     teacherName,
+    sourceMeetingId: materiContext?.sourceMeetingId || docMeetingId,
+    sourceMasterVersion: materiContext?.sourceMasterVersion || docMasterVersion,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -681,6 +785,73 @@ export const MateriPage: React.FC<MateriPageProps> = ({
           )}
         </div>
       </div>
+
+      {/* ====================================================================== */}
+      {/* 1B. BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH)        */}
+      {/* ====================================================================== */}
+      {materiContext && (
+        <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
+          isOutdated 
+            ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 
+            : 'bg-white border-slate-200/90 text-slate-800 shadow-xs'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${
+                isOutdated 
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300' 
+                  : 'bg-indigo-50 text-[#3b49df] border border-indigo-100'
+              }`}>
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-50 text-[#3b49df] border border-indigo-200">
+                    📌 Terhubung dengan Master Learning Data
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-600">
+                    {materiContext.pertemuan} • {materiContext.grade} ({materiContext.subject})
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                    isOutdated 
+                      ? 'bg-amber-200 text-amber-900 border-amber-300 font-extrabold'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    Versi Master: v{materiContext.sourceMasterVersion} {isOutdated ? `(Dokumen saat ini: v${docMasterVersion})` : ''}
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed">
+                  {isOutdated ? (
+                    <span className="text-amber-900 font-semibold">
+                      ⚠️ <strong>Master Context telah diperbarui:</strong> Cakupan atau materi pertemuan ini telah diubah ke versi <strong>v{materiContext.sourceMasterVersion}</strong>. Dokumen versi sebelumnya tetap aman dan tidak diubah otomatis.
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">
+                      Fokus Tema: <strong className="text-slate-900">{materiContext.temaKegiatan}</strong> — Bab: <strong className="text-slate-900">{materiContext.bab}</strong>. Seluruh identitas & cakupan materi otomatis dialirkan tanpa perlu input ulang.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={handleSyncToLatestMasterContext}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 ${
+                  isOutdated
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                }`}
+                title="Terapkan cakupan materi terbaru dari Master Context ke bagian-bagian materi"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isOutdated ? `Selaraskan ke Master v${materiContext.sourceMasterVersion}` : 'Sinkronkan Ulang Master'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ====================================================================== */}
       {/* 2. MODE FORM INPUT MATERI (FLEKSIBEL & DINAMIS) */}

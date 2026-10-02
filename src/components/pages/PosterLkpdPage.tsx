@@ -37,7 +37,8 @@ import {
   InfographicDraft,
   NavigationTab,
   SubscriptionSummary,
-  PROMPT_PACKAGES
+  PROMPT_PACKAGES,
+  LKPDProductContext
 } from '../../types';
 import {
   LkpdStimulusType,
@@ -63,6 +64,7 @@ import {
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
+import { isLKPDContextOutdated } from '../../services/productContextAdapter';
 
 interface PosterLkpdPageProps {
   projects: InfographicDraft[];
@@ -74,6 +76,8 @@ interface PosterLkpdPageProps {
   userId?: string;
   subscriptionSummary?: SubscriptionSummary | null;
   onUsageRecorded?: () => void;
+  lkpdContext?: LKPDProductContext | null;
+  onRefreshFromMasterContext?: () => void;
 }
 
 export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
@@ -82,7 +86,9 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
   onNavigate,
   userId,
   subscriptionSummary,
-  onUsageRecorded
+  onUsageRecorded,
+  lkpdContext,
+  onRefreshFromMasterContext
 }) => {
   // ==========================================================================
   // STEPPER PROGRESSIF:
@@ -92,23 +98,65 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
   // ==========================================================================
   const [activeStep, setActiveStep] = useState<'blueprint' | 'review_doc' | 'poster_final'>('blueprint');
 
-  // 1. Identitas LKPD
-  const [title, setTitle] = useState<string>(
-    currentDraft.title && !currentDraft.title.includes('Draft') 
-      ? currentDraft.title 
-      : `LEMBAR KERJA PESERTA DIDIK: ${(currentDraft.rawTopic || 'STRUKTUR DATA GRAPH').toUpperCase()}`
+  // Tracking Provenance Master Context (Tahap 3C)
+  const [draftMasterVersion, setDraftMasterVersion] = useState<number>(
+    () => lkpdContext?.sourceMasterVersion || currentDraft.sourceMasterVersion || 1
   );
-  const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft.educationLevel || 'SMA');
-  const [grade, setGrade] = useState<string>(currentDraft.grade || 'Kelas X');
-  const [subject, setSubject] = useState<string>(currentDraft.subject || 'Informatika');
+  const [draftMeetingId, setDraftMeetingId] = useState<string>(
+    () => lkpdContext?.sourceMeetingId || currentDraft.sourceMeetingId || ''
+  );
+
+  const isOutdated = Boolean(
+    lkpdContext &&
+    isLKPDContextOutdated(draftMasterVersion, lkpdContext.sourceMasterVersion)
+  );
+
+  // 1. Identitas LKPD & Konteks Pembelajaran (Pre-filled dari Master Context jika tersedia)
+  const [title, setTitle] = useState<string>(() => {
+    if (lkpdContext?.materiDiajarkan) {
+      return `LEMBAR KERJA PESERTA DIDIK: ${lkpdContext.materiDiajarkan.toUpperCase()}`;
+    }
+    if (currentDraft.title && !currentDraft.title.includes('Draft')) {
+      return currentDraft.title;
+    }
+    return `LEMBAR KERJA PESERTA DIDIK: ${(currentDraft.rawTopic || 'STRUKTUR DATA GRAPH').toUpperCase()}`;
+  });
+  const [educationLevel, setEducationLevel] = useState<EducationLevel>(
+    lkpdContext?.educationLevel || currentDraft.educationLevel || 'SMA'
+  );
+  const [grade, setGrade] = useState<string>(
+    lkpdContext?.grade || currentDraft.grade || 'Kelas X'
+  );
+  const [subject, setSubject] = useState<string>(
+    lkpdContext?.subject || currentDraft.subject || 'Informatika'
+  );
   const [customSubject, setCustomSubject] = useState<string>('');
   const [isCustomSubject, setIsCustomSubject] = useState<boolean>(false);
-  const [materi, setMateri] = useState<string>(currentDraft.rawTopic || 'Struktur Data Graph');
-  const [subTopic, setSubTopic] = useState<string>(currentDraft.bab || 'Representasi Simpul & Sisi Terarah');
+  const [materi, setMateri] = useState<string>(
+    lkpdContext?.materiDiajarkan || currentDraft.rawTopic || 'Struktur Data Graph'
+  );
+  const [subTopic, setSubTopic] = useState<string>(
+    lkpdContext?.bab || currentDraft.bab || 'Representasi Simpul & Sisi Terarah'
+  );
+  const [temaKegiatan, setTemaKegiatan] = useState<string>(
+    lkpdContext?.temaKegiatan || currentDraft.theme || ''
+  );
+  const [pertemuan, setPertemuan] = useState<string>(
+    lkpdContext?.pertemuan || currentDraft.pertemuan || 'Pertemuan 1'
+  );
+  const [cakupanMateri, setCakupanMateri] = useState<string>(
+    lkpdContext?.cakupanMateri || currentDraft.scope || ''
+  );
+  const [teacherNotes, setTeacherNotes] = useState<string>(
+    lkpdContext?.userNotes || currentDraft.userNotes || ''
+  );
   const [timeAllocation, setTimeAllocation] = useState<string>('40 menit');
 
-  // 2. Tujuan Pembelajaran
+  // 2. Tujuan Pembelajaran (Master TP sebagai prioritas utama jika tersedia)
   const [learningObjectives, setLearningObjectives] = useState<string[]>(() => {
+    if (lkpdContext?.learningObjectives && lkpdContext.learningObjectives.length > 0) {
+      return lkpdContext.learningObjectives;
+    }
     if (currentDraft.learningObjectivesList && currentDraft.learningObjectivesList.length > 0) {
       return currentDraft.learningObjectivesList;
     }
@@ -177,18 +225,64 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
   const timeWarning = checkTimeAllocationWarning(timeAllocation, effectiveTotalResponses);
 
   // ==========================================================================
-  // SINKRONISASI MATERI AWAL DARI DRAFT
+  // SINKRONISASI MATERI AWAL DARI DRAFT (Hanya jika mode legacy / tanpa lkpdContext)
   // ==========================================================================
   useEffect(() => {
-    if (currentDraft) {
+    if (!lkpdContext && currentDraft) {
       if (currentDraft.title && !currentDraft.title.includes('Draft')) setTitle(currentDraft.title);
       if (currentDraft.educationLevel) setEducationLevel(currentDraft.educationLevel);
       if (currentDraft.grade) setGrade(currentDraft.grade);
       if (currentDraft.subject) setSubject(currentDraft.subject);
       if (currentDraft.rawTopic) setMateri(currentDraft.rawTopic);
       if (currentDraft.bab) setSubTopic(currentDraft.bab);
+      if (currentDraft.scope) setCakupanMateri(currentDraft.scope);
+      if (currentDraft.userNotes) setTeacherNotes(currentDraft.userNotes);
+      if (currentDraft.theme) setTemaKegiatan(currentDraft.theme);
     }
-  }, [currentDraft]);
+  }, [currentDraft, lkpdContext]);
+
+  // ==========================================================================
+  // SINKRONISASI ULANG DARI MASTER LEARNING DATA (Tahap 3C)
+  // Memperbarui materi, cakupan, dan TP tanpa merusak konfigurasi LKPD guru
+  // ==========================================================================
+  const handleSyncToLatestMasterContext = () => {
+    if (!lkpdContext) return;
+    setEducationLevel(lkpdContext.educationLevel);
+    setGrade(lkpdContext.grade);
+    setSubject(lkpdContext.subject);
+    setIsCustomSubject(false);
+    setCustomSubject('');
+    setMateri(lkpdContext.materiDiajarkan);
+    setSubTopic(lkpdContext.bab);
+    setTemaKegiatan(lkpdContext.temaKegiatan);
+    setPertemuan(lkpdContext.pertemuan);
+    setTitle(`LEMBAR KERJA PESERTA DIDIK: ${lkpdContext.materiDiajarkan.toUpperCase()}`);
+    if (lkpdContext.cakupanMateri) {
+      setCakupanMateri(lkpdContext.cakupanMateri);
+    }
+    if (lkpdContext.userNotes) {
+      setTeacherNotes(lkpdContext.userNotes);
+    }
+    if (lkpdContext.learningObjectives && lkpdContext.learningObjectives.length > 0) {
+      setLearningObjectives(lkpdContext.learningObjectives);
+    }
+    setDraftMasterVersion(lkpdContext.sourceMasterVersion);
+    setDraftMeetingId(lkpdContext.sourceMeetingId);
+
+    if (onRefreshFromMasterContext) {
+      onRefreshFromMasterContext();
+    }
+
+    setCopyToast(`🔄 LKPD berhasil diselaraskan dengan Master Learning Data v${lkpdContext.sourceMasterVersion}!`);
+    setTimeout(() => setCopyToast(null), 3000);
+  };
+
+  // Deteksi pergantian pertemuan aktif secara otomatis
+  useEffect(() => {
+    if (lkpdContext && lkpdContext.sourceMeetingId && lkpdContext.sourceMeetingId !== draftMeetingId) {
+      handleSyncToLatestMasterContext();
+    }
+  }, [lkpdContext?.sourceMeetingId]);
 
   // ==========================================================================
   // HANDLERS: REKOMENDASI STIVIA & OBJECTIVES
@@ -304,6 +398,7 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
   // EKSEKUSI GENERATE LKPD (INTEGRITAS SALDO & PEDAGOGIK)
   // ==========================================================================
   const executeGenerateLkpd = async () => {
+    if (isGenerating) return;
     if (!validateBlueprint()) return;
 
     if (userId) {
@@ -343,7 +438,8 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
           hots: diffHots,
           mode: difficultyMode
         },
-        totalResponses: effectiveTotalResponses
+        totalResponses: effectiveTotalResponses,
+        notes: teacherNotes || cakupanMateri
       };
 
       // 1. Eksekusi Analisis & Generate Dokumen LKPD
@@ -359,7 +455,29 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
         if (onUsageRecorded) onUsageRecorded();
       }
 
-      // 3. Masuk ke Step Review Dokumen LKPD
+      // 3. Simpan draf LKPD terstruktur dan provenance ke parent state
+      if (onSubmitForm) {
+        onSubmitForm({
+          ...currentDraft,
+          title: generatedDoc.title,
+          educationLevel,
+          grade,
+          subject: activeSubj,
+          rawTopic: materi,
+          bab: subTopic,
+          theme: temaKegiatan,
+          scope: cakupanMateri,
+          userNotes: teacherNotes,
+          learningObjective: learningObjectives[0] || '',
+          learningObjectivesList: learningObjectives,
+          sourceMeetingId: lkpdContext?.sourceMeetingId || draftMeetingId,
+          sourceMasterVersion: lkpdContext?.sourceMasterVersion || draftMasterVersion,
+          status: 'ready',
+          updatedAt: new Date().toISOString().split('T')[0]
+        });
+      }
+
+      // 4. Masuk ke Step Review Dokumen LKPD
       setActiveStep('review_doc');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setCopyToast('✨ LKPD Pembelajaran berhasil dirancang sesuai stimulus!');
@@ -421,9 +539,14 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
       subject: activeSubj,
       rawTopic: materi,
       bab: subTopic,
+      theme: temaKegiatan,
+      scope: cakupanMateri,
+      userNotes: teacherNotes,
       learningObjective: learningObjectives[0] || '',
       learningObjectivesList: learningObjectives,
       stiviaPrompt: universalPrompt,
+      sourceMeetingId: lkpdContext?.sourceMeetingId || draftMeetingId,
+      sourceMasterVersion: lkpdContext?.sourceMasterVersion || draftMasterVersion,
       updatedAt: new Date().toISOString().split('T')[0],
       status: 'completed'
     };
@@ -505,6 +628,73 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ====================================================================== */}
+      {/* BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH - TAHAP 3C) */}
+      {/* ====================================================================== */}
+      {lkpdContext && (
+        <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
+          isOutdated 
+            ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 
+            : 'bg-white border-slate-200/90 text-slate-800 shadow-xs'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${
+                isOutdated 
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300' 
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+              }`}>
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    📌 Terhubung dengan Master Learning Data
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-600">
+                    {lkpdContext.pertemuan} • {lkpdContext.grade} ({lkpdContext.subject})
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                    isOutdated 
+                      ? 'bg-amber-200 text-amber-900 border-amber-300 font-extrabold'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    Versi Master: v{lkpdContext.sourceMasterVersion} {isOutdated ? `(LKPD saat ini: v${draftMasterVersion})` : ''}
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed">
+                  {isOutdated ? (
+                    <span className="text-amber-900 font-semibold">
+                      ⚠️ <strong>Master Context telah diperbarui:</strong> Cakupan atau materi pertemuan ini telah diubah ke versi <strong>v{lkpdContext.sourceMasterVersion}</strong>. Konfigurasi LKPD versi sebelumnya tetap aman dan tidak diubah paksa.
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">
+                      Fokus Tema: <strong className="text-slate-900">{lkpdContext.temaKegiatan}</strong> — Bab: <strong className="text-slate-900">{lkpdContext.bab}</strong>. Seluruh identitas & cakupan materi otomatis dialirkan sebagai fondasi aktivitas peserta didik.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={handleSyncToLatestMasterContext}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 ${
+                  isOutdated
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                }`}
+                title="Terapkan cakupan dan data materi terbaru dari Master Context ke rancangan LKPD"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isOutdated ? `Selaraskan ke Master v${lkpdContext.sourceMasterVersion}` : 'Sinkronkan Ulang Master'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ====================================================================== */}
       {/* TAHAP 1: RANCANG STRUKTUR LKPD (BLUEPRINT DESIGN) */}
@@ -650,6 +840,35 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
                   onChange={(e) => setSubTopic(e.target.value)}
                   placeholder="Contoh: Simpul & Sisi Berbobot"
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-slate-800"
+                />
+              </div>
+
+              {/* Tema Kegiatan Pembelajaran */}
+              <div className="sm:col-span-2 md:col-span-3 space-y-1 pt-1">
+                <label className="block text-xs font-bold text-slate-700">Tema Kegiatan Pembelajaran</label>
+                <input
+                  type="text"
+                  value={temaKegiatan}
+                  onChange={(e) => setTemaKegiatan(e.target.value)}
+                  placeholder="Contoh: Analisis dan Perancangan Struktur Data Jaringan Rute"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-slate-800"
+                />
+              </div>
+
+              {/* Cakupan Materi Pembelajaran (Master Scope) */}
+              <div className="sm:col-span-2 md:col-span-3 space-y-1 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Cakupan Materi Pembelajaran (Acuan Bahan Aktivitas LKPD)
+                  </label>
+                  <span className="text-[10px] text-slate-400">Gunakan penomoran butir 1, 2, 3...</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={cakupanMateri}
+                  onChange={(e) => setCakupanMateri(e.target.value)}
+                  placeholder="1. Definisi dan konsep dasar...&#10;2. Karakteristik dan unsur...&#10;3. Studi kasus nyata..."
+                  className="w-full p-3 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-slate-800 leading-relaxed"
                 />
               </div>
             </div>

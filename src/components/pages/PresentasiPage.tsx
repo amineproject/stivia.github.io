@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Presentation,
   Sparkles,
@@ -33,7 +33,8 @@ import {
   InfographicDraft,
   NavigationTab,
   SubscriptionSummary,
-  PROMPT_PACKAGES
+  PROMPT_PACKAGES,
+  PresentationProductContext
 } from '../../types';
 import {
   PresentationVisualStyle,
@@ -44,6 +45,7 @@ import {
   generateAdaptive10SlideStructure,
   buildStrictGammaPrompt
 } from '../../services/gammaPresentationEngine';
+import { isPresentationContextOutdated } from '../../services/productContextAdapter';
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
@@ -55,6 +57,8 @@ interface PresentasiPageProps {
   subscriptionSummary?: SubscriptionSummary | null;
   onUsageRecorded?: () => void;
   onSubmitForm?: (draft: InfographicDraft) => void;
+  presentationContext?: PresentationProductContext | null;
+  onRefreshFromMasterContext?: () => void;
 }
 
 export const PresentasiPage: React.FC<PresentasiPageProps> = ({
@@ -63,28 +67,62 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
   userId,
   subscriptionSummary,
   onUsageRecorded,
-  onSubmitForm
+  onSubmitForm,
+  presentationContext,
+  onRefreshFromMasterContext
 }) => {
   // ==========================================================================
-  // STATE INPUT FORM PRESENTASI 10 SLIDE
+  // TRACKING PROVENANCE MASTER CONTEXT (TAHAP 3D)
   // ==========================================================================
-  const [subject, setSubject] = useState<string>(currentDraft?.subject || 'Informatika');
-  const [customSubject, setCustomSubject] = useState<string>('');
-  const [isCustomSubject, setIsCustomSubject] = useState<boolean>(false);
-  const [educationLevel, setEducationLevel] = useState<EducationLevel>(currentDraft?.educationLevel || 'SMA');
-  const [grade, setGrade] = useState<string>(currentDraft?.grade || 'Kelas X');
-  const [materi, setMateri] = useState<string>(currentDraft?.rawTopic || 'Struktur Data Graph');
-  const [bab, setBab] = useState<string>(currentDraft?.bab || 'Bab 2: Pemodelan Graf & Logika Jaringan');
-  const [pertemuan, setPertemuan] = useState<string>(currentDraft?.pertemuan || 'Pertemuan 1');
-
-  // Materi Pembelajaran (Textarea Utama)
-  const [rawMaterial, setRawMaterial] = useState<string>(
-    currentDraft?.scope || 
-    '1. Pengantar dan definisi Graph sebagai struktur data non-linear yang merepresentasikan keterhubungan antar-objek.\n2. Komponen pokok Graph: Vertex (Simpul) dan Edge (Sisi/Garis relasi).\n3. Klasifikasi Graph: Graph terarah (Directed) vs tidak terarah (Undirected), serta Graph berbobot (Weighted).\n4. Studi kasus nyata: Navigasi rute jalan terpendek (Google Maps) dan relasi pertemanan media sosial.\n5. Keuntungan dan analisis kompleksitas algoritma traversal (BFS dan DFS).'
+  const [draftMasterVersion, setDraftMasterVersion] = useState<number>(
+    () => presentationContext?.sourceMasterVersion || currentDraft?.sourceMasterVersion || 1
+  );
+  const [draftMeetingId, setDraftMeetingId] = useState<string>(
+    () => presentationContext?.sourceMeetingId || currentDraft?.sourceMeetingId || ''
   );
 
-  // Tujuan Pembelajaran (AI Suggester + Daftar Manual)
+  const isOutdated = Boolean(
+    presentationContext &&
+    isPresentationContextOutdated(draftMasterVersion, presentationContext.sourceMasterVersion)
+  );
+
+  // ==========================================================================
+  // STATE INPUT FORM PRESENTASI 10 SLIDE
+  // Pre-filled dari Master Learning Data (Single Source of Truth) jika tersedia
+  // ==========================================================================
+  const [subject, setSubject] = useState<string>(
+    () => presentationContext?.subject || currentDraft?.subject || 'Informatika'
+  );
+  const [customSubject, setCustomSubject] = useState<string>('');
+  const [isCustomSubject, setIsCustomSubject] = useState<boolean>(false);
+  const [educationLevel, setEducationLevel] = useState<EducationLevel>(
+    () => presentationContext?.educationLevel || currentDraft?.educationLevel || 'SMA'
+  );
+  const [grade, setGrade] = useState<string>(
+    () => presentationContext?.grade || currentDraft?.grade || 'Kelas X'
+  );
+  const [materi, setMateri] = useState<string>(
+    () => presentationContext?.materiDiajarkan || currentDraft?.rawTopic || 'Struktur Data Graph'
+  );
+  const [bab, setBab] = useState<string>(
+    () => presentationContext?.bab || currentDraft?.bab || 'Bab 2: Pemodelan Graf & Logika Jaringan'
+  );
+  const [pertemuan, setPertemuan] = useState<string>(
+    () => presentationContext?.pertemuan || currentDraft?.pertemuan || 'Pertemuan 1'
+  );
+
+  // Materi Pembelajaran (Textarea Utama) - Mengalirkan cakupanMateri Master Learning Data
+  const [rawMaterial, setRawMaterial] = useState<string>(() => {
+    if (presentationContext?.cakupanMateri) return presentationContext.cakupanMateri;
+    if (currentDraft?.scope) return currentDraft.scope;
+    return '1. Pengantar dan definisi Graph sebagai struktur data non-linear yang merepresentasikan keterhubungan antar-objek.\n2. Komponen pokok Graph: Vertex (Simpul) dan Edge (Sisi/Garis relasi).\n3. Klasifikasi Graph: Graph terarah (Directed) vs tidak terarah (Undirected), serta Graph berbobot (Weighted).\n4. Studi kasus nyata: Navigasi rute jalan terpendek (Google Maps) dan relasi pertemanan media sosial.\n5. Keuntungan dan analisis kompleksitas algoritma traversal (BFS dan DFS).';
+  });
+
+  // Tujuan Pembelajaran (Master TP -> currentDraft.learningObjectivesList -> defaults)
   const [learningObjectives, setLearningObjectives] = useState<string[]>(() => {
+    if (presentationContext?.learningObjectives && presentationContext.learningObjectives.length > 0) {
+      return presentationContext.learningObjectives;
+    }
     if (currentDraft?.learningObjectivesList && currentDraft.learningObjectivesList.length > 0) {
       return currentDraft.learningObjectivesList;
     }
@@ -99,7 +137,7 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
 
   // Catatan Guru (Opsional)
   const [userNotes, setUserNotes] = useState<string>(
-    currentDraft?.userNotes || 'Gunakan gaya bahasa semi-formal yang komunikatif untuk siswa SMA. Tekankan analogi rute kota agar materi mudah dibayangkan.'
+    () => presentationContext?.userNotes || currentDraft?.userNotes || 'Gunakan gaya bahasa semi-formal yang komunikatif untuk siswa SMA. Tekankan analogi rute kota agar materi mudah dibayangkan.'
   );
 
   // Pilihan Gaya Visual Presentasi
@@ -116,9 +154,9 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
   const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
   const [limitReason, setLimitReason] = useState<string>('');
 
-  // Sinkronisasi data awal jika currentDraft berubah
+  // Sinkronisasi data awal jika currentDraft berubah dan tidak ada presentationContext (legacy fallback)
   useEffect(() => {
-    if (currentDraft) {
+    if (!presentationContext && currentDraft) {
       if (currentDraft.subject) setSubject(currentDraft.subject);
       if (currentDraft.educationLevel) setEducationLevel(currentDraft.educationLevel);
       if (currentDraft.grade) setGrade(currentDraft.grade);
@@ -131,7 +169,49 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
       }
       if (currentDraft.userNotes) setUserNotes(currentDraft.userNotes);
     }
-  }, [currentDraft]);
+  }, [currentDraft, presentationContext]);
+
+  // ==========================================================================
+  // SINKRONISASI ULANG DARI MASTER LEARNING DATA (Tahap 3D)
+  // Memperbarui materi, cakupan, dan TP tanpa merusak preferensi gaya visual guru
+  // ==========================================================================
+  const handleSyncToLatestMasterContext = () => {
+    if (!presentationContext) return;
+    setEducationLevel(presentationContext.educationLevel);
+    setGrade(presentationContext.grade);
+    setSubject(presentationContext.subject);
+    setIsCustomSubject(false);
+    setCustomSubject('');
+    setMateri(presentationContext.materiDiajarkan);
+    setBab(presentationContext.bab);
+    setPertemuan(presentationContext.pertemuan);
+    if (presentationContext.cakupanMateri) {
+      setRawMaterial(presentationContext.cakupanMateri);
+    }
+    if (presentationContext.userNotes) {
+      setUserNotes(presentationContext.userNotes);
+    }
+    if (presentationContext.learningObjectives && presentationContext.learningObjectives.length > 0) {
+      setLearningObjectives(presentationContext.learningObjectives);
+    }
+    setDraftMasterVersion(presentationContext.sourceMasterVersion);
+    setDraftMeetingId(presentationContext.sourceMeetingId);
+
+    if (onRefreshFromMasterContext) {
+      onRefreshFromMasterContext();
+    }
+
+    setCopyToast(`🔄 Presentasi berhasil diselaraskan dengan Master Learning Data v${presentationContext.sourceMasterVersion}!`);
+    setTimeout(() => setCopyToast(null), 3000);
+  };
+
+  // Deteksi pergantian pertemuan aktif secara otomatis
+  useEffect(() => {
+    if (presentationContext && presentationContext.sourceMeetingId && presentationContext.sourceMeetingId !== draftMeetingId) {
+      handleSyncToLatestMasterContext();
+    }
+  }, [presentationContext?.sourceMeetingId]);
+
 
   // ==========================================================================
   // HANDLERS: TUJUAN PEMBELAJARAN
@@ -195,7 +275,11 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
   // ==========================================================================
   // EKSEKUSI GENERATE PRESENTASI 10 SLIDE (ATURAN SALDO & INTEGRITAS)
   // ==========================================================================
+  const isGeneratingRef = useRef<boolean>(false);
+
   const executeGeneratePresentation = async () => {
+    // 0. Double Click & In-Flight Lock Protection (Requirement 14)
+    if (isGenerating || isGeneratingRef.current) return;
     if (!validateForm()) return;
 
     // 1. Pengecekan limit & saldo STIVIA (Biaya: 3 Saldo Prompt untuk Presentasi 10 Slide)
@@ -211,6 +295,7 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
       }
     }
 
+    isGeneratingRef.current = true;
     setIsGenerating(true);
 
     try {
@@ -261,6 +346,35 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
       setGeneratedResult(result);
       setActiveSlideIndex(0);
 
+      // 5. Sinkronkan hasil generate & perbarui status produk pertemuan menjadi ready (Requirement 16, 17, 18)
+      if (onSubmitForm) {
+        onSubmitForm({
+          ...(currentDraft || {
+            id: `proj-pres-${Date.now()}`,
+            createdAt: new Date().toISOString().split('T')[0],
+            status: 'completed',
+            viewCount: 0
+          }),
+          id: currentDraft?.id || `proj-pres-${Date.now()}`,
+          title: result.title,
+          educationLevel,
+          grade,
+          subject: activeSubj,
+          rawTopic: materi,
+          bab,
+          pertemuan,
+          scope: rawMaterial,
+          learningObjective: learningObjectives[0] || '',
+          learningObjectivesList: learningObjectives,
+          userNotes,
+          stiviaPrompt: result.gammaPrompt,
+          updatedAt: new Date().toISOString().split('T')[0],
+          status: 'completed',
+          sourceMeetingId: presentationContext?.sourceMeetingId || draftMeetingId,
+          sourceMasterVersion: presentationContext?.sourceMasterVersion || draftMasterVersion
+        });
+      }
+
       // Scroll halus ke area hasil
       setTimeout(() => {
         const el = document.getElementById('gamma-output-container');
@@ -273,6 +387,7 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
       setLimitReason(err?.message || 'Terjadi kendala teknis saat menyusun prompt presentasi.');
       setShowLimitModal(true);
     } finally {
+      isGeneratingRef.current = false;
       setIsGenerating(false);
     }
   };
@@ -314,12 +429,15 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
       rawTopic: materi,
       bab,
       pertemuan,
+      scope: rawMaterial,
       learningObjective: learningObjectives[0] || '',
       learningObjectivesList: learningObjectives,
       userNotes,
       stiviaPrompt: generatedResult.gammaPrompt,
       updatedAt: new Date().toISOString().split('T')[0],
-      status: 'completed'
+      status: 'completed',
+      sourceMeetingId: presentationContext?.sourceMeetingId || draftMeetingId,
+      sourceMasterVersion: presentationContext?.sourceMasterVersion || draftMasterVersion
     };
     onSubmitForm(updatedDraft);
     setCopyToast('💾 Proyek Presentasi berhasil disimpan ke daftar proyek!');
@@ -371,6 +489,73 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
           </div>
         )}
       </div>
+
+      {/* ====================================================================== */}
+      {/* BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH - TAHAP 3D) */}
+      {/* ====================================================================== */}
+      {presentationContext && (
+        <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
+          isOutdated 
+            ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 
+            : 'bg-white border-slate-200/90 text-slate-800 shadow-xs'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${
+                isOutdated 
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300' 
+                  : 'bg-amber-50 text-amber-700 border border-amber-100'
+              }`}>
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    📌 Terhubung dengan Master Learning Data
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-600">
+                    {presentationContext.pertemuan} • {presentationContext.grade} ({presentationContext.subject})
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                    isOutdated 
+                      ? 'bg-amber-200 text-amber-900 border-amber-300 font-extrabold'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    Versi Master: v{presentationContext.sourceMasterVersion} {isOutdated ? `(Presentasi saat ini: v${draftMasterVersion})` : ''}
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed">
+                  {isOutdated ? (
+                    <span className="text-amber-900 font-semibold">
+                      ⚠️ <strong>Master Context telah diperbarui:</strong> Cakupan atau materi pertemuan ini telah diubah ke versi <strong>v{presentationContext.sourceMasterVersion}</strong>. Konfigurasi visual presentasi Anda tetap aman dan tidak diubah paksa.
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">
+                      Fokus Tema: <strong className="text-slate-900">{presentationContext.temaKegiatan}</strong> — Bab: <strong className="text-slate-900">{presentationContext.bab}</strong>. Seluruh identitas & cakupan materi otomatis dialirkan ke prompt presentasi 10 slide Gamma AI.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={handleSyncToLatestMasterContext}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 ${
+                  isOutdated
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                }`}
+                title="Terapkan cakupan dan data materi terbaru dari Master Context ke presentasi"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isOutdated ? `Selaraskan ke Master v${presentationContext.sourceMasterVersion}` : 'Sinkronkan Ulang Master'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ====================================================================== */}
       {/* FORM PENGISIAN MATERI & KONTEKS PRESENTASI */}
@@ -763,6 +948,18 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 self-stretch md:self-auto">
+              {onSubmitForm && (
+                <button
+                  type="button"
+                  onClick={handleSaveToProjects}
+                  className="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-amber-400 text-slate-950 hover:bg-amber-300 text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  title="Simpan presentasi ini ke daftar proyek pembelajaran"
+                >
+                  <Bookmark className="w-4 h-4 text-slate-950" />
+                  <span>Simpan Proyek</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={handleCopyGammaPrompt}

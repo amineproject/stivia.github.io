@@ -13,7 +13,8 @@ import {
   GraduationCap,
   Calendar,
   Award,
-  ChevronDown
+  ChevronDown,
+  FolderPlus
 } from 'lucide-react';
 import { NavigationTab } from '../types';
 import { APP_CURRENT_VERSION } from '../data/versionHistoryData';
@@ -61,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (tabId === 'beranda' && activeTab === 'dashboard') return true;
     if (tabId === 'proyek_saya' && activeTab === 'infografis_saya') return true;
     if (tabId === 'infografis_saya' && activeTab === 'proyek_saya') return true;
+    if (tabId === 'buat_proyek' && activeTab === 'buat_proyek') return true;
     if (tabId === 'infografis' && (activeTab === 'buat' || activeTab === 'visual' || activeTab === 'hasil' || activeTab === 'preview')) {
       return true;
     }
@@ -77,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const renderNavButton = (id: NavigationTab, label: string, icon: React.ReactNode) => {
+  const renderNavButton = (id: NavigationTab, label: string, icon: React.ReactNode, badge?: string) => {
     const active = isTabActive(id);
     return (
       <button
@@ -85,16 +87,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
         id={`nav-btn-${id}`}
         type="button"
         onClick={() => handleNavClick(id)}
-        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all text-left cursor-pointer ${
+        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all text-left cursor-pointer ${
           active
             ? 'bg-[#3b49df] text-white shadow-md shadow-indigo-600/25 font-bold'
             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
         }`}
       >
-        <span className={active ? 'text-white' : 'text-slate-500'}>
-          {icon}
-        </span>
-        <span>{label}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <span className={active ? 'text-white' : 'text-slate-500'}>
+            {icon}
+          </span>
+          <span className="truncate">{label}</span>
+        </div>
+        {badge && (
+          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+            active
+              ? 'bg-white/20 text-white'
+              : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+          }`}>
+            {badge}
+          </span>
+        )}
       </button>
     );
   };
@@ -160,6 +173,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* 1. Dashboard */}
             {renderNavButton('dashboard', 'Dashboard', <Home className="w-5 h-5" />)}
 
+            {/* PROYEK PEMBELAJARAN (1 DATA -> BANYAK PRODUK) */}
+            <div className="pt-3 pb-1 px-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                Proyek Pembelajaran
+              </span>
+            </div>
+
+            {/* 2. Buat Proyek (Alur Utama Master Learning Data) */}
+            {renderNavButton('buat_proyek', 'Buat Proyek', <FolderPlus className="w-5 h-5" />, '1 Data')}
+
+            {/* 3. Proyek Saya */}
+            {renderNavButton('infografis_saya', 'Proyek Saya', <FolderKanban className="w-5 h-5" />)}
+
             {/* STUDIO KONTEN SECTION */}
             <div className="pt-3 pb-1 px-3">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
@@ -167,19 +193,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
             </div>
 
-            {/* 2. Materi */}
+            {/* 4. Materi */}
             {renderNavButton('materi', 'Materi', <BookOpen className="w-5 h-5" />)}
 
-            {/* 3. Infografis */}
+            {/* 5. Infografis */}
             {renderNavButton('infografis', 'Infografis', <Palette className="w-5 h-5" />)}
 
-            {/* 4. LKPD */}
+            {/* 6. LKPD */}
             {renderNavButton('lkpd', 'LKPD', <FileText className="w-5 h-5" />)}
 
-            {/* 5. Presentasi */}
+            {/* 7. Presentasi */}
             {renderNavButton('presentasi', 'Presentasi', <Presentation className="w-5 h-5" />)}
 
-            {/* 6. Asesmen (dengan Submenu Harian & Sumatif) */}
+            {/* 8. Asesmen (dengan Submenu Harian & Sumatif) */}
             <div className="space-y-1">
               <button
                 type="button"
@@ -241,16 +267,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
             </div>
-
-            {/* PENYIMPANAN SECTION */}
-            <div className="pt-3 pb-1 px-3">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                Penyimpanan
-              </span>
-            </div>
-
-            {/* 7. Proyek Saya */}
-            {renderNavButton('infografis_saya', 'Proyek Saya', <FolderKanban className="w-5 h-5" />)}
           </nav>
         </div>
 

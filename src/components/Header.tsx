@@ -20,6 +20,12 @@ interface HeaderProps {
   viewMode?: ResponsiveViewMode;
   onSetViewMode?: (mode: ResponsiveViewMode) => void;
   effectiveMode?: 'mobile' | 'desktop';
+  activeMeetingBreadcrumb?: {
+    projectName?: string;
+    classSubjectName?: string;
+    chapterName?: string;
+    meetingName?: string;
+  };
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,19 +33,74 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
   onOpenMobileMenu,
   currentDraftTitle,
+  activeMeetingBreadcrumb,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Breadcrumb generation based on active tab
+  // Breadcrumb generation based on active tab & active meeting context
   const getBreadcrumbs = () => {
+    // Jika ada konteks pertemuan aktif dan tab adalah studio produk atau proyek
+    const isProductStudio = [
+      'materi',
+      'infografis',
+      'buat',
+      'lkpd',
+      'presentasi',
+      'asesmen',
+      'asesmen_harian',
+      'asesmen_sumatif',
+      'proyek_saya',
+      'infografis_saya'
+    ].includes(activeTab);
+
+    if (isProductStudio && activeMeetingBreadcrumb?.meetingName) {
+      const crumbs = [
+        { label: 'Proyek', tab: 'infografis_saya' as NavigationTab },
+        { label: activeMeetingBreadcrumb.projectName || 'Proyek Pembelajaran', tab: 'infografis_saya' as NavigationTab },
+      ];
+
+      if (activeMeetingBreadcrumb.classSubjectName) {
+        crumbs.push({ label: activeMeetingBreadcrumb.classSubjectName, tab: 'infografis_saya' as NavigationTab });
+      }
+      if (activeMeetingBreadcrumb.chapterName) {
+        crumbs.push({ label: activeMeetingBreadcrumb.chapterName, tab: 'infografis_saya' as NavigationTab });
+      }
+      if (activeMeetingBreadcrumb.meetingName) {
+        crumbs.push({ label: activeMeetingBreadcrumb.meetingName, tab: 'infografis_saya' as NavigationTab });
+      }
+
+      // Label produk akhir jika sedang di menu produk
+      const productLabels: Record<string, string> = {
+        materi: 'Materi A4',
+        infografis: 'Infografis',
+        buat: 'Infografis',
+        lkpd: 'LKPD',
+        presentasi: 'Presentasi',
+        asesmen: 'Asesmen',
+        asesmen_harian: 'Asesmen Harian',
+        asesmen_sumatif: 'Asesmen Sumatif',
+      };
+
+      if (productLabels[activeTab]) {
+        crumbs.push({ label: productLabels[activeTab], tab: activeTab });
+      }
+
+      return crumbs;
+    }
+
     switch (activeTab) {
       case 'dashboard':
       case 'beranda':
         return [
           { label: 'STIVIA', tab: 'dashboard' as NavigationTab },
           { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+        ];
+      case 'buat_proyek':
+        return [
+          { label: 'Dashboard', tab: 'dashboard' as NavigationTab },
+          { label: 'Buat Proyek Pembelajaran', tab: 'buat_proyek' as NavigationTab },
         ];
       case 'buat':
       case 'infografis':

@@ -689,11 +689,15 @@ export interface InfographicDraft {
   infographicSettings?: InfographicSettings;
   previewStructureBlocks?: InfographicPreviewSection[];
   materiDocumentConfig?: any;
+  sourceMeetingId?: string;
+  sourceMasterVersion?: number;
 }
 
 export type NavigationTab = 
   | 'dashboard'
   | 'beranda'
+  | 'buat_proyek'
+  | 'tentang'
   | 'buat'
   | 'materi'
   | 'infografis'
@@ -1032,5 +1036,197 @@ export interface ProjectState {
   errorMessage?: string | null;
   finalDraft?: FinalDraft | null;
   finalOutput?: FinalOutputState | null;
+}
+
+// ============================================================================
+// STIVIA TAHAP 2: MODEL DATA PROYEK PEMBELAJARAN & MASTER LEARNING DATA
+// Hierarki: PROYEK -> KELAS -> MAPEL -> TEKS/BAB -> PERTEMUAN -> MASTER CONTEXT
+// ============================================================================
+
+export type MeetingStatus = 'draft' | 'in_progress' | 'ready' | 'completed';
+
+export type ProductLifecycleStatus = 'not_started' | 'draft' | 'ready';
+
+export interface MeetingProductStates {
+  material: ProductLifecycleStatus;
+  infographic: ProductLifecycleStatus;
+  lkpd: ProductLifecycleStatus;
+  presentation: ProductLifecycleStatus;
+  assessment_harian: ProductLifecycleStatus;
+  assessment_sumatif: ProductLifecycleStatus;
+}
+
+export interface MasterLearningData {
+  temaKegiatan: string;          // A. Tema Kegiatan Pembelajaran (Fokus kegiatan pertemuan)
+  materiDiajarkan: string;       // B. Materi yang Diajarkan (Materi pokok/utama)
+  cakupanMateri: string;         // C. Cakupan Materi (Bagian/submateri yang dibahas)
+  learningObjectives?: string[]; // Tujuan Pembelajaran Master
+  userNotes?: string;            // Catatan Pedagogis Guru
+  version?: number;              // Versioning Master Context (v1, v2, etc.)
+  updatedAt?: string;
+}
+
+export interface MeetingSession {
+  id: string;
+  meetingNumber: string;         // Misal: "Pertemuan 1", "Pertemuan 2"
+  title: string;                 // Misal: "Mengenal Ciri & Unsur Teks Iklan"
+  status: MeetingStatus;         // 'draft' | 'in_progress' | 'ready' | 'completed'
+  masterLearningData: MasterLearningData;
+  productStates: MeetingProductStates;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  legacyDraftId?: string;        // Pointer ke InfographicDraft jika diadaptasi
+}
+
+export interface ChapterNode {
+  id: string;
+  chapterNumber: string;         // Misal: "Bab 2" atau "Teks 1"
+  title: string;                 // Misal: "Menemukan Pola Pesan dalam Iklan"
+  meetings: MeetingSession[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClassSubjectNode {
+  id: string;
+  educationLevel: EducationLevel; // 'SD' | 'SMP' | 'SMA' | 'SMK'
+  grade: string;                  // Misal: "Kelas VIII"
+  subject: string;                // Misal: "Bahasa Indonesia"
+  chapters: ChapterNode[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LearningProject {
+  id: string;
+  name: string;                   // Nama Proyek, misal: "Bahasa Indonesia Semester Ganjil"
+  academicYear?: string;          // "2026/2027"
+  semester?: 'Ganjil' | 'Genap';
+  teacherName?: string;
+  schoolName?: string;
+  classSubjects: ClassSubjectNode[];
+  createdAt: string;
+  updatedAt: string;
+  isLegacyAdapted?: boolean;      // Penanda proyek hasil adaptasi otomatis dari draft lama
+}
+
+export interface ActiveLearningContext {
+  activeProjectId?: string;
+  activeClassSubjectId?: string;
+  activeChapterId?: string;
+  activeMeetingId?: string;
+}
+
+// ============================================================================
+// STIVIA TAHAP 3A: MATERI PRODUCT CONTEXT CONTRACT
+// Adapter penghubung MasterLearningData ke Menu Materi Dokumen A4
+// ============================================================================
+
+export interface MateriProductContext {
+  // Master Learning Data Utama
+  temaKegiatan: string;
+  materiDiajarkan: string;
+  cakupanMateri: string;
+  learningObjectives: string[];
+  userNotes?: string;
+
+  // Metadata Hirarki Pembelajaran
+  educationLevel: EducationLevel;
+  grade: string;
+  subject: string;
+  bab: string;
+  pertemuan: string;
+  projectName?: string;
+  schoolName?: string;
+  teacherName?: string;
+
+  // Provenance & Version Awareness
+  sourceMeetingId: string;
+  sourceMasterVersion: number;
+}
+
+// ============================================================================
+// STIVIA TAHAP 3B: INFOGRAPHIC PRODUCT CONTEXT CONTRACT
+// Adapter penghubung MasterLearningData ke Menu Infografis
+// ============================================================================
+
+export interface InfographicProductContext {
+  // Master Learning Data Utama
+  temaKegiatan: string;
+  materiDiajarkan: string;
+  cakupanMateri: string;
+  learningObjectives: string[];
+  userNotes?: string;
+
+  // Metadata Hirarki Pembelajaran
+  educationLevel: EducationLevel;
+  grade: string;
+  subject: string;
+  bab: string;
+  pertemuan: string;
+  projectName?: string;
+  schoolName?: string;
+  teacherName?: string;
+
+  // Provenance & Version Awareness
+  sourceMeetingId: string;
+  sourceMasterVersion: number;
+}
+
+// ============================================================================
+// STIVIA TAHAP 3C: LKPD PRODUCT CONTEXT CONTRACT
+// Adapter penghubung MasterLearningData ke Menu LKPD (Poster LKPD)
+// ============================================================================
+
+export interface LKPDProductContext {
+  // Master Learning Data Utama
+  temaKegiatan: string;
+  materiDiajarkan: string;
+  cakupanMateri: string;
+  learningObjectives: string[];
+  userNotes?: string;
+
+  // Metadata Hirarki Pembelajaran
+  educationLevel: EducationLevel;
+  grade: string;
+  subject: string;
+  bab: string;
+  pertemuan: string;
+  projectName?: string;
+  schoolName?: string;
+  teacherName?: string;
+
+  // Provenance & Version Awareness
+  sourceMeetingId: string;
+  sourceMasterVersion: number;
+}
+
+// ============================================================================
+// STIVIA TAHAP 3D: PRESENTATION PRODUCT CONTEXT CONTRACT
+// Adapter penghubung MasterLearningData ke Menu Presentasi (Gamma AI 10 Slide)
+// ============================================================================
+
+export interface PresentationProductContext {
+  // Master Learning Data Utama
+  temaKegiatan: string;
+  materiDiajarkan: string;
+  cakupanMateri: string;
+  learningObjectives: string[];
+  userNotes?: string;
+
+  // Metadata Hirarki Pembelajaran
+  educationLevel: EducationLevel;
+  grade: string;
+  subject: string;
+  bab: string;
+  pertemuan: string;
+  projectName?: string;
+  schoolName?: string;
+  teacherName?: string;
+
+  // Provenance & Version Awareness
+  sourceMeetingId: string;
+  sourceMasterVersion: number;
 }
 
