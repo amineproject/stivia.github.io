@@ -13,20 +13,38 @@ import {
 } from '../types';
 import { suggestLearningObjectives } from './stiviaThinkingFramework';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { INITIAL_SAMPLE_DRAFT } from '../data/mockData';
 
-const STORAGE_PROJECTS_KEY = 'stivia_learning_projects';
-const STORAGE_ACTIVE_CONTEXT_KEY = 'stivia_active_learning_context';
+export function getStorageProjectsKey(userId?: string): string {
+  if (userId) return `stivia_learning_projects_${userId}`;
+  return 'stivia_learning_projects_guest';
+}
+
+export function getStorageContextKey(userId?: string): string {
+  if (userId) return `stivia_active_learning_context_${userId}`;
+  return 'stivia_active_learning_context_guest';
+}
+
+export function getStorageLegacyProjectsKey(userId?: string): string {
+  if (userId) return `stivia_projects_${userId}`;
+  return 'stivia_projects_guest';
+}
+
+export function getStorageCurrentDraftKey(userId?: string): string {
+  if (userId) return `stivia_current_draft_${userId}`;
+  return 'stivia_current_draft_guest';
+}
 
 /**
- * Data Awal Contoh Proyek Pembelajaran STIVIA
+ * Data Awal Contoh Proyek Pembelajaran STIVIA (Template Netral & Bebas Data Pribadi Tertentu)
  */
 export const DEFAULT_INITIAL_LEARNING_PROJECT: LearningProject = {
-  id: 'proj-lp-001',
-  name: 'Bahasa Indonesia Semester Ganjil 2026/2027',
+  id: 'proj-lp-sample',
+  name: 'Contoh Proyek Bahasa Indonesia (Kurikulum Merdeka)',
   academicYear: '2026/2027',
   semester: 'Ganjil',
-  teacherName: 'Amin Wahyudi, S.Pd.',
-  schoolName: 'SMP Negeri 2 Jetis Kabupaten Mojokerto',
+  teacherName: 'Pendidik STIVIA',
+  schoolName: 'Sekolah Penggerak STIVIA',
   createdAt: '2026-09-01',
   updatedAt: '2026-09-30',
   classSubjects: [
@@ -119,76 +137,185 @@ export const DEFAULT_INITIAL_LEARNING_PROJECT: LearningProject = {
 };
 
 /**
- * Mengambil daftar proyek pembelajaran terstruktur dari localStorage
+ * Membuat entitas contoh proyek yang dikustomisasi dengan profil pendidik aktif
  */
-export function getStoredLearningProjects(): LearningProject[] {
-  if (typeof window === 'undefined') return [DEFAULT_INITIAL_LEARNING_PROJECT];
+export function createSampleProjectForUser(teacherName?: string, schoolName?: string): LearningProject {
+  const now = new Date().toISOString().split('T')[0];
+  const uniqueId = `proj-sample-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  return {
+    ...DEFAULT_INITIAL_LEARNING_PROJECT,
+    id: uniqueId,
+    name: 'Contoh Proyek Pembelajaran',
+    teacherName: teacherName || 'Pendidik STIVIA',
+    schoolName: schoolName || 'Sekolah Penggerak STIVIA',
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * Mengambil daftar proyek pembelajaran terstruktur dari localStorage secara terisolasi per pengguna.
+ * Mencegah data akun lain bocor pada browser yang sama.
+ */
+export function getStoredLearningProjects(userId?: string): LearningProject[] {
+  if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STORAGE_PROJECTS_KEY);
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageProjectsKey(effectiveUserId);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
-    // Inisialisasi awal
-    localStorage.setItem(STORAGE_PROJECTS_KEY, JSON.stringify([DEFAULT_INITIAL_LEARNING_PROJECT]));
-    return [DEFAULT_INITIAL_LEARNING_PROJECT];
+
+    // Jika pengguna belum login (guest), sediakan template netral
+    if (!effectiveUserId) {
+      const guestRaw = localStorage.getItem('stivia_learning_projects_guest');
+      if (guestRaw) {
+        try {
+          const parsedGuest = JSON.parse(guestRaw);
+          if (Array.isArray(parsedGuest) && parsedGuest.length > 0) return parsedGuest;
+        } catch (_) {}
+      }
+      const initial = [DEFAULT_INITIAL_LEARNING_PROJECT];
+      localStorage.setItem('stivia_learning_projects_guest', JSON.stringify(initial));
+      return initial;
+    }
+
+    // Untuk pengguna terautentikasi: default ke array kosong jika belum ada proyek
+    return [];
   } catch (e) {
     console.warn('Gagal membaca learning projects dari localStorage:', e);
-    return [DEFAULT_INITIAL_LEARNING_PROJECT];
+    return [];
   }
 }
 
 /**
- * Menyimpan daftar proyek pembelajaran ke localStorage
+ * Menyimpan daftar proyek pembelajaran ke localStorage secara terisolasi per pengguna.
  */
-export function saveStoredLearningProjects(projects: LearningProject[]): void {
+export function saveStoredLearningProjects(projects: LearningProject[], userId?: string): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_PROJECTS_KEY, JSON.stringify(projects));
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageProjectsKey(effectiveUserId);
+    localStorage.setItem(key, JSON.stringify(projects));
   } catch (e) {
     console.error('Gagal menyimpan learning projects ke localStorage:', e);
   }
 }
 
 /**
- * Mengambil status konteks aktif (Project, Class, Chapter, Meeting)
+ * Mengambil status konteks aktif terisolasi per pengguna.
  */
-export function getStoredActiveContext(): ActiveLearningContext {
-  if (typeof window === 'undefined') {
-    return {
-      activeProjectId: 'proj-lp-001',
-      activeClassSubjectId: 'cs-001',
-      activeChapterId: 'ch-001',
-      activeMeetingId: 'meet-001'
-    };
-  }
+export function getStoredActiveContext(userId?: string): ActiveLearningContext {
+  const fallbackContext: ActiveLearningContext = {
+    activeProjectId: undefined,
+    activeClassSubjectId: undefined,
+    activeChapterId: undefined,
+    activeMeetingId: undefined
+  };
+
+  if (typeof window === 'undefined') return fallbackContext;
   try {
-    const raw = localStorage.getItem(STORAGE_ACTIVE_CONTEXT_KEY);
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageContextKey(effectiveUserId);
+    const raw = localStorage.getItem(key);
     if (raw) {
       return JSON.parse(raw);
     }
   } catch (e) {
     console.warn('Gagal membaca active context:', e);
   }
-  return {
-    activeProjectId: 'proj-lp-001',
-    activeClassSubjectId: 'cs-001',
-    activeChapterId: 'ch-001',
-    activeMeetingId: 'meet-001'
-  };
+  return fallbackContext;
 }
 
 /**
- * Menyimpan status konteks aktif
+ * Menyimpan status konteks aktif ke localStorage terisolasi per pengguna.
  */
-export function saveStoredActiveContext(context: ActiveLearningContext): void {
+export function saveStoredActiveContext(context: ActiveLearningContext, userId?: string): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_ACTIVE_CONTEXT_KEY, JSON.stringify(context));
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageContextKey(effectiveUserId);
+    localStorage.setItem(key, JSON.stringify(context));
   } catch (e) {
     console.error('Gagal menyimpan active context:', e);
+  }
+}
+
+/**
+ * Mengambil daftar proyek/draf infografis lama terisolasi per pengguna.
+ */
+export function getStoredLegacyProjects(userId?: string): InfographicDraft[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageLegacyProjectsKey(effectiveUserId);
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (p) => !['proj-002', 'proj-003', 'proj-004', 'sample-draft-001'].includes(p.id)
+        );
+      }
+    }
+  } catch (e) {
+    console.warn('Gagal membaca legacy projects dari localStorage:', e);
+  }
+  return [];
+}
+
+/**
+ * Menyimpan daftar proyek/draf infografis lama terisolasi per pengguna.
+ */
+export function saveStoredLegacyProjects(drafts: InfographicDraft[], userId?: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageLegacyProjectsKey(effectiveUserId);
+    localStorage.setItem(key, JSON.stringify(drafts));
+  } catch (e) {
+    console.error('Gagal menyimpan legacy projects ke localStorage:', e);
+  }
+}
+
+/**
+ * Mengambil draf aktif (current draft) terisolasi per pengguna.
+ */
+export function getStoredCurrentDraft(userId?: string, fallbackDraft?: InfographicDraft): InfographicDraft {
+  const fallback: InfographicDraft = fallbackDraft || {
+    ...INITIAL_SAMPLE_DRAFT,
+    id: `draft-${Date.now()}`
+  };
+
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageCurrentDraftKey(effectiveUserId);
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.warn('Gagal membaca current draft dari localStorage:', e);
+  }
+  return fallback;
+}
+
+/**
+ * Menyimpan draf aktif (current draft) terisolasi per pengguna.
+ */
+export function saveStoredCurrentDraft(draft: InfographicDraft, userId?: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const effectiveUserId = userId || (localStorage.getItem('stivia_last_user_id') || undefined);
+    const key = getStorageCurrentDraftKey(effectiveUserId);
+    localStorage.setItem(key, JSON.stringify(draft));
+  } catch (e) {
+    console.error('Gagal menyimpan current draft ke localStorage:', e);
   }
 }
 
@@ -1037,12 +1164,18 @@ export async function saveLearningProjectToSupabase(
   try {
     const now = new Date().toISOString();
 
+    let effectiveUserId = userId;
+    const { data: authData } = await supabase.auth.getSession();
+    if (authData.session?.user?.id) {
+      effectiveUserId = authData.session.user.id;
+    }
+
     // 1. Upsert Proyek Utama
     const { error: projErr } = await supabase
       .from('learning_projects')
       .upsert({
         id: project.id,
-        user_id: userId,
+        user_id: effectiveUserId,
         name: project.name,
         academic_year: project.academicYear || '2026/2027',
         semester: project.semester || 'Ganjil',
@@ -1168,29 +1301,136 @@ export async function saveLearningProjectToSupabase(
 }
 
 /**
- * Menghapus proyek pembelajaran dari Supabase.
- * Database foreign key cascade otomatis menghapus seluruh kelas, bab, pertemuan, dan master data.
+ * Menghapus proyek pembelajaran dari Supabase secara konsisten.
+ * Mencakup penghapusan relasional dari bawah ke atas jika cascade tidak aktif di Supabase:
+ * master_learning_data -> learning_meetings -> learning_chapters -> learning_classes -> learning_projects.
+ * Jika tabel belum dibuat di database Supabase (PGRST205), fungsi mengembalikan isSchemaMissing: true
+ * agar penghapusan di sisi lokal tetap berjalan mulus tanpa menghalangi pengguna.
  */
 export async function deleteLearningProjectFromSupabase(
   projectId: string,
-  userId: string
-): Promise<boolean> {
-  if (!isSupabaseConfigured || !userId) return false;
-  try {
-    const { error } = await supabase
-      .from('learning_projects')
-      .delete()
-      .eq('id', projectId)
-      .eq('user_id', userId);
+  userId?: string
+): Promise<{ success: boolean; isSchemaMissing?: boolean; error?: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: true, isSchemaMissing: true };
+  }
+  if (!projectId) {
+    return { success: false, error: 'ID Proyek tidak valid.' };
+  }
 
-    if (error) {
-      console.warn('[STIVIA Supabase] Gagal menghapus learning project dari Supabase:', error);
-      return false;
+  try {
+    let effectiveUserId = userId;
+    if (!effectiveUserId) {
+      const { data: authData } = await supabase.auth.getSession();
+      effectiveUserId = authData.session?.user?.id;
     }
-    return true;
-  } catch (err) {
-    console.warn('[STIVIA Supabase] Error saat delete project di Supabase:', err);
-    return false;
+
+    // 1. Coba hapus langsung dari learning_projects (memanfaatkan DB FK ON DELETE CASCADE jika tersedia)
+    let query = supabase.from('learning_projects').delete().eq('id', projectId);
+    if (effectiveUserId) {
+      query = query.eq('user_id', effectiveUserId);
+    }
+    const { error: directErr } = await query;
+
+    // Jika berhasil langsung di Supabase tanpa error
+    if (!directErr) {
+      return { success: true };
+    }
+
+    // Jika tabel belum diinisialisasi / belum ada di schema cache Supabase (PGRST205)
+    if (directErr.code === 'PGRST205' || directErr.message?.includes('schema cache')) {
+      console.warn('[STIVIA Supabase] Tabel public.learning_projects belum diinisialisasi di Supabase. Proyek dihapus dari cache lokal.');
+      return { success: true, isSchemaMissing: true };
+    }
+
+    // Jika error karena RLS (Permission Denied)
+    if (directErr.code === '42501' || directErr.message?.includes('permission')) {
+      return { success: false, error: 'Izin ditolak oleh database (RLS). Pastikan Anda pemilik proyek ini.' };
+    }
+
+    // 2. Fallback: Eksekusi penghapusan hierarki data secara eksplisit jika terjadi foreign key block (23503)
+    console.warn('[STIVIA Supabase] Direct project delete encounter note, mencoba explicit cascade delete:', directErr.message);
+
+    // Ambil seluruh class_id dalam project
+    const { data: classes, error: classSelectErr } = await supabase
+      .from('learning_classes')
+      .select('id')
+      .eq('project_id', projectId);
+
+    if (classSelectErr?.code === 'PGRST205') {
+      return { success: true, isSchemaMissing: true };
+    }
+
+    const classIds = (classes || []).map((c: any) => c.id).filter(Boolean);
+
+    if (classIds.length > 0) {
+      // Ambil seluruh chapter_id dalam class
+      const { data: chapters } = await supabase
+        .from('learning_chapters')
+        .select('id')
+        .in('class_id', classIds);
+
+      const chapterIds = (chapters || []).map((ch: any) => ch.id).filter(Boolean);
+
+      if (chapterIds.length > 0) {
+        // Ambil seluruh meeting_id dalam chapter
+        const { data: meetings } = await supabase
+          .from('learning_meetings')
+          .select('id')
+          .in('chapter_id', chapterIds);
+
+        const meetingIds = (meetings || []).map((m: any) => m.id).filter(Boolean);
+
+        if (meetingIds.length > 0) {
+          // Hapus master_learning_data
+          await supabase
+            .from('master_learning_data')
+            .delete()
+            .in('meeting_id', meetingIds);
+
+          // Hapus learning_meetings
+          await supabase
+            .from('learning_meetings')
+            .delete()
+            .in('id', meetingIds);
+        }
+
+        // Hapus learning_chapters
+        await supabase
+          .from('learning_chapters')
+          .delete()
+          .in('id', chapterIds);
+      }
+
+      // Hapus learning_classes
+      await supabase
+        .from('learning_classes')
+        .delete()
+        .in('id', classIds);
+    }
+
+    // Terakhir: Hapus learning_projects record
+    let finalQuery = supabase.from('learning_projects').delete().eq('id', projectId);
+    if (effectiveUserId) {
+      finalQuery = finalQuery.eq('user_id', effectiveUserId);
+    }
+    const { error: finalErr } = await finalQuery;
+
+    if (finalErr) {
+      if (finalErr.code === 'PGRST205' || finalErr.message?.includes('schema cache')) {
+        return { success: true, isSchemaMissing: true };
+      }
+      console.error('[STIVIA Supabase] Gagal menghapus learning project setelah explicit cascade:', finalErr);
+      return { success: false, error: finalErr.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    if (err?.code === 'PGRST205' || err?.message?.includes('schema cache')) {
+      return { success: true, isSchemaMissing: true };
+    }
+    console.error('[STIVIA Supabase] Error saat deleteLearningProjectFromSupabase:', err);
+    return { success: false, error: err?.message || 'Gagal menghapus proyek di cloud.' };
   }
 }
 
@@ -1201,9 +1441,9 @@ export async function deleteLearningProjectFromSupabase(
  */
 export async function deleteLearningMeetingFromSupabase(
   meetingId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; isSchemaMissing?: boolean; error?: string }> {
   if (!isSupabaseConfigured) {
-    return { success: false, error: 'Supabase belum dikonfigurasi.' };
+    return { success: true, isSchemaMissing: true };
   }
 
   try {
@@ -1213,7 +1453,7 @@ export async function deleteLearningMeetingFromSupabase(
       .delete()
       .eq('meeting_id', meetingId);
 
-    if (mldErr && mldErr.code !== 'PGRST116') {
+    if (mldErr && mldErr.code !== 'PGRST116' && mldErr.code !== 'PGRST205') {
       console.warn('[STIVIA Supabase] Catatan saat hapus master_learning_data:', mldErr);
     }
 
@@ -1224,12 +1464,18 @@ export async function deleteLearningMeetingFromSupabase(
       .eq('id', meetingId);
 
     if (meetErr) {
+      if (meetErr.code === 'PGRST205' || meetErr.message?.includes('schema cache')) {
+        return { success: true, isSchemaMissing: true };
+      }
       console.error('[STIVIA Supabase] Gagal menghapus meeting dari Supabase:', meetErr);
       return { success: false, error: meetErr.message };
     }
 
     return { success: true };
   } catch (err: any) {
+    if (err?.code === 'PGRST205' || err?.message?.includes('schema cache')) {
+      return { success: true, isSchemaMissing: true };
+    }
     console.error('[STIVIA Supabase] Error saat delete meeting di Supabase:', err);
     return { success: false, error: err?.message || 'Gagal menghapus pertemuan di cloud.' };
   }
@@ -1520,11 +1766,15 @@ export async function deleteLegacyProjectFromSupabase(
 }
 
 /**
- * FUNGSI UTAMA SINKRONISASI SAAT PENGGUNA LOGIN (Multi-Device Sync):
- * 1. Ambil data dari Supabase Cloud (sebagai Source of Truth).
- * 2. Jika Supabase memiliki data, gunakan data tersebut dan update local cache.
- * 3. Jika Supabase kosong tetapi user punya data lokal kustom, backfill ke Supabase.
- * 4. Jika Supabase belum memiliki tabel atau offline, gunakan local cache dengan graceful degradation.
+ * FUNGSI UTAMA SINKRONISASI SAAT PENGGUNA LOGIN (Multi-Device Sync & Strict User Isolation):
+ * 1. Ambil data dari Supabase Cloud khusus untuk userId tersebut (Source of Truth).
+ * 2. Jika Supabase memiliki data, simpan ke local partition user tersebut (stivia_learning_projects_${userId}).
+ * 3. Jika Supabase belum memiliki data:
+ *    - HANYA periksa partition lokal user ini (getStoredLearningProjects(userId)).
+ *    - JANGAN PERNAH mengambil data pengguna lain atau partisi global.
+ *    - Jika user ini memiliki proyek lokal sendiri, sinkronkan ke Supabase.
+ *    - Jika akun baru dan belum ada proyek, kembalikan [] (empty).
+ * 4. Jamin tidak terjadi kebocoran atau tumpang tindih data antar-akun.
  */
 export async function syncLearningProjectsOnLogin(userId: string): Promise<{
   learningProjects: LearningProject[];
@@ -1533,21 +1783,21 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
 }> {
   if (!isSupabaseConfigured || !userId) {
     return {
-      learningProjects: getStoredLearningProjects(),
+      learningProjects: getStoredLearningProjects(userId),
       legacyProjects: [],
       syncStatus: 'local_fallback'
     };
   }
 
   try {
-    // 1. Ambil proyek hierarki dari Supabase
+    // 1. Ambil proyek hierarki milik pengguna dari Supabase Cloud (Source of Truth)
     const cloudProjects = await fetchLearningProjectsFromSupabase(userId);
-    // 2. Ambil draf legacy dari Supabase
+    // 2. Ambil draf legacy milik pengguna dari Supabase Cloud
     const cloudLegacyDrafts = await fetchLegacyProjectsFromSupabase(userId);
 
     if (cloudProjects.length > 0) {
-      // Supabase adalah Source of Truth: update local cache agar instan saat offline
-      saveStoredLearningProjects(cloudProjects);
+      // Supabase adalah Source of Truth: simpan ke partisi lokal user ini
+      saveStoredLearningProjects(cloudProjects, userId);
       if (typeof window !== 'undefined') {
         localStorage.setItem('stivia_last_user_id', userId);
       }
@@ -1558,57 +1808,39 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
       };
     }
 
-    // Jika di Supabase belum ada data:
-    // Cek apakah data lokal benar-benar milik user ini (bukan user sebelumnya) untuk menjamin User Isolation
-    const lastUserId = typeof window !== 'undefined' ? localStorage.getItem('stivia_last_user_id') : null;
-    const isSameUserOrFreshSession = !lastUserId || lastUserId === userId;
+    // 3. Jika di Supabase belum ada data:
+    // HANYA ambil data lokal yang berada pada partisi user ini (stivia_learning_projects_${userId})
+    const userLocalProjects = getStoredLearningProjects(userId);
 
-    if (isSameUserOrFreshSession) {
-      const localProjects = getStoredLearningProjects();
-      const hasCustomLocal = localProjects.some(p => !p.id.startsWith('proj-lp-001'));
-
-      if (hasCustomLocal) {
-        // Backfill proyek lokal kustom milik user ini ke akunnya di Supabase
-        for (const p of localProjects) {
-          if (!p.id.startsWith('proj-lp-001')) {
-            await saveLearningProjectToSupabase(p, userId);
-          }
+    if (userLocalProjects.length > 0) {
+      for (const p of userLocalProjects) {
+        if (!p.id.startsWith('proj-lp-sample')) {
+          await saveLearningProjectToSupabase(p, userId);
         }
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('stivia_last_user_id', userId);
-        }
-        return {
-          learningProjects: localProjects,
-          legacyProjects: cloudLegacyDrafts,
-          syncStatus: 'supabase_synced'
-        };
       }
-    } else {
-      // Akun user lain login pada browser yang sama: Reset working state lokal agar data tidak bocor antar-pengguna
-      const cleanDefault = [DEFAULT_INITIAL_LEARNING_PROJECT];
-      saveStoredLearningProjects(cleanDefault);
       if (typeof window !== 'undefined') {
         localStorage.setItem('stivia_last_user_id', userId);
       }
       return {
-        learningProjects: cleanDefault,
+        learningProjects: userLocalProjects,
         legacyProjects: cloudLegacyDrafts,
         syncStatus: 'supabase_synced'
       };
     }
 
+    // 4. Jika user ini memang belum memiliki proyek sama sekali (Akun Baru / Tanpa Proyek):
     if (typeof window !== 'undefined') {
       localStorage.setItem('stivia_last_user_id', userId);
     }
     return {
-      learningProjects: getStoredLearningProjects(),
+      learningProjects: [],
       legacyProjects: cloudLegacyDrafts,
-      syncStatus: 'local_fallback'
+      syncStatus: 'empty'
     };
   } catch (err) {
     console.warn('[STIVIA Supabase] Gagal sinkronisasi proyek saat login:', err);
     return {
-      learningProjects: getStoredLearningProjects(),
+      learningProjects: getStoredLearningProjects(userId),
       legacyProjects: [],
       syncStatus: 'local_fallback'
     };

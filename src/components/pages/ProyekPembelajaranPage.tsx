@@ -55,7 +55,8 @@ import {
   insertMeetingIntoProject,
   removeMeetingFromProject,
   reorderMeetingInProject,
-  deleteLearningMeetingFromSupabase
+  deleteLearningMeetingFromSupabase,
+  deleteLearningProjectFromSupabase
 } from '../../services/learningProjectService';
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 
@@ -151,6 +152,8 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   const [meetingFormErrors, setMeetingFormErrors] = useState<Record<string, string>>({});
   const [meetingToDelete, setMeetingToDelete] = useState<MeetingSession | null>(null);
   const [isDeletingMeeting, setIsDeletingMeeting] = useState<boolean>(false);
+  const [projectToDelete, setProjectToDelete] = useState<LearningProject | null>(null);
+  const [isDeletingProject, setIsDeletingProject] = useState<boolean>(false);
 
   const handleOpenAddMeetingModal = () => {
     const nextIdx = (activeChapter?.meetings.length || 0) + 1;
@@ -584,6 +587,42 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     }
   };
 
+  // Handler Konfirmasi Penghapusan Proyek (Cascade & Orphan-free)
+  const handleConfirmDeleteProject = async () => {
+    if (!projectToDelete) return;
+    const targetId = projectToDelete.id;
+    const targetName = projectToDelete.name;
+
+    setIsDeletingProject(true);
+    try {
+      if (onDeleteLearningProject) {
+        await onDeleteLearningProject(targetId);
+      } else {
+        const updated = learningProjects.filter((p) => p.id !== targetId);
+        onUpdateLearningProjects(updated);
+        if (activeProject?.id === targetId) {
+          const nextProj = updated[0];
+          onUpdateActiveContext({
+            activeProjectId: nextProj?.id,
+            activeClassSubjectId: nextProj?.classSubjects[0]?.id,
+            activeChapterId: nextProj?.classSubjects[0]?.chapters[0]?.id,
+            activeMeetingId: nextProj?.classSubjects[0]?.chapters[0]?.meetings[0]?.id,
+          });
+        }
+        if (userId) {
+          await deleteLearningProjectFromSupabase(targetId, userId);
+        }
+        onSaveToast(`Proyek "${targetName}" berhasil dihapus.`);
+      }
+      setProjectToDelete(null);
+    } catch (err: any) {
+      console.warn('Gagal menghapus proyek:', err);
+      onSaveToast(`Gagal menghapus proyek: ${err?.message || 'Terjadi kesalahan'}`);
+    } finally {
+      setIsDeletingProject(false);
+    }
+  };
+
   // Handler Geser Urutan Pertemuan (Move Up / Down)
   const handleReorderMeeting = (meetingId: string, direction: 'up' | 'down') => {
     if (!activeChapter) return;
@@ -715,7 +754,38 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
       {/* TAMPILAN 1: HIERARKI PROYEK -> KELAS -> MAPEL -> BAB -> PERTEMUAN   */}
       {/* ==================================================================== */}
       {activeMainTab === 'hierarki' && (
-        <div className="space-y-6">
+        learningProjects.length === 0 ? (
+          <div className="bg-white rounded-3xl p-10 border border-slate-200/90 shadow-xs text-center space-y-4 max-w-xl mx-auto my-8">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200 text-[#3b49df] flex items-center justify-center mx-auto">
+              <FolderKanban className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900">Belum Ada Proyek Pembelajaran</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Seluruh proyek pembelajaran telah dihapus. Anda dapat membuat proyek baru untuk mulai menyusun Master Learning Data.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => onNavigate('buat_proyek')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span>Buat Proyek Baru</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddProjectModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Cepat</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
           {/* LEVEL 1 & 2: PILIH PROYEK DAN PILIH KELAS & MAPEL */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -767,16 +837,13 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                     <span>Tambah Cepat</span>
                   </button>
 
-                  {onDeleteLearningProject && learningProjects.length > 1 && activeProject && (
+                  {onDeleteLearningProject && activeProject && (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`Hapus proyek pembelajaran "${activeProject.name}"? Data di Supabase Cloud juga akan dihapus.`)) {
-                          onDeleteLearningProject(activeProject.id);
-                        }
-                      }}
-                      className="p-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
-                      title="Hapus Proyek Ini"
+                      onClick={() => setProjectToDelete(activeProject)}
+                      disabled={isDeletingProject}
+                      className="p-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer disabled:opacity-50"
+                      title={`Hapus Proyek "${activeProject.name}"`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1479,7 +1546,10 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
+        )
       )}
 
       {/* ==================================================================== */}
@@ -2042,6 +2112,87 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
               >
                 <Trash2 className="w-4 h-4" />
                 <span>{isDeletingMeeting ? 'Menghapus...' : 'Hapus Pertemuan'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL 6: KONFIRMASI HAPUS PROYEK (CASCADE & ORPHAN-FREE)             */}
+      {/* ==================================================================== */}
+      {projectToDelete && (
+        <div className="fixed inset-0 bg-slate-900/50 z-50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900">
+                  Hapus Proyek?
+                </h3>
+                <p className="text-xs text-rose-600 font-semibold leading-relaxed">
+                  Menghapus proyek akan menghapus data pembelajaran yang berada di dalam proyek ini. Tindakan ini tidak dapat dibatalkan.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/90 text-xs space-y-2.5">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Nama Proyek
+                </span>
+                <p className="font-bold text-slate-900 text-sm">
+                  {projectToDelete.name}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/70">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Tingkat
+                  </span>
+                  <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md inline-block mt-0.5 text-xs">
+                    {projectToDelete.classSubjects[0]?.educationLevel || 'SMP'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Kelas
+                  </span>
+                  <span className="font-bold text-slate-700 bg-slate-200/70 px-2 py-0.5 rounded-md inline-block mt-0.5 text-xs">
+                    {projectToDelete.classSubjects[0]?.grade || '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Mata Pelajaran
+                  </span>
+                  <span className="font-bold text-slate-700 bg-slate-200/70 px-2 py-0.5 rounded-md inline-block mt-0.5 text-xs truncate max-w-full">
+                    {projectToDelete.classSubjects[0]?.subject || '-'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setProjectToDelete(null)}
+                disabled={isDeletingProject}
+                className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteProject}
+                disabled={isDeletingProject}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingProject ? 'Menghapus Proyek...' : 'Hapus Proyek'}</span>
               </button>
             </div>
           </div>

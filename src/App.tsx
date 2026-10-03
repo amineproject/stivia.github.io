@@ -28,6 +28,10 @@ import {
   saveStoredLearningProjects, 
   getStoredActiveContext, 
   saveStoredActiveContext,
+  getStoredLegacyProjects,
+  saveStoredLegacyProjects,
+  getStoredCurrentDraft,
+  saveStoredCurrentDraft,
   adaptLegacyProjectToLearningProject,
   syncMeetingToCurrentDraft,
   resolveActiveHierarchy,
@@ -38,6 +42,7 @@ import {
   saveLearningProjectToSupabase,
   deleteLearningProjectFromSupabase,
   deleteLearningMeetingFromSupabase,
+  deleteLegacyProjectFromSupabase,
   removeMeetingFromProject,
   syncLearningProjectsOnLogin,
   saveLegacyProjectToSupabase,
@@ -88,34 +93,12 @@ export default function App() {
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'local' | 'syncing' | 'error'>('local');
 
-  // User projects & active draft state (only user-created/saved projects)
+  // User projects & active draft state (only user-created/saved projects, strictly isolated per user)
   const [projects, setProjects] = useState<InfographicDraft[]>(() => {
-    const saved = localStorage.getItem('stivia_projects');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.filter(
-            (p) => !['proj-002', 'proj-003', 'proj-004', 'sample-draft-001'].includes(p.id)
-          );
-        }
-        return [];
-      } catch (e) {
-        return [];
-      }
-    }
     return [];
   });
 
   const [currentDraft, setCurrentDraft] = useState<InfographicDraft>(() => {
-    const savedDraft = localStorage.getItem('stivia_current_draft');
-    if (savedDraft) {
-      try {
-        return JSON.parse(savedDraft);
-      } catch (e) {
-        return INITIAL_SAMPLE_DRAFT;
-      }
-    }
     return INITIAL_SAMPLE_DRAFT;
   });
 
@@ -131,14 +114,18 @@ export default function App() {
     return DEFAULT_USER_SETTINGS;
   });
 
-  // STIVIA Tahap 2: Hierarki Proyek Pembelajaran & Active Context
+  // STIVIA Tahap 2: Hierarki Proyek Pembelajaran & Active Context (Terisolasi per Akun)
   const [learningProjects, setLearningProjects] = useState<LearningProject[]>(() => {
-    const stored = getStoredLearningProjects();
-    return stored;
+    return [];
   });
 
   const [activeLearningContext, setActiveLearningContext] = useState<ActiveLearningContext>(() => {
-    return getStoredActiveContext();
+    return {
+      activeProjectId: undefined,
+      activeClassSubjectId: undefined,
+      activeChapterId: undefined,
+      activeMeetingId: undefined,
+    };
   });
 
   // Fungsi memuat data proyek pembelajaran milik user dari Cloud Supabase (Source of Truth)
@@ -151,7 +138,7 @@ export default function App() {
       const syncResult = await syncLearningProjectsOnLogin(userId);
       if (syncResult.syncStatus === 'supabase_synced' && syncResult.learningProjects.length > 0) {
         setLearningProjects(syncResult.learningProjects);
-        saveStoredLearningProjects(syncResult.learningProjects);
+        saveStoredLearningProjects(syncResult.learningProjects, userId);
 
         // Validasi & restore active learning context terhadap data dari Supabase
         setActiveLearningContext((prevContext) => {
@@ -174,40 +161,57 @@ export default function App() {
             activeChapterId: validChapter?.id,
             activeMeetingId: validMeeting?.id,
           };
-          saveStoredActiveContext(newContext);
+          saveStoredActiveContext(newContext, userId);
 
           // Sinkronkan meeting pertama dari cloud project ke currentDraft
           if (validMeeting && validChapter && validClass && validProj) {
-            setCurrentDraft((prevDraft) =>
-              syncMeetingToCurrentDraft(
+            setCurrentDraft((prevDraft) => {
+              const synced = syncMeetingToCurrentDraft(
                 validMeeting,
                 validChapter,
                 validClass,
                 validProj,
                 prevDraft
-              )
-            );
+              );
+              saveStoredCurrentDraft(synced, userId);
+              return synced;
+            });
           }
 
           return newContext;
         });
 
         // Sinkronkan draf legacy dari cloud jika ada
-        if (syncResult.legacyProjects && syncResult.legacyProjects.length > 0) {
-          setProjects((prev) => {
-            const cloudIds = new Set(syncResult.legacyProjects.map((p) => p.id));
-            const merged = [
-              ...syncResult.legacyProjects,
-              ...prev.filter((p) => !cloudIds.has(p.id)),
-            ];
-            localStorage.setItem('stivia_projects', JSON.stringify(merged));
-            return merged;
-          });
+        if (syncResult.legacyProjects) {
+          setProjects(syncResult.legacyProjects);
+          saveStoredLegacyProjects(syncResult.legacyProjects, userId);
         }
 
         setCloudSyncStatus('synced');
       } else {
-        setCloudSyncStatus('local');
+        // PENTING: User belum memiliki proyek sama sekali (Akun Baru / Tanpa Proyek)
+        // Jamin state memori bersih dari data akun sebelumnya (Zero Data Bleeding)
+        setLearningProjects([]);
+        saveStoredLearningProjects([], userId);
+
+        const emptyContext: ActiveLearningContext = {
+          activeProjectId: undefined,
+          activeClassSubjectId: undefined,
+          activeChapterId: undefined,
+          activeMeetingId: undefined,
+        };
+        setActiveLearningContext(emptyContext);
+        saveStoredActiveContext(emptyContext, userId);
+
+        if (syncResult.legacyProjects && syncResult.legacyProjects.length > 0) {
+          setProjects(syncResult.legacyProjects);
+          saveStoredLegacyProjects(syncResult.legacyProjects, userId);
+        } else {
+          setProjects([]);
+          saveStoredLegacyProjects([], userId);
+        }
+
+        setCloudSyncStatus('synced');
       }
     } catch (err) {
       console.warn('[STIVIA] Gagal memuat proyek dari cloud Supabase:', err);
@@ -286,6 +290,17 @@ export default function App() {
           );
           await refreshSubscriptionSummary(data.session.user.id);
           await loadUserLearningProjectsFromCloud(data.session.user.id);
+        } else {
+          // Tidak ada sesi aktif (tamu / belum login)
+          setLearningProjects([]);
+          setActiveLearningContext({
+            activeProjectId: undefined,
+            activeClassSubjectId: undefined,
+            activeChapterId: undefined,
+            activeMeetingId: undefined,
+          });
+          setProjects([]);
+          setCurrentDraft(INITIAL_SAMPLE_DRAFT);
         }
       } catch (err) {
         console.warn('Gagal memuat sesi Supabase:', err);
@@ -307,8 +322,17 @@ export default function App() {
         return;
       }
 
-      setSession(newSession);
       if (newSession?.user) {
+        setSession(newSession);
+        // Kosongkan state memori sebelum data user baru selesai dimuat untuk mencegah tumpang tindih data akun lama
+        setLearningProjects([]);
+        setActiveLearningContext({
+          activeProjectId: undefined,
+          activeClassSubjectId: undefined,
+          activeChapterId: undefined,
+          activeMeetingId: undefined,
+        });
+        setProjects([]);
         await fetchUserProfile(
           newSession.user.id,
           newSession.user.user_metadata?.full_name
@@ -316,8 +340,19 @@ export default function App() {
         await refreshSubscriptionSummary(newSession.user.id);
         await loadUserLearningProjectsFromCloud(newSession.user.id);
       } else {
+        setSession(null);
         setUserProfile(null);
         setSubscriptionSummary(null);
+        setLearningProjects([]);
+        setActiveLearningContext({
+          activeProjectId: undefined,
+          activeClassSubjectId: undefined,
+          activeChapterId: undefined,
+          activeMeetingId: undefined,
+        });
+        setProjects([]);
+        setCurrentDraft(INITIAL_SAMPLE_DRAFT);
+        localStorage.removeItem('stivia_last_user_id');
       }
     });
 
@@ -350,22 +385,18 @@ export default function App() {
       setSession(null);
       setUserProfile(null);
       setSubscriptionSummary(null);
-      // Reset user-specific state to guarantee User Isolation (TEST 5)
-      const defaultProject = [DEFAULT_INITIAL_LEARNING_PROJECT];
-      setLearningProjects(defaultProject);
-      saveStoredLearningProjects(defaultProject);
-      const defaultContext = {
-        activeProjectId: 'proj-lp-001',
-        activeClassSubjectId: 'cs-001',
-        activeChapterId: 'ch-001',
-        activeMeetingId: 'meet-001',
+      // Reset user-specific state to guarantee strict User Isolation
+      setLearningProjects([]);
+      const emptyContext: ActiveLearningContext = {
+        activeProjectId: undefined,
+        activeClassSubjectId: undefined,
+        activeChapterId: undefined,
+        activeMeetingId: undefined,
       };
-      setActiveLearningContext(defaultContext);
-      saveStoredActiveContext(defaultContext);
+      setActiveLearningContext(emptyContext);
       setProjects([]);
-      localStorage.removeItem('stivia_projects');
-      localStorage.removeItem('stivia_last_user_id');
       setCurrentDraft(INITIAL_SAMPLE_DRAFT);
+      localStorage.removeItem('stivia_last_user_id');
       setCloudSyncStatus('local');
       showToast('Berhasil keluar dari akun STIVIA.');
     }
@@ -449,12 +480,16 @@ export default function App() {
   }, [projects]);
 
   useEffect(() => {
-    saveStoredLearningProjects(learningProjects);
-  }, [learningProjects]);
+    if (session?.user?.id) {
+      saveStoredLearningProjects(learningProjects, session.user.id);
+    }
+  }, [learningProjects, session?.user?.id]);
 
   useEffect(() => {
-    saveStoredActiveContext(activeLearningContext);
-  }, [activeLearningContext]);
+    if (session?.user?.id) {
+      saveStoredActiveContext(activeLearningContext, session.user.id);
+    }
+  }, [activeLearningContext, session?.user?.id]);
 
   // Handler memilih produk dari sebuah pertemuan aktif
   const handleSelectMeetingProduct = (
@@ -467,14 +502,21 @@ export default function App() {
     // 1. Sinkronkan Master Learning Data dari Pertemuan ke currentDraft
     const syncedDraft = syncMeetingToCurrentDraft(meeting, chapter, classSubject, project, currentDraft);
     setCurrentDraft(syncedDraft);
+    if (session?.user?.id) {
+      saveStoredCurrentDraft(syncedDraft, session.user.id);
+    }
 
     // 2. Set active learning context
-    setActiveLearningContext({
+    const nextContext: ActiveLearningContext = {
       activeProjectId: project.id,
       activeClassSubjectId: classSubject.id,
       activeChapterId: chapter.id,
       activeMeetingId: meeting.id
-    });
+    };
+    setActiveLearningContext(nextContext);
+    if (session?.user?.id) {
+      saveStoredActiveContext(nextContext, session.user.id);
+    }
 
     // 3. Arahkan pengguna ke studio produk yang dipilih
     setActiveTab(productTab);
@@ -486,14 +528,14 @@ export default function App() {
   const handleCreateLearningProject = async (input: CreateProjectFormInput) => {
     const { project, activeContext } = createLearningProjectFromFormData(input);
 
-    // 1. Tambahkan ke daftar proyek hierarki lokal
+    // 1. Tambahkan ke daftar proyek hierarki lokal (terisolasi per user)
     const updated = [project, ...learningProjects];
     setLearningProjects(updated);
-    saveStoredLearningProjects(updated);
+    saveStoredLearningProjects(updated, session?.user?.id);
 
     // 2. Set konteks pembelajaran aktif
     setActiveLearningContext(activeContext);
-    saveStoredActiveContext(activeContext);
+    saveStoredActiveContext(activeContext, session?.user?.id);
 
     // 3. Sinkronkan Master Learning Data dari pertemuan pertama ke currentDraft
     const firstClass = project.classSubjects[0];
@@ -508,12 +550,13 @@ export default function App() {
         currentDraft
       );
       setCurrentDraft(syncedDraft);
+      saveStoredCurrentDraft(syncedDraft, session?.user?.id);
 
       // Simpan juga ke daftar user projects legacy untuk kompatibilitas
       setProjects((prev) => {
         const filtered = prev.filter((p) => p.id !== syncedDraft.id);
         const newProjList = [syncedDraft, ...filtered];
-        localStorage.setItem('stivia_projects', JSON.stringify(newProjList));
+        saveStoredLegacyProjects(newProjList, session?.user?.id);
         return newProjList;
       });
 
@@ -559,7 +602,7 @@ export default function App() {
     options?: { targetProjectId?: string }
   ) => {
     setLearningProjects(updated);
-    saveStoredLearningProjects(updated);
+    saveStoredLearningProjects(updated, session?.user?.id);
 
     const targetProjId = options?.targetProjectId || activeLearningContext.activeProjectId;
     const targetProject = updated.find((p) => p.id === targetProjId) || updated[0];
@@ -584,43 +627,68 @@ export default function App() {
     }
   };
 
-  // Handler menghapus proyek pembelajaran (Multi-device sync delete)
+  // Handler menghapus proyek pembelajaran (Multi-device sync delete & reliable cloud persistence)
   const handleDeleteLearningProject = async (projectId: string) => {
-    if (learningProjects.length <= 1) {
-      showToast('Minimal harus ada satu proyek pembelajaran.');
-      return;
-    }
+    if (!projectId) return;
 
     const target = learningProjects.find((p) => p.id === projectId);
-    const updated = learningProjects.filter((p) => p.id !== projectId);
-    setLearningProjects(updated);
-    saveStoredLearningProjects(updated);
+    if (!target) return;
 
-    if (activeLearningContext.activeProjectId === projectId) {
-      const nextProj = updated[0];
-      const newContext: ActiveLearningContext = {
-        activeProjectId: nextProj.id,
-        activeClassSubjectId: nextProj.classSubjects[0]?.id,
-        activeChapterId: nextProj.classSubjects[0]?.chapters[0]?.id,
-        activeMeetingId: nextProj.classSubjects[0]?.chapters[0]?.meetings[0]?.id,
-      };
-      setActiveLearningContext(newContext);
-      saveStoredActiveContext(newContext);
-    }
-
+    // 1. Sinkronisasi penghapusan ke Supabase terlebih dahulu jika user login dan Supabase aktif
     if (session?.user?.id && isSupabaseConfigured) {
       setIsCloudSyncing(true);
+      setCloudSyncStatus('syncing');
       try {
-        await deleteLearningProjectFromSupabase(projectId, session.user.id);
-        setCloudSyncStatus('synced');
-      } catch (err) {
-        console.warn('[STIVIA Supabase] Gagal menghapus proyek dari Supabase:', err);
+        const deleteRes = await deleteLearningProjectFromSupabase(projectId, session.user.id);
+        if (!deleteRes.success && !deleteRes.isSchemaMissing) {
+          console.warn('[STIVIA Supabase] Gagal menghapus proyek dari Supabase:', deleteRes.error);
+          setCloudSyncStatus('local');
+          showToast(`Gagal menghapus proyek: ${deleteRes.error || 'Terjadi kesalahan'}`);
+          return;
+        }
+        if (deleteRes.isSchemaMissing) {
+          setCloudSyncStatus('local');
+        } else {
+          setCloudSyncStatus('synced');
+        }
+      } catch (err: any) {
+        console.warn('[STIVIA Supabase] Exception saat hapus proyek di Supabase:', err);
+        setCloudSyncStatus('local');
       } finally {
         setIsCloudSyncing(false);
       }
     }
 
-    showToast(`Proyek "${target?.name || 'Pembelajaran'}" berhasil dihapus.`);
+    // 2. Perbarui state lokal & localStorage (terisolasi per user)
+    const updated = learningProjects.filter((p) => p.id !== projectId);
+    setLearningProjects(updated);
+    saveStoredLearningProjects(updated, session?.user?.id);
+
+    // 3. Normalisasi activeLearningContext
+    if (activeLearningContext.activeProjectId === projectId) {
+      if (updated.length > 0) {
+        const nextProj = updated[0];
+        const newContext: ActiveLearningContext = {
+          activeProjectId: nextProj.id,
+          activeClassSubjectId: nextProj.classSubjects[0]?.id,
+          activeChapterId: nextProj.classSubjects[0]?.chapters[0]?.id,
+          activeMeetingId: nextProj.classSubjects[0]?.chapters[0]?.meetings[0]?.id,
+        };
+        setActiveLearningContext(newContext);
+        saveStoredActiveContext(newContext, session?.user?.id);
+      } else {
+        const emptyContext: ActiveLearningContext = {
+          activeProjectId: undefined,
+          activeClassSubjectId: undefined,
+          activeChapterId: undefined,
+          activeMeetingId: undefined,
+        };
+        setActiveLearningContext(emptyContext);
+        saveStoredActiveContext(emptyContext, session?.user?.id);
+      }
+    }
+
+    showToast(`Proyek "${target.name}" berhasil dihapus.`);
   };
 
   // Handler menghapus sesi pertemuan pembelajaran (Multi-device sync delete & normalisasi nomor pertemuan)
@@ -631,7 +699,7 @@ export default function App() {
     if (!deletedMeeting) return;
 
     setLearningProjects(updatedProjects);
-    saveStoredLearningProjects(updatedProjects);
+    saveStoredLearningProjects(updatedProjects, session?.user?.id);
 
     if (activeLearningContext.activeMeetingId === meetingId) {
       const newContext: ActiveLearningContext = {
@@ -639,7 +707,7 @@ export default function App() {
         activeMeetingId: nextActiveMeetingId,
       };
       setActiveLearningContext(newContext);
-      saveStoredActiveContext(newContext);
+      saveStoredActiveContext(newContext, session?.user?.id);
     }
 
     if (session?.user?.id && isSupabaseConfigured) {
@@ -665,14 +733,18 @@ export default function App() {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Persist to localStorage
+  // Persist to localStorage terisolasi per akun
   useEffect(() => {
-    localStorage.setItem('stivia_projects', JSON.stringify(projects));
-  }, [projects]);
+    if (session?.user?.id) {
+      saveStoredLegacyProjects(projects, session.user.id);
+    }
+  }, [projects, session?.user?.id]);
 
   useEffect(() => {
-    localStorage.setItem('stivia_current_draft', JSON.stringify(currentDraft));
-  }, [currentDraft]);
+    if (session?.user?.id) {
+      saveStoredCurrentDraft(currentDraft, session.user.id);
+    }
+  }, [currentDraft, session?.user?.id]);
 
   useEffect(() => {
     localStorage.setItem('stivia_settings', JSON.stringify(userSettings));
@@ -803,7 +875,14 @@ export default function App() {
   };
 
   const handleDeleteProject = (projectId: string) => {
-    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    setProjects((prev) => {
+      const updated = prev.filter((p) => p.id !== projectId);
+      saveStoredLegacyProjects(updated, session?.user?.id);
+      return updated;
+    });
+    if (session?.user?.id && isSupabaseConfigured) {
+      deleteLegacyProjectFromSupabase(projectId, session.user.id).catch(console.warn);
+    }
     showToast('Proyek infografis berhasil dihapus.');
   };
 
@@ -816,7 +895,14 @@ export default function App() {
       updatedAt: new Date().toISOString().split('T')[0],
       status: 'draft',
     };
-    setProjects((prev) => [duplicated, ...prev]);
+    setProjects((prev) => {
+      const updated = [duplicated, ...prev];
+      saveStoredLegacyProjects(updated, session?.user?.id);
+      return updated;
+    });
+    if (session?.user?.id && isSupabaseConfigured) {
+      saveLegacyProjectToSupabase(duplicated, session.user.id).catch(console.warn);
+    }
     showToast('Proyek berhasil diduplikasi.');
   };
 
