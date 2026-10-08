@@ -6,7 +6,8 @@ import {
   MateriProductContext,
   InfographicProductContext,
   LKPDProductContext,
-  PresentationProductContext
+  PresentationProductContext,
+  AssessmentProductContext
 } from '../types';
 import { MateriSection } from './materiDocumentEngine';
 
@@ -34,6 +35,7 @@ export function buildMateriProductContext(
     materiDiajarkan: mld.materiDiajarkan || meeting.title,
     cakupanMateri: mld.cakupanMateri || '',
     learningObjectives: mld.learningObjectives || [],
+    reinforcementActivities: mld.reinforcementActivities || '',
     userNotes: mld.userNotes || '',
 
     // Hirarki Metadata
@@ -182,6 +184,7 @@ export function buildLKPDProductContext(
     materiDiajarkan: mld.materiDiajarkan || meeting.title,
     cakupanMateri: mld.cakupanMateri || '',
     learningObjectives: mld.learningObjectives || [],
+    reinforcementActivities: mld.reinforcementActivities || '',
     userNotes: mld.userNotes || '',
 
     // Hirarki Metadata
@@ -235,6 +238,7 @@ export function buildPresentationProductContext(
     materiDiajarkan: mld.materiDiajarkan || meeting.title,
     cakupanMateri: mld.cakupanMateri || '',
     learningObjectives: mld.learningObjectives || [],
+    reinforcementActivities: mld.reinforcementActivities || '',
     userNotes: mld.userNotes || '',
 
     // Hirarki Metadata
@@ -262,4 +266,66 @@ export function isPresentationContextOutdated(
 ): boolean {
   if (presentationMasterVersion === undefined || activeMasterVersion === undefined) return false;
   return presentationMasterVersion < activeMasterVersion;
+}
+
+/**
+ * Membangun AssessmentProductContext dari MeetingSession aktif secara deterministik.
+ * Mengalirkan Master Learning Data ke Menu Asesmen (Harian & Sumatif) secara kondisional.
+ */
+export function buildAssessmentProductContext(
+  meeting: MeetingSession,
+  chapter?: ChapterNode,
+  classSubject?: ClassSubjectNode,
+  project?: LearningProject
+): AssessmentProductContext {
+  const mld = meeting.masterLearningData;
+
+  const cleanSubject = classSubject?.subject || 'Bahasa Indonesia';
+  const cleanGrade = classSubject?.grade || 'Kelas VIII';
+  const cleanLevel = classSubject?.educationLevel || 'SMP';
+  const cleanBab = chapter?.title || 'Bab 1: Konsep Dasar';
+  const cleanPertemuan = meeting.meetingNumber || 'Pertemuan 1';
+
+  return {
+    // Master Learning Data
+    temaKegiatan: mld.temaKegiatan || meeting.title,
+    materiDiajarkan: mld.materiDiajarkan || meeting.title,
+    cakupanMateri: mld.cakupanMateri || '',
+    learningObjectives: mld.learningObjectives || [],
+    reinforcementActivities: mld.reinforcementActivities || '',
+    userNotes: mld.userNotes || '',
+
+    // Konfigurasi Asesmen Kondisional (Default: false jika belum diatur)
+    assessmentEnabled: Boolean(mld.assessmentEnabled),
+    assessmentType: mld.assessmentType || 'Formatif',
+    assessmentForms: mld.assessmentForms && mld.assessmentForms.length > 0
+      ? mld.assessmentForms
+      : ['Pilihan Ganda', 'Uraian'],
+    assessmentNotes: mld.assessmentNotes || '',
+
+    // Hirarki Metadata
+    educationLevel: cleanLevel,
+    grade: cleanGrade,
+    subject: cleanSubject,
+    bab: cleanBab,
+    pertemuan: cleanPertemuan,
+    projectName: project?.name,
+    schoolName: project?.schoolName,
+    teacherName: project?.teacherName,
+
+    // Provenance & Versioning
+    sourceMeetingId: meeting.id,
+    sourceMasterVersion: mld.version || 1
+  };
+}
+
+/**
+ * Memeriksa apakah asesmen yang sedang dibuka menggunakan versi Master Learning Data yang sudah usang.
+ */
+export function isAssessmentContextOutdated(
+  assessmentMasterVersion?: number,
+  activeMasterVersion?: number
+): boolean {
+  if (assessmentMasterVersion === undefined || activeMasterVersion === undefined) return false;
+  return assessmentMasterVersion < activeMasterVersion;
 }

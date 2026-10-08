@@ -258,76 +258,66 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right: Cloud Sync, Search Action & Notification Icons */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Cloud Sync Status Indicator */}
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={onRefreshCloud}
-            disabled={isCloudSyncing || !onRefreshCloud}
-            title={
-              cloudSyncStatus === 'synced'
-                ? 'Data pembelajaran tersinkron di Cloud Supabase (Klik untuk refresh)'
-                : cloudSyncStatus === 'syncing'
-                ? 'Sedang menyinkronkan data dengan Cloud Supabase...'
-                : cloudSyncStatus === 'error'
-                ? 'Koneksi cloud tertunda (Klik untuk mencoba ulang)'
-                : 'Mode lokal aktif (Klik untuk sinkronkan ke Cloud Supabase)'
-            }
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer disabled:cursor-default ${
-              cloudSyncStatus === 'synced'
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                : cloudSyncStatus === 'syncing'
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse'
-                : cloudSyncStatus === 'error'
-                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-            }`}
-          >
-            {cloudSyncStatus === 'synced' ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden sm:inline">Cloud Synced</span>
-              </>
-            ) : cloudSyncStatus === 'syncing' ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                <span className="hidden sm:inline">Sinkronisasi...</span>
-              </>
-            ) : cloudSyncStatus === 'error' ? (
-              <>
-                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                <span className="hidden sm:inline">Sync Tertunda</span>
-              </>
-            ) : (
-              <>
-                <Cloud className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Lokal</span>
-              </>
-            )}
-          </button>
-        </div>
+      <div className="flex items-center gap-1 sm:gap-2">
+        {/* Subtle Cloud Sync Status Indicator */}
+        <button
+          type="button"
+          onClick={onRefreshCloud}
+          disabled={isCloudSyncing || !onRefreshCloud}
+          title={
+            cloudSyncStatus === 'synced'
+              ? 'Tersinkron dengan Cloud Supabase (Klik untuk perbarui)'
+              : cloudSyncStatus === 'syncing'
+              ? 'Sedang menyinkronkan data...'
+              : cloudSyncStatus === 'error'
+              ? 'Sinkronisasi tertunda (Klik untuk coba lagi)'
+              : 'Penyimpanan lokal (Klik untuk sinkronkan)'
+          }
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer disabled:cursor-default"
+        >
+          {cloudSyncStatus === 'synced' ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="hidden md:inline text-[11px] text-slate-600">Tersinkron</span>
+            </>
+          ) : cloudSyncStatus === 'syncing' ? (
+            <>
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+              <span className="hidden md:inline text-[11px] text-indigo-600">Sinkronisasi</span>
+            </>
+          ) : cloudSyncStatus === 'error' ? (
+            <>
+              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden md:inline text-[11px] text-amber-700">Tertunda</span>
+            </>
+          ) : (
+            <>
+              <Cloud className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden md:inline text-[11px] text-slate-500">Lokal</span>
+            </>
+          )}
+        </button>
 
         {/* Search trigger */}
         <button
           onClick={() => setShowSearchModal(true)}
-          className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
-          title="Cari Infografis atau Materi"
-          aria-label="Cari Infografis atau Materi"
+          className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer"
+          title="Cari Materi atau Proyek"
+          aria-label="Cari Materi atau Proyek"
         >
           <Search className="w-4 h-4" />
         </button>
 
-        {/* Notification Bell with red dot */}
+        {/* Notification Bell */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
+            className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative cursor-pointer"
             title="Notifikasi"
             aria-label="Notifikasi Pembelajaran"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+            <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-indigo-600 rounded-full"></span>
           </button>
 
           {/* Notifications Dropdown */}

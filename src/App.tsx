@@ -52,7 +52,8 @@ import {
   buildMateriProductContext, 
   buildInfographicProductContext, 
   buildLKPDProductContext,
-  buildPresentationProductContext 
+  buildPresentationProductContext,
+  buildAssessmentProductContext 
 } from './services/productContextAdapter';
 import { 
   InfographicDraft, 
@@ -537,11 +538,16 @@ export default function App() {
     setActiveLearningContext(activeContext);
     saveStoredActiveContext(activeContext, session?.user?.id);
 
-    // 3. Sinkronkan Master Learning Data dari pertemuan pertama ke currentDraft
+    // 3. Sinkronkan Master Learning Data dari pertemuan pertama ke currentDraft hanya jika terdapat data materi nyata
     const firstClass = project.classSubjects[0];
     const firstChapter = firstClass?.chapters[0];
     const firstMeeting = firstChapter?.meetings[0];
-    if (firstMeeting && firstChapter && firstClass) {
+    const hasRealLearningData = Boolean(
+      firstMeeting?.masterLearningData?.materiDiajarkan?.trim() ||
+      firstMeeting?.masterLearningData?.temaKegiatan?.trim()
+    );
+
+    if (firstMeeting && firstChapter && firstClass && hasRealLearningData) {
       const syncedDraft = syncMeetingToCurrentDraft(
         firstMeeting,
         firstChapter,
@@ -985,6 +991,16 @@ export default function App() {
       )
     : null;
 
+  // Context Adapter untuk Menu Asesmen (Tahap 3E: Harian & Sumatif)
+  const activeAssessmentContext = resolvedHierarchy.meeting
+    ? buildAssessmentProductContext(
+        resolvedHierarchy.meeting,
+        resolvedHierarchy.chapter,
+        resolvedHierarchy.classSubject,
+        resolvedHierarchy.project
+      )
+    : null;
+
   // Layar Loading Pengecekan Sesi
   if (isAuthChecking) {
     return (
@@ -1184,6 +1200,11 @@ export default function App() {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              assessmentContext={activeAssessmentContext}
+              subscriptionSummary={subscriptionSummary}
+              onUsageRecorded={() => refreshSubscriptionSummary()}
+              userId={session?.user?.id}
+              onSaveToast={showToast}
             />
           )}
 
@@ -1194,6 +1215,11 @@ export default function App() {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              assessmentContext={activeAssessmentContext}
+              subscriptionSummary={subscriptionSummary}
+              onUsageRecorded={() => refreshSubscriptionSummary()}
+              userId={session?.user?.id}
+              onSaveToast={showToast}
             />
           )}
 

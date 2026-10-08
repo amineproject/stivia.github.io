@@ -455,17 +455,10 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
             <Presentation className="w-7 h-7" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                Studio Konten
-              </span>
-              <span className="text-[11px] font-bold text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200 flex items-center gap-1">
-                <span>🎯</span>
-                <span>TEPAT 10 SLIDE</span>
-              </span>
-              <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
-                Khusus Gamma AI
-              </span>
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
+              <span>Studio Presentasi</span>
+              <span aria-hidden="true">·</span>
+              <span>Format 10 Slide Gamma AI</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
               Presentasi Pembelajaran (Gamma AI)

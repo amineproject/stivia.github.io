@@ -45,10 +45,13 @@ import {
   EducationLevel,
   MeetingStatus,
   ProductLifecycleStatus,
-  FEATURE_COSTS
+  FEATURE_COSTS,
+  AssessmentType,
+  AssessmentForm
 } from '../../types';
 import {
   updateMeetingMasterLearningData,
+  updateMeetingMetadata,
   updateMeetingStatus,
   updateMeetingProductState,
   syncMeetingToCurrentDraft,
@@ -86,6 +89,18 @@ interface ProyekPembelajaranPageProps {
   userId?: string;
 }
 
+const ASSESSMENT_FORMS_LIST: { id: AssessmentForm; label: string; desc: string }[] = [
+  { id: 'Pilihan Ganda', label: 'Pilihan Ganda', desc: 'Soal objektif dengan opsi jawaban' },
+  { id: 'Benar-Salah', label: 'Benar-Salah', desc: 'Uji kebenaran pernyataan konsep' },
+  { id: 'Menjodohkan', label: 'Menjodohkan', desc: 'Memasangkan istilah dengan konsep' },
+  { id: 'Uraian', label: 'Uraian / Esai', desc: 'Pertanyaan pemahaman mendalam' },
+  { id: 'Praktik', label: 'Praktik / Unjuk Kerja', desc: 'Aktivitas aksi terapan langsung' },
+  { id: 'Proyek', label: 'Proyek', desc: 'Pembuatan produk nyata kontekstual' },
+  { id: 'Observasi', label: 'Observasi', desc: 'Pengamatan sikap & proses belajar' },
+  { id: 'Presentasi', label: 'Presentasi', desc: 'Paparan lisan hasil telaah' },
+  { id: 'Self Assessment', label: 'Self Assessment', desc: 'Refleksi mandiri ketercapaian kompetensi' },
+];
+
 export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   projects,
   learningProjects,
@@ -122,6 +137,13 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   const [cakupanMateri, setCakupanMateri] = useState<string>('');
   const [learningObjectives, setLearningObjectives] = useState<string[]>([]);
   const [newObjectiveInput, setNewObjectiveInput] = useState<string>('');
+  const [reinforcementActivities, setReinforcementActivities] = useState<string>('');
+  const [assessmentEnabled, setAssessmentEnabled] = useState<boolean>(false);
+  const [assessmentType, setAssessmentType] = useState<AssessmentType>('Formatif');
+  const [assessmentForms, setAssessmentForms] = useState<AssessmentForm[]>(['Pilihan Ganda', 'Uraian']);
+  const [assessmentNotes, setAssessmentNotes] = useState<string>('');
+  const [isContinuation, setIsContinuation] = useState<boolean>(false);
+  const [continuationFromMeetingId, setContinuationFromMeetingId] = useState<string>('');
   const [userNotes, setUserNotes] = useState<string>('');
   const [isSuggestingObjectives, setIsSuggestingObjectives] = useState<boolean>(false);
   const [formErrors, setFormErrors] = useState<{ tema?: string; materi?: string; cakupan?: string }>({});
@@ -148,6 +170,13 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   const [newMeetingTema, setNewMeetingTema] = useState('');
   const [newMeetingMateri, setNewMeetingMateri] = useState('');
   const [newMeetingCakupan, setNewMeetingCakupan] = useState('');
+  const [newMeetingActivities, setNewMeetingActivities] = useState('');
+  const [newMeetingAssessmentEnabled, setNewMeetingAssessmentEnabled] = useState(false);
+  const [newMeetingAssessmentType, setNewMeetingAssessmentType] = useState<AssessmentType>('Formatif');
+  const [newMeetingAssessmentForms, setNewMeetingAssessmentForms] = useState<AssessmentForm[]>(['Pilihan Ganda', 'Uraian']);
+  const [newMeetingAssessmentNotes, setNewMeetingAssessmentNotes] = useState('');
+  const [newMeetingIsContinuation, setNewMeetingIsContinuation] = useState(false);
+  const [newMeetingContinuationId, setNewMeetingContinuationId] = useState('');
   const [newMeetingNotes, setNewMeetingNotes] = useState('');
   const [meetingFormErrors, setMeetingFormErrors] = useState<Record<string, string>>({});
   const [meetingToDelete, setMeetingToDelete] = useState<MeetingSession | null>(null);
@@ -157,12 +186,20 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
 
   const handleOpenAddMeetingModal = () => {
     const nextIdx = (activeChapter?.meetings.length || 0) + 1;
+    const lastMeeting = activeChapter?.meetings[activeChapter.meetings.length - 1];
     setNewMeetingPosition(nextIdx);
     setNewMeetingNumber(`Pertemuan ${nextIdx}`);
     setNewMeetingTitle('');
     setNewMeetingTema('');
     setNewMeetingMateri('');
     setNewMeetingCakupan('');
+    setNewMeetingActivities('');
+    setNewMeetingAssessmentEnabled(false);
+    setNewMeetingAssessmentType('Formatif');
+    setNewMeetingAssessmentForms(['Pilihan Ganda', 'Uraian']);
+    setNewMeetingAssessmentNotes('');
+    setNewMeetingIsContinuation(false);
+    setNewMeetingContinuationId(lastMeeting?.id || '');
     setNewMeetingNotes('');
     setMeetingFormErrors({});
     setShowAddMeetingModal(true);
@@ -178,6 +215,11 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
       '3. Unsur pembentuk naskah iklan (Headline, Body text, CTA).\n' +
       '4. Contoh analisis iklan komersial vs layanan masyarakat.'
     );
+    setNewMeetingActivities('Diskusi kelompok membandingkan 2 contoh poster iklan, lalu latihan menganalisis 4 unsur pembentuknya.');
+    setNewMeetingAssessmentEnabled(true);
+    setNewMeetingAssessmentType('Formatif');
+    setNewMeetingAssessmentForms(['Pilihan Ganda', 'Uraian']);
+    setNewMeetingAssessmentNotes('Kuis 5 soal konsep iklan dan latihan analisis singkat.');
     setNewMeetingNotes('Fokus pada iklan komersial dan layanan masyarakat di media digital.');
     setMeetingFormErrors({});
   };
@@ -194,7 +236,14 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
       setMateriDiajarkan(mld.materiDiajarkan || '');
       setCakupanMateri(mld.cakupanMateri || '');
       setLearningObjectives(mld.learningObjectives || []);
+      setReinforcementActivities(mld.reinforcementActivities || '');
+      setAssessmentEnabled(Boolean(mld.assessmentEnabled));
+      setAssessmentType(mld.assessmentType || 'Formatif');
+      setAssessmentForms(mld.assessmentForms && mld.assessmentForms.length > 0 ? mld.assessmentForms : ['Pilihan Ganda', 'Uraian']);
+      setAssessmentNotes(mld.assessmentNotes || '');
       setUserNotes(mld.userNotes || '');
+      setIsContinuation(Boolean(activeMeeting.isContinuation));
+      setContinuationFromMeetingId(activeMeeting.continuationFromMeetingId || '');
       setFormErrors({});
     }
   }, [activeMeeting?.id]);
@@ -214,17 +263,32 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
 
     if (!activeMeeting) return;
 
-    const updated = updateMeetingMasterLearningData(learningProjects, activeMeeting.id, {
+    const contTargetMeeting = isContinuation && continuationFromMeetingId
+      ? activeChapter?.meetings.find(m => m.id === continuationFromMeetingId)
+      : undefined;
+
+    let updated = updateMeetingMasterLearningData(learningProjects, activeMeeting.id, {
       temaKegiatan: temaKegiatan.trim(),
       materiDiajarkan: materiDiajarkan.trim(),
       cakupanMateri: cakupanMateri.trim(),
       learningObjectives,
+      reinforcementActivities: reinforcementActivities.trim(),
+      assessmentEnabled,
+      assessmentType: assessmentEnabled ? assessmentType : undefined,
+      assessmentForms: assessmentEnabled ? assessmentForms : undefined,
+      assessmentNotes: assessmentEnabled ? assessmentNotes.trim() : undefined,
       userNotes: userNotes.trim()
+    });
+
+    updated = updateMeetingMetadata(updated, activeMeeting.id, {
+      isContinuation,
+      continuationFromMeetingId: isContinuation ? continuationFromMeetingId : undefined,
+      continuationFromMeetingNumber: contTargetMeeting?.meetingNumber
     });
 
     onUpdateLearningProjects(updated);
     setFormErrors({});
-    onSaveToast('Master Learning Data berhasil disimpan! Siap digunakan oleh semua produk.');
+    onSaveToast('Master Learning Data berhasil disimpan! Siap digunakan oleh seluruh produk.');
   };
 
   // Handler Tambah Tujuan Pembelajaran Manual
@@ -503,11 +567,18 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     // ID pertemuan permanen dan mandiri, tidak bergantung pada nomor pertemuan
     const meetingId = `meet-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
+    const contTarget = newMeetingIsContinuation && newMeetingContinuationId
+      ? activeChapter.meetings.find(m => m.id === newMeetingContinuationId)
+      : undefined;
+
     const newMeeting: MeetingSession = {
       id: meetingId,
       meetingNumber: `Pertemuan ${newMeetingPosition}`,
       title: newMeetingTitle.trim(),
       status: 'ready',
+      isContinuation: newMeetingIsContinuation,
+      continuationFromMeetingId: newMeetingIsContinuation ? newMeetingContinuationId : undefined,
+      continuationFromMeetingNumber: contTarget?.meetingNumber,
       createdAt: now,
       updatedAt: now,
       masterLearningData: {
@@ -515,6 +586,11 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
         materiDiajarkan: newMeetingMateri.trim(),
         cakupanMateri: newMeetingCakupan.trim(),
         learningObjectives: [],
+        reinforcementActivities: newMeetingActivities.trim(),
+        assessmentEnabled: newMeetingAssessmentEnabled,
+        assessmentType: newMeetingAssessmentEnabled ? newMeetingAssessmentType : undefined,
+        assessmentForms: newMeetingAssessmentEnabled ? newMeetingAssessmentForms : undefined,
+        assessmentNotes: newMeetingAssessmentEnabled ? newMeetingAssessmentNotes.trim() : undefined,
         userNotes: newMeetingNotes.trim(),
         version: 1,
         updatedAt: now
@@ -650,101 +726,43 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   return (
     <div className="max-w-6xl mx-auto pb-24 space-y-8 animate-in fade-in duration-200">
       {/* Header Banner Utama */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Fondasi Pembelajaran Berbasis Proyek</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Proyek & Ruang Belajar
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Proyek Saya
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Tentukan hierarki pembelajaran sekali, lalu hasilkan seluruh produk secara konsisten melalui Master Learning Data.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Kelola bab dan pertemuan untuk menghasilkan perangkat ajar terintegrasi.
           </p>
         </div>
 
-        {/* Tab Switcher & Cloud Sync Indicator */}
-        <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
-          {/* Cloud Sync Status Pill */}
-          <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
-              cloudSyncStatus === 'synced'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                : cloudSyncStatus === 'syncing'
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse'
-                : cloudSyncStatus === 'error'
-                ? 'bg-amber-50 text-amber-800 border-amber-200'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-            }`}>
-              {cloudSyncStatus === 'synced' ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Cloud Synced</span>
-                </>
-              ) : cloudSyncStatus === 'syncing' ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                  <span>Menyinkronkan...</span>
-                </>
-              ) : cloudSyncStatus === 'error' ? (
-                <>
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Sync Pending</span>
-                </>
-              ) : (
-                <>
-                  <Clock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Lokal</span>
-                </>
-              )}
-            </span>
-
-            {onRefreshCloud && (
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await onRefreshCloud();
-                    onSaveToast('Data pembelajaran berhasil disinkronkan dari Cloud Supabase!');
-                  } catch (e) {
-                    onSaveToast('Gagal menyinkronkan data cloud.');
-                  }
-                }}
-                disabled={isCloudSyncing}
-                title="Muat Ulang / Sinkronkan Data dari Supabase Cloud"
-                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isCloudSyncing ? 'animate-spin text-indigo-600' : ''}`} />
-              </button>
-            )}
-          </div>
-
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-3 self-start sm:self-auto">
           {/* Switcher Tab */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200">
+          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
             <button
               type="button"
               onClick={() => setActiveMainTab('hierarki')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeMainTab === 'hierarki'
                   ? 'bg-white text-indigo-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Struktur Proyek & Pertemuan</span>
+              <span>Hierarki Proyek</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveMainTab('legacy')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeMainTab === 'legacy'
                   ? 'bg-white text-indigo-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <FolderKanban className="w-3.5 h-3.5" />
-              <span>Arsip Rancangan Lama ({projects.length})</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>Draf Lama ({projects.length})</span>
             </button>
           </div>
         </div>
@@ -1147,6 +1165,11 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                     <span className="text-[10px] font-bold text-slate-400">
                       Versi Master: v{activeMeeting?.masterLearningData.version || 1}
                     </span>
+                    {activeMeeting?.isContinuation && (
+                      <span className="text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md">
+                        Lanjutan dari {activeMeeting.continuationFromMeetingNumber || 'Pertemuan Sebelumnya'}
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mt-0.5">
                     Master Learning Data — {activeMeeting?.meetingNumber}
@@ -1199,6 +1222,52 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* OPSI KELANJUTAN PERTEMUAN (OPSIONAL) */}
+            {activeChapter && activeChapter.meetings.length > 1 && (
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="cb-is-continuation"
+                    checked={isContinuation}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setIsContinuation(checked);
+                      if (checked && !continuationFromMeetingId) {
+                        const previousMeetings = activeChapter.meetings.filter(m => m.id !== activeMeeting?.id);
+                        if (previousMeetings.length > 0) {
+                          setContinuationFromMeetingId(previousMeetings[0].id);
+                        }
+                      }
+                    }}
+                    className="w-4 h-4 rounded text-[#3b49df] focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <label htmlFor="cb-is-continuation" className="font-bold text-slate-800 cursor-pointer select-none">
+                    Tandai pertemuan ini sebagai kelanjutan dari pertemuan sebelumnya
+                  </label>
+                </div>
+
+                {isContinuation && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 font-medium">Lanjutan dari:</span>
+                    <select
+                      value={continuationFromMeetingId}
+                      onChange={(e) => setContinuationFromMeetingId(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-xs cursor-pointer focus:outline-hidden"
+                    >
+                      {activeChapter.meetings
+                        .filter(m => m.id !== activeMeeting?.id)
+                        .map(m => (
+                          <option key={m.id} value={m.id}>
+                            {m.meetingNumber} — {m.title}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* FORM 3 DATA UTAMA MASTER LEARNING DATA */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1342,10 +1411,151 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
               </div>
             </div>
 
-            {/* CATATAN PEDAGOGIS GURU (OPSIONAL) */}
+            {/* DATA 4: KEGIATAN / LATIHAN PENGUAT (OPSIONAL) */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="flex items-center justify-between text-xs font-bold text-slate-800">
+                <span>4. Kegiatan / Latihan Penguat (Opsional)</span>
+                <span className="text-[10px] font-normal text-slate-400">Diskusi, praktik, demonstrasi, studi kasus, latihan soal</span>
+              </label>
+              <textarea
+                rows={3}
+                value={reinforcementActivities}
+                onChange={(e) => setReinforcementActivities(e.target.value)}
+                placeholder="Contoh: Peserta didik membaca dua contoh teks iklan secara berpasangan, kemudian mengidentifikasi ciri kebahasaan persuasif dan mempresentasikan hasil temuannya."
+                className="w-full p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200 text-xs sm:text-sm font-medium focus:bg-white focus:outline-hidden focus:border-indigo-500 transition-all leading-relaxed"
+              />
+            </div>
+
+            {/* DATA 5: ASESMEN PEMBELAJARAN (KOMPONEN KONDISIONAL - OPSIONAL) */}
+            <div className="space-y-3.5 pt-3 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div>
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-teal-600" />
+                    <span>5. Asesmen Pembelajaran (Opsional)</span>
+                  </label>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Apakah pertemuan ini menggunakan asesmen? (Default: Tidak, fokus eksplorasi materi)
+                  </p>
+                </div>
+
+                {/* Switch Kondisional: Tidak / Ya */}
+                <div className="inline-flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200/80 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setAssessmentEnabled(false)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      !assessmentEnabled
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    Tidak
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAssessmentEnabled(true)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      assessmentEnabled
+                        ? 'bg-teal-600 text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    Ya, Gunakan Asesmen
+                  </button>
+                </div>
+              </div>
+
+              {!assessmentEnabled ? (
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 flex items-center gap-2.5">
+                  <Info className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>
+                    Pertemuan ini diset tanpa asesmen formal. Pembelajaran berfokus pada penyampaian dan penguatan konsep materi.
+                  </span>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-teal-50/50 border border-teal-200/80 space-y-4 animate-in fade-in duration-150">
+                  {/* Pilihan Jenis Asesmen */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-teal-950 block">
+                      Jenis Asesmen <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['Diagnostik', 'Formatif', 'Sumatif'] as AssessmentType[]).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setAssessmentType(type)}
+                          className={`p-2 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                            assessmentType === type
+                              ? 'bg-teal-600 text-white border-teal-700 shadow-xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-teal-50/60'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Pilihan Bentuk Asesmen */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-teal-950 flex items-center justify-between">
+                      <span>Bentuk Asesmen (Pilih satu atau beberapa) <span className="text-rose-500">*</span></span>
+                      <span className="text-[10px] text-teal-700 font-normal">Klik untuk memilih/membatalkan</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ASSESSMENT_FORMS_LIST.map((form) => {
+                        const isSelected = assessmentForms.includes(form.id);
+                        return (
+                          <button
+                            key={form.id}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                if (assessmentForms.length > 1) {
+                                  setAssessmentForms(prev => prev.filter(f => f !== form.id));
+                                }
+                              } else {
+                                setAssessmentForms(prev => [...prev, form.id]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-teal-600 text-white border-teal-700 shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                            title={form.desc}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5" />}
+                            <span>{form.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Catatan Asesmen */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-teal-950 block">
+                      Catatan Asesmen (Opsional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={assessmentNotes}
+                      onChange={(e) => setAssessmentNotes(e.target.value)}
+                      placeholder="Misal: Kuis 5 butir pemahaman konsep iklan dan unjuk kerja mandiri..."
+                      className="w-full p-2.5 rounded-xl bg-white border border-teal-200 text-xs font-medium focus:outline-hidden focus:border-teal-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* DATA 6: CATATAN PEDAGOGIS GURU (OPSIONAL) */}
             <div className="space-y-1.5 pt-2 border-t border-slate-100">
               <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span>Catatan Pedagogis Guru (Opsional)</span>
+                <span>6. Catatan Pedagogis Guru (Opsional)</span>
                 <span className="text-[10px] font-normal text-slate-400">Instruksi khusus untuk gaya atau penekanan materi</span>
               </label>
               <textarea
@@ -2016,7 +2226,171 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                 )}
               </div>
 
-              {/* 6. Catatan Pedagogis */}
+              {/* Opsi Kelanjutan Pertemuan (Opsional) */}
+              {activeChapter && activeChapter.meetings.length > 0 && (
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="modal-cb-continuation"
+                      checked={newMeetingIsContinuation}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNewMeetingIsContinuation(checked);
+                        if (checked && !newMeetingContinuationId && activeChapter.meetings.length > 0) {
+                          setNewMeetingContinuationId(activeChapter.meetings[activeChapter.meetings.length - 1].id);
+                        }
+                      }}
+                      className="w-4 h-4 rounded text-[#3b49df] focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <label htmlFor="modal-cb-continuation" className="font-bold text-slate-800 cursor-pointer select-none text-xs">
+                      Tandai sebagai kelanjutan dari pertemuan sebelumnya
+                    </label>
+                  </div>
+                  {newMeetingIsContinuation && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-slate-500 font-medium text-[11px]">Lanjutan dari:</span>
+                      <select
+                        value={newMeetingContinuationId}
+                        onChange={(e) => setNewMeetingContinuationId(e.target.value)}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-bold text-xs cursor-pointer focus:outline-hidden"
+                      >
+                        {activeChapter.meetings.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.meetingNumber} — {m.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 5. Kegiatan / Latihan Penguat (Opsional) */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Kegiatan / Latihan Penguat (Opsional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={newMeetingActivities}
+                  onChange={(e) => setNewMeetingActivities(e.target.value)}
+                  placeholder="Misal: Diskusi kelompok membedakan ciri iklan komersial vs non-komersial..."
+                  className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 font-medium focus:bg-white text-xs leading-relaxed"
+                />
+              </div>
+
+              {/* 6. Asesmen Pembelajaran (Opsional) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="font-bold text-slate-800 text-xs block">
+                      Asesmen Pembelajaran (Opsional)
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Gunakan asesmen pada pertemuan ini? (Default: Tidak)
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-200/80">
+                    <button
+                      type="button"
+                      onClick={() => setNewMeetingAssessmentEnabled(false)}
+                      className={`px-3 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+                        !newMeetingAssessmentEnabled
+                          ? 'bg-white text-slate-900 shadow-2xs'
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      Tidak
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewMeetingAssessmentEnabled(true)}
+                      className={`px-3 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+                        newMeetingAssessmentEnabled
+                          ? 'bg-teal-600 text-white shadow-2xs'
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      Ya, Gunakan
+                    </button>
+                  </div>
+                </div>
+
+                {newMeetingAssessmentEnabled && (
+                  <div className="pt-2 border-t border-slate-200/80 space-y-2.5 animate-in fade-in duration-150">
+                    {/* Jenis Asesmen */}
+                    <div>
+                      <span className="font-semibold text-slate-700 text-[11px] block mb-1">
+                        Jenis Asesmen:
+                      </span>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(['Diagnostik', 'Formatif', 'Sumatif'] as AssessmentType[]).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setNewMeetingAssessmentType(t)}
+                            className={`py-1.5 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-all ${
+                              newMeetingAssessmentType === t
+                                ? 'bg-teal-600 text-white border-teal-700 shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Bentuk Asesmen */}
+                    <div>
+                      <span className="font-semibold text-slate-700 text-[11px] block mb-1">
+                        Bentuk Asesmen:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {ASSESSMENT_FORMS_LIST.map((form) => {
+                          const isSel = newMeetingAssessmentForms.includes(form.id);
+                          return (
+                            <button
+                              key={form.id}
+                              type="button"
+                              onClick={() => {
+                                if (isSel) {
+                                  if (newMeetingAssessmentForms.length > 1) {
+                                    setNewMeetingAssessmentForms(prev => prev.filter(f => f !== form.id));
+                                  }
+                                } else {
+                                  setNewMeetingAssessmentForms(prev => [...prev, form.id]);
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all cursor-pointer ${
+                                isSel
+                                  ? 'bg-teal-600 text-white border-teal-700'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              {form.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Catatan Asesmen */}
+                    <div>
+                      <input
+                        type="text"
+                        value={newMeetingAssessmentNotes}
+                        onChange={(e) => setNewMeetingAssessmentNotes(e.target.value)}
+                        placeholder="Catatan asesmen (misal: Kuis 5 soal konsep dasar)..."
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 7. Catatan Pedagogis */}
               <div>
                 <label className="font-bold text-slate-700 block mb-1">
                   Catatan (Opsional)

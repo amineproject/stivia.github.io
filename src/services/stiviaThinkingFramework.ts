@@ -77,7 +77,7 @@ export interface StiviaThinkingInput {
   // Pengaturan Infografis Pendidikan Baru (Backward-Compatible Optional Fields)
   structureShape?: string;
   selectedComponents?: string[];
-  depth?: 'Ringkas' | 'Sedang' | 'Mendalam';
+  depth?: 'Ringkas' | 'Sedang' | 'Mendalam' | 'Dasar' | 'Menengah' | 'Lanjut' | string;
   illustrationLevel?: string;
   selectedVisualTypes?: string[];
   designStyle?: string;
@@ -601,6 +601,229 @@ export function suggestLearningObjectives(
 }
 
 /**
+ * Format Judul Infografis Fleksibel & Alami (Mematuhi Standar STIVIA Section 4)
+ * Formula fleksibel: [TOPIK] + [AKSI / MANFAAT / FOKUS]
+ * Contoh: "Mengenali Ciri-Ciri Teks Deskripsi" atau "Menganalisis Struktur Teks Deskripsi"
+ */
+export function formatFlexibleInfographicTitle(
+  rawTitle: string,
+  subject: string,
+  primaryChar?: MaterialCharacterType,
+  learningObjectives?: string[]
+): string {
+  let title = (rawTitle || '').trim();
+  if (!title) return 'Infografis Pembelajaran';
+
+  // Bersihkan teks berulang sebelum/sesudah titik dua jika redundan
+  if (title.includes(':')) {
+    const parts = title.split(':').map(p => p.trim());
+    if (parts[0] && parts[1]) {
+      if (parts[0].length >= 15 && parts[1].length >= 15) {
+        // Ambil bagian yang lebih ringkas dan fokus
+        title = parts[0].length <= parts[1].length ? parts[0] : parts[1];
+      }
+    }
+  }
+
+  // Jika judul ALL CAPS, ubah ke Title Case secara rapi
+  if (title === title.toUpperCase() && title.length > 5) {
+    const minorWords = new Set(['dan', 'atau', 'di', 'ke', 'dari', 'untuk', 'pada', 'dengan', 'yang', 'dalam', 'vs']);
+    title = title
+      .toLowerCase()
+      .split(' ')
+      .map((word, idx) => {
+        if (idx > 0 && minorWords.has(word)) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(' ');
+  }
+
+  // Jika sudah memiliki kata kerja aksi pedagogis atau cukup panjang, kembalikan langsung
+  const hasAction = /^(mengenal|mengenali|memahami|menganalisis|mengevaluasi|menerapkan|mengidentifikasi|cara|panduan|langkah|struktur|konsep|anatomi|pembedahan|perbandingan|tips|produksi|penyuntingan|finalisasi)\b/i.test(title);
+  if (hasAction || title.length > 35) {
+    return title;
+  }
+
+  // Lengkapi secara natural jika judul terlalu polos/pendek berdasarkan tujuan pembelajaran
+  if (learningObjectives && learningObjectives.length > 0) {
+    const firstObj = learningObjectives[0].toLowerCase();
+    if (firstObj.includes('mengidentifikasi ciri') || firstObj.includes('ciri-ciri')) {
+      return `Mengenali Ciri-Ciri ${title}`;
+    }
+    if (firstObj.includes('menganalisis struktur') || firstObj.includes('struktur')) {
+      return `Menganalisis Struktur ${title}`;
+    }
+    if (firstObj.includes('langkah') || firstObj.includes('prosedur')) {
+      return `Langkah & Prosedur ${title}`;
+    }
+    if (firstObj.includes('memahami konsep') || firstObj.includes('pengertian')) {
+      return `Memahami Konsep Dasar ${title}`;
+    }
+  }
+
+  return title;
+}
+
+/**
+ * Pencocokan Substantif Poin Materi dari Cakupan Materi (Strict Anti-Hallucination & Less is More)
+ * Memastikan setiap komponen infografis mengambil data nyata dari Cakupan Materi pendidik.
+ */
+function findSubstanceInScope(
+  compName: string,
+  scopePoints: string[],
+  defaultTitle: string,
+  defaultSubject: string,
+  depth: string = 'Sedang'
+): { text: string; keyword: string; contextualExample?: string } {
+  const compLower = compName.toLowerCase();
+
+  // Pola pencarian kata kunci semantik dalam scopePoints
+  let targetPattern: RegExp | null = null;
+  if (compLower.includes('pengertian') || compLower.includes('definisi') || compLower.includes('hakikat')) {
+    targetPattern = /(pengertian|definisi|hakikat|apa itu|konsep dasar|pengantar)/i;
+  } else if (compLower.includes('tujuan') || compLower.includes('fungsi') || compLower.includes('peranan') || compLower.includes('manfaat')) {
+    targetPattern = /(tujuan|fungsi|peranan|manfaat|kegunaan|peran)/i;
+  } else if (compLower.includes('ciri') || compLower.includes('karakteristik') || compLower.includes('sifat') || compLower.includes('indikator')) {
+    targetPattern = /(ciri|karakteristik|sifat|indikator|kaidah|tanda)/i;
+  } else if (compLower.includes('unsur') || compLower.includes('komponen') || compLower.includes('bagian') || compLower.includes('elemen') || compLower.includes('struktur') || compLower.includes('jenis')) {
+    targetPattern = /(unsur|komponen|bagian|elemen|struktur|anatomi|jenis|tipe|kategori|klasifikasi)/i;
+  } else if (compLower.includes('contoh') || compLower.includes('perbandingan') || compLower.includes('kasus') || compLower.includes('aplikasi')) {
+    targetPattern = /(contoh|kasus|penerapan|aplikasi|komparasi|vs|perbandingan|nyata)/i;
+  } else if (compLower.includes('langkah') || compLower.includes('proses') || compLower.includes('tahap') || compLower.includes('alur')) {
+    targetPattern = /(langkah|proses|tahap|alur|prosedur|cara)/i;
+  } else if (compLower.includes('tips') || compLower.includes('kesimpulan') || compLower.includes('ringkasan') || compLower.includes('evaluasi')) {
+    targetPattern = /(tips|kesimpulan|ringkasan|catatan|pedoman|evaluasi|hasil)/i;
+  }
+
+  // Cari di scopePoints
+  let matchedPoint: string | undefined;
+  if (targetPattern) {
+    matchedPoint = scopePoints.find(p => targetPattern!.test(p));
+  }
+
+  // Jika belum cocok, gunakan indeks yang proporsional dari scopePoints jika tersedia
+  if (!matchedPoint && scopePoints.length > 0) {
+    if (compLower.includes('pengertian') || compLower.includes('tujuan')) {
+      matchedPoint = scopePoints[0];
+    } else if (compLower.includes('kesimpulan') || compLower.includes('tips') || compLower.includes('evaluasi')) {
+      matchedPoint = scopePoints[scopePoints.length - 1];
+    }
+  }
+
+  if (matchedPoint) {
+    const clean = matchedPoint.replace(/^(\d+|[a-zA-Z])[\.\)\-\*•]\s*/, '').trim();
+    // Ekstraksi teks ringkas: ambil inti kalimat tanpa kata-kata pengisi berlebih
+    let text = clean;
+    if (text.includes(':')) {
+      text = text.split(':').slice(1).join(':').trim();
+    }
+    // Prinsip LESS IS MORE: ringkas, maksimal ~90 karakter
+    if (text.length > 95) {
+      const firstSentence = text.split(/[.;]/)[0].trim();
+      text = firstSentence.length >= 30 ? firstSentence : text.slice(0, 90) + '...';
+    }
+
+    const keyword = clean.split(/[:\-\–\(\]]/)[0].trim() || compName;
+    return {
+      text,
+      keyword: keyword.length > 30 ? compName : keyword,
+      contextualExample: `Penerapan ${keyword.toLowerCase()} dalam materi ${defaultTitle} (${defaultSubject})`
+    };
+  }
+
+  // Fallback terikat materi tanpa halusinasi
+  let fallbackText = `Intisari pembahasan ${compName.toLowerCase()} yang esensial pada materi ${defaultTitle}.`;
+  if (compLower.includes('pengertian')) {
+    fallbackText = `Definisi ringkas dan hakikat utama konsep ${defaultTitle}.`;
+  } else if (compLower.includes('tujuan')) {
+    fallbackText = `Capaian kompetensi dan tujuan utama pembelajaran ${defaultTitle}.`;
+  } else if (compLower.includes('fungsi')) {
+    fallbackText = `Peranan fungsional dan manfaat konsep dalam pembelajaran ${defaultSubject}.`;
+  } else if (compLower.includes('ciri')) {
+    fallbackText = `Karakteristik pembeda dan kaidah utama materi ${defaultTitle}.`;
+  } else if (compLower.includes('unsur') || compLower.includes('komponen')) {
+    fallbackText = `Bagian pembentuk dan elemen pokok materi ${defaultTitle}.`;
+  } else if (compLower.includes('contoh')) {
+    fallbackText = `Contoh kontekstual penerapan ${defaultTitle} pada situasi belajar nyata.`;
+  } else if (compLower.includes('langkah')) {
+    fallbackText = `Tahapan prosedur sistematis pemahaman dan penyelesaian materi.`;
+  } else if (compLower.includes('kesimpulan')) {
+    fallbackText = `Sintesis penutup pemahaman materi ${defaultTitle} secara komprehensif.`;
+  }
+
+  return {
+    text: fallbackText,
+    keyword: compName,
+    contextualExample: `Contoh kontekstual ${compName.toLowerCase()} materi ${defaultTitle}`
+  };
+}
+
+/**
+ * Pemilihan Komponen Pintar (AI Pilihkan) Berdasarkan Tujuan, Materi, Cakupan, Bentuk, dan Kedalaman
+ * Mematuhi Standar STIVIA Section 17 & Section 8
+ */
+function determineSmartComponents(
+  activeContext: ActiveContentContext,
+  primaryChar: MaterialCharacterType,
+  structureShape?: string,
+  depth: string = 'Sedang'
+): string[] {
+  const shape = structureShape || '';
+  const objText = (activeContext.learningObjectives || []).join(' ').toLowerCase();
+  const scopeText = (activeContext.scopePoints || []).join(' ').toLowerCase();
+
+  // 1. Bentuk Proses / Langkah (Section 8: TUJUAN -> LANGKAH 1 -> LANGKAH 2 -> LANGKAH 3 -> HASIL)
+  if (shape === 'Proses / Langkah' || primaryChar === 'Proses' || scopeText.includes('langkah') || objText.includes('prosedur')) {
+    return ['Tujuan Proses', 'Tahap Persiapan', 'Langkah Inti', 'Langkah Lanjutan', 'Hasil & Evaluasi'];
+  }
+
+  // 2. Bentuk Perbandingan (Section 8: PARAMETER -> OBJEK A vs B -> PERBEDAAN -> PERSAMAAN -> KESIMPULAN)
+  if (shape === 'Perbandingan' || primaryChar === 'Perbandingan' || scopeText.includes('perbedaan') || scopeText.includes('komparasi')) {
+    return ['Parameter Komparasi', 'Karakteristik Objek A', 'Karakteristik Objek B', 'Perbedaan Esensial', 'Kesimpulan'];
+  }
+
+  // 3. Bentuk Struktur / Komponen (Section 8: KONSEP UTAMA -> BAGIAN 1 -> BAGIAN 2 -> INTERAKSI -> SISTEM UTUH)
+  if (shape === 'Struktur / Komponen' || primaryChar === 'Sistem' || scopeText.includes('anatomi') || scopeText.includes('unsur pembangun')) {
+    return ['Konsep Utama', 'Komponen Inti', 'Komponen Pendukung', 'Interaksi Fungsi', 'Keutuhan Sistem'];
+  }
+
+  // 4. Bentuk Analisis
+  if (shape === 'Analisis' || objText.includes('menganalisis')) {
+    return ['Identifikasi Konsep', 'Unsur & Parameter', 'Hubungan Kausal', 'Konteks Aplikasi', 'Sintesis Temuan'];
+  }
+
+  // 5. Bentuk Kontekstual
+  if (shape === 'Kontekstual' || objText.includes('kontekstual') || scopeText.includes('kehidupan')) {
+    return ['Fenomena Nyata', 'Kaitan Konseptual', 'Mekanisme Kejadian', 'Manfaat Aplikatif', 'Refleksi Siswa'];
+  }
+
+  // 6. Bentuk Materi + Contoh
+  if (shape === 'Materi + Contoh') {
+    return ['Pengertian Teoretis', 'Kaidah Pokok', 'Contoh Konkret', 'Variasi Konteks', 'Refleksi Pembelajaran'];
+  }
+
+  // 7. Bentuk Ringkasan
+  if (shape === 'Ringkasan') {
+    return ['Gagasan Pokok', 'Pilar Konsep 1', 'Pilar Konsep 2', 'Pilar Konsep 3', 'Kesimpulan Akhir'];
+  }
+
+  // 8. Bentuk Konsep Dasar / Standar (Default Section 8: PENGERTIAN -> FUNGSI -> CIRI-CIRI -> CONTOH -> KESIMPULAN)
+  if (objText.includes('mengidentifikasi ciri') || objText.includes('ciri-ciri') || scopeText.includes('ciri')) {
+    return ['Pengertian', 'Tujuan', 'Ciri-ciri', 'Contoh', 'Kesimpulan'];
+  }
+
+  if (depth === 'Dasar') {
+    return ['Pengertian Dasar', 'Fungsi Utama', 'Ciri Pokok', 'Contoh Sederhana'];
+  }
+
+  if (depth === 'Mendalam') {
+    return ['Definisi & Hakikat', 'Struktur & Unsur', 'Karakteristik Khas', 'Analisis Perbandingan', 'Aplikasi Nyata', 'Kesimpulan'];
+  }
+
+  return ['Pengertian', 'Fungsi & Peranan', 'Karakteristik Utama', 'Contoh Penerapan', 'Kesimpulan'];
+}
+
+/**
  * Helper STIVIA: Membentuk Preview Struktur Rancangan Infografis (Lokal & In-Memory Tanpa Saldo)
  */
 export function buildPreviewInfographicStructure(
@@ -614,7 +837,7 @@ export function buildPreviewInfographicStructure(
   const cleanSubject = subject?.trim() || 'Umum';
 
   // Jika guru memilih komponen tertentu secara eksplisit:
-  if (components && components.length > 0) {
+  if (components && components.length > 0 && !components.some(c => c.toLowerCase().includes('pilihkan'))) {
     return components.slice(0, 6).map((comp, idx) => {
       const stepNum = String(idx + 1).padStart(2, '0');
       let desc = `Penjelasan terstruktur mengenai ${comp.toLowerCase()} dari ${cleanTopic} sesuai kedalaman materi ${depth.toLowerCase()}.`;
@@ -882,104 +1105,44 @@ function determineInfographicStructure(
 
 /**
  * Sintesis 4–6 Bagian Konten Infografis yang Terstruktur (Prinsip Short Text + Strong Visual)
+ * Menerapkan IDENTIFY -> SIMPLIFY -> VISUALIZE -> VERIFY dan LESS IS MORE
  */
 function synthesizeContentSections(
   activeContext: ActiveContentContext,
   primaryChar: MaterialCharacterType,
   icons: string[],
   selectedComponents?: string[],
-  depth: string = 'Sedang'
+  depth: string = 'Sedang',
+  structureShape?: string
 ): InfographicContentSection[] {
   const { scopePoints, title, subject, activeKeywords } = activeContext;
 
-  // Jika guru memilih komponen spesifik pada form:
-  if (selectedComponents && selectedComponents.length >= 3) {
-    return selectedComponents.slice(0, 6).map((compName, idx) => {
-      const bagianNum = idx + 1;
-      const iconForSection = icons[idx % icons.length] || `Ikon ${compName}`;
-      const keywordForSection = activeKeywords[idx % activeKeywords.length] || compName;
+  // Tentukan nama-nama komponen: input guru atau AI Pilihkan berbasis tujuan, materi, cakupan & bentuk
+  let finalComponentNames: string[] = [];
+  const isAIMode = !selectedComponents || 
+                   selectedComponents.length < 3 || 
+                   selectedComponents.some(c => c.toLowerCase().includes('pilihkan'));
 
-      let detailText = `Uraian konsep ${compName.toLowerCase()} dari ${title} yang relevan dengan pembelajaran ${subject}.`;
-      if (compName === 'Pengertian') {
-        detailText = `Definisi ringkas dan hakikat utama yang mendasari konsep ${title}.`;
-      } else if (compName === 'Tujuan') {
-        detailText = `Tujuan pembelajaran dan capaian kompetensi yang diharapkan dari ${title}.`;
-      } else if (compName === 'Fungsi') {
-        detailText = `Peranan fungsional dan manfaat utama dalam aplikasi nyata peserta didik.`;
-      } else if (compName === 'Ciri-ciri' || compName === 'Karakteristik') {
-        detailText = `Karakteristik khas dan indikator penting pembeda dari materi ${title}.`;
-      } else if (compName === 'Unsur / Komponen' || compName === 'Jenis') {
-        detailText = `Bagian-bagian pembentuk, klasifikasi kategori, atau sub-elemen materi.`;
-      } else if (compName === 'Contoh') {
-        detailText = `Contoh konkret aplikatif yang akrab dengan keseharian siswa.`;
-      } else if (compName === 'Langkah / Proses') {
-        detailText = `Alur tahapan terstruktur dari awal persiapan hingga tercapainya hasil.`;
-      } else if (compName === 'Tips') {
-        detailText = `Panduan praktis dan tips cerdas untuk mempermudah pemahaman siswa.`;
-      } else if (compName === 'Kesimpulan') {
-        detailText = `Rangkuman kesimpulan penutup pembelajaran ${title} secara utuh.`;
-      }
-
-      // Sesuaikan panjang teks berdasarkan kedalaman
-      if (depth === 'Ringkas' && detailText.length > 80) {
-        detailText = detailText.slice(0, 75) + '...';
-      }
-
-      return {
-        bagianNumber: bagianNum,
-        judul: compName,
-        teksSingkat: detailText,
-        kataKunci: keywordForSection,
-        contohKonkret: `Contoh penerapan ${compName.toLowerCase()} dalam materi ${title} (${subject}).`,
-        visual: `Modul visual beraksen fokus pada aspek ${compName.toLowerCase()}`,
-        ikon: iconForSection
-      };
-    });
+  if (isAIMode) {
+    finalComponentNames = determineSmartComponents(activeContext, primaryChar, structureShape, depth);
+  } else {
+    finalComponentNames = selectedComponents.slice(0, 6);
   }
 
-  // Gunakan scopePoints yang diberikan pengguna sebagai dasar 4–6 bagian
-  let basePoints = scopePoints.slice(0, 6);
-  if (basePoints.length < 4) {
-    // Tambahkan poin terstruktur jika kurang dari 4 poin
-    const needed = 4 - basePoints.length;
-    for (let i = 0; i < needed; i++) {
-      if (i === 0 && !basePoints.some(p => p.toLowerCase().includes('karakteristik') || p.toLowerCase().includes('ciri'))) {
-        basePoints.push(`Karakteristik & Indikator Utama ${activeKeywords[0] || title}`);
-      } else if (i === 1 && !basePoints.some(p => p.toLowerCase().includes('fungsi') || p.toLowerCase().includes('peranan'))) {
-        basePoints.push(`Fungsi dan Tujuan Pembelajaran ${activeKeywords[1] || title}`);
-      } else {
-        basePoints.push(`Penerapan Nyata & Contoh Kontekstual ${activeKeywords[2] || title}`);
-      }
-    }
-  }
-
-  return basePoints.map((pointText, idx) => {
+  // Petakan setiap komponen langsung ke data riil Cakupan Materi pendidik
+  return finalComponentNames.slice(0, 6).map((compName, idx) => {
     const bagianNum = idx + 1;
-    const cleanTitle = pointText
-      .replace(/^(\d+|[a-zA-Z])[\.\)\-\*•]\s*/, '')
-      .split(/[:\-\–]/)[0]
-      .trim();
-
-    let detailText = pointText.includes(':') 
-      ? pointText.split(':').slice(1).join(':').trim() 
-      : `Intisari pemahaman tentang ${cleanTitle.toLowerCase()} yang relevan dengan ${subject}.`;
-
-    if (depth === 'Ringkas' && detailText.length > 80) {
-      detailText = detailText.slice(0, 75) + '...';
-    } else if (depth === 'Mendalam' && detailText.length < 60) {
-      detailText = `${detailText} Disertai penjelasan relasional yang memperdalam pemahaman siswa.`;
-    }
-
-    const iconForSection = icons[idx % icons.length] || `Ikon ${cleanTitle}`;
-    const keywordForSection = activeKeywords[idx % activeKeywords.length] || cleanTitle;
+    const substance = findSubstanceInScope(compName, scopePoints, title, subject, depth);
+    const iconForSection = icons[idx % icons.length] || `Ikon ${compName}`;
+    const keywordForSection = substance.keyword || activeKeywords[idx % activeKeywords.length] || compName;
 
     return {
       bagianNumber: bagianNum,
-      judul: cleanTitle || `Bagian ${bagianNum}`,
-      teksSingkat: detailText.length > 120 ? detailText.slice(0, 115) + '...' : detailText,
+      judul: compName,
+      teksSingkat: substance.text,
       kataKunci: keywordForSection,
-      contohKonkret: `Contoh konkret penerapan dalam pembelajaran ${subject} untuk ${activeContext.educationLevel} ${activeContext.grade}.`,
-      visual: `Kartu visual dengan penekanan pada konsep ${cleanTitle}, diperjelas dengan grafis penjelas sederhana`,
+      contohKonkret: substance.contextualExample || `Penerapan kontekstual ${compName.toLowerCase()} materi ${title} (${subject}).`,
+      visual: `Modul visual kartu simetris beraksen fokus pada aspek ${compName.toLowerCase()}`,
       ikon: iconForSection
     };
   });
@@ -1430,64 +1593,184 @@ ${footerSummary}
 * Penempatan footer: Rangkuman inti (Footer Summary) di bagian bawah kanvas
 * Keseimbangan teks dan visual: Proporsi seimbang 45% teks ringkas terstruktur dan 55% ruang visual/grafis`;
 
-  // FINAL PROMPT INFOGRAFIS RESMI STIVIA (MEMATUHI BAGIAN 8 & 12 USER SPEC)
-  // Menghasilkan prompt terstruktur yang siap pakai untuk AI Image Generator
+  // Helper: Diagram Alur Struktur Konten Spesifik (Section 8 STIVIA Standard)
+  const getSpecificVisualStructure = (
+    shape: string | undefined,
+    primaryChar: MaterialCharacterType
+  ): string => {
+    if (shape === 'Proses / Langkah' || primaryChar === 'Proses') {
+      return 'JUDUL → TUJUAN → LANGKAH 1 → LANGKAH 2 → LANGKAH 3 → LANGKAH 4 → HASIL';
+    }
+    if (shape === 'Perbandingan' || primaryChar === 'Perbandingan') {
+      return 'JUDUL → OBJEK A | OBJEK B → PERBEDAAN → PERSAMAAN → KESIMPULAN';
+    }
+    if (shape === 'Struktur / Komponen' || primaryChar === 'Sistem') {
+      return 'JUDUL → KONSEP UTAMA → BAGIAN 1 (Fungsi, Ciri, Contoh) → BAGIAN 2 (Fungsi, Ciri, Contoh) → KEUTUHAN SISTEM';
+    }
+    // Default Konsep:
+    return 'JUDUL → PENGERTIAN → FUNGSI → CIRI-CIRI → CONTOH → KESIMPULAN';
+  };
+
+  const visualStructureDiagram = getSpecificVisualStructure(
+    input.structureShape,
+    stage3_MaterialCharacters.primaryCharacter
+  );
+
+  // STANDAR ENGINE INFOGRAFIS STIVIA — PROMPT OUTPUT STRUCTURE
+  // ROLE + EDUCATIONAL CONTEXT + CONTENT + VISUAL STRUCTURE + LAYOUT + TYPOGRAPHY + COLOR + ILLUSTRATION + ACCURACY RULES + NEGATIVE CONSTRAINTS + OUTPUT FORMAT
   const resolvedOrientation = input.orientation || 'Portrait';
   const resolvedPaperSize = input.paperSize || 'A4';
   const resolvedAspectRatio = resolvedOrientation === 'Landscape' ? '3:2' : '2:3';
 
-  const stage7_FinalPrompt = `Create a ${resolvedOrientation.toLowerCase()} educational infographic poster (${resolvedPaperSize}) for ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade}) ${stage1_Understanding.subject} titled "${stage1_Understanding.title}".
+  const stage7_FinalPrompt = `### 1. ROLE
+You are an expert Educational Infographic Designer and Pedagogical Visual Specialist.
+Create a clean, highly structured, accurate, engaging, and visually balanced educational infographic poster based strictly on the Master Learning Data provided below. Adhere to the core methodology: IDENTIFY → SIMPLIFY → VISUALIZE → VERIFY.
 
-### A. IDENTITAS
-* Judul Materi: ${stage1_Understanding.title}
+### 2. EDUCATIONAL CONTEXT
+Create an educational infographic based ONLY on the following learning data:
+
+SUBJECT:
+${stage1_Understanding.subject}
+
+GRADE:
+${stage1_Understanding.grade} (${stage1_Understanding.educationLevel})
+
+LEARNING THEME:
+${stage1_Understanding.bab || stage1_Understanding.theme || stage1_Understanding.title}
+
+LEARNING OBJECTIVES:
+${activeObjectives.length > 0 ? activeObjectives.map(o => `- ${o}`).join('\n') : `- Peserta didik memahami esensi ${stage1_Understanding.title} secara komprehensif.`}
+
+CORE MATERIAL:
+${stage1_Understanding.title}
+
+MATERIAL SCOPE:
+${activeScopePoints.map((sp, idx) => `${idx + 1}. ${sp}`).join('\n')}
+
+SELECTED INFOGRAPHIC TYPE:
+${input.structureShape || stage6_LayoutStrategy.strategy}
+
+SELECTED COMPONENTS:
+${contentSections.map(s => s.judul).join(', ')}
+
+DEPTH:
+${input.depth || 'Sedang'} (Tingkat kedalaman materi: ${(input.depth === 'Dasar' || input.depth === 'Ringkas') ? 'Dasar - fokus pengertian & ciri pokok' : (input.depth === 'Mendalam' || input.depth === 'Lanjut') ? 'Lanjut - analisis, perbandingan & berpikir kritis' : 'Menengah - hubungan antar konsep & analisis sederhana'})
+
+CONTENT RULES:
+1. Stay strictly within the provided material scope (content boundary).
+2. Do not introduce unrelated topics, out-of-scope chapters, or external trivia.
+3. Simplify complex concepts without altering scientific/grammatical meaning.
+4. Prioritize essential information; eliminate verbose sentences (Less is More).
+5. Use clear, communicative educational language tailored to ${stage1_Understanding.grade} students.
+6. Convert suitable information into visual elements (diagrams, flows, icons, cards).
+7. Maximum 3 levels of visual hierarchy.
+8. Limit color palette to primary, secondary, and accent with 60-30-10 distribution.
+9. Ensure high readability and generous intentional white space.
+10. Keep all visual metaphors directly connected to the educational concept.
+11. Do not hallucinate facts or extend scope beyond teacher's input.
+
+### 3. CONTENT
+IDENTITAS INFOGRAFIS:
+* Judul: "${stage1_Understanding.title}" (Formula [TOPIK] + [AKSI / MANFAAT / FOKUS])
 * Mata Pelajaran: ${stage1_Understanding.subject}
-* Jenjang & Kelas: ${stage1_Understanding.educationLevel} (${stage1_Understanding.grade})
-* Tema / Bab: ${stage1_Understanding.bab || stage1_Understanding.theme || stage1_Understanding.title}
+* Kelas: ${stage1_Understanding.grade} (${stage1_Understanding.educationLevel})
+* Tema Pembelajaran: ${stage1_Understanding.bab || stage1_Understanding.theme || stage1_Understanding.title}
 * Posisi Rangkaian: ${stage1_Understanding.pertemuan}${input.teacherNotes ? `\n* Catatan Khusus Guru: "${input.teacherNotes.trim()}"` : ''}
 
-### B. KONTEN
-* Konsep Utama: ${stage2_ImportantInfo.mainConcept}
-* Bentuk Infografis: ${input.structureShape || stage6_LayoutStrategy.strategy}
-* Tingkat Kedalaman Materi: ${input.depth || 'Sedang'}
-${activeObjectives.length > 0 ? `* Tujuan Pembelajaran:\n${activeObjectives.map(o => `  - ${o}`).join('\n')}\n` : ''}* 4–6 Bagian Utama Infografis:
-${contentSections.map(s => `  - Bagian ${s.bagianNumber}: [${s.judul}]
-    • Teks yang Harus Ditampilkan: "${s.teksSingkat}"
-    • Kata Kunci: ${s.kataKunci}
-    • Contoh Kontekstual: ${s.contohKonkret || `Penerapan dalam ${stage1_Understanding.subject}`}
-    • Arahan Visual: ${s.visual}
-    • Ikon: ${s.ikon}`).join('\n')}
-* Footer Summary: "${footerSummary}"
+KONSEP UTAMA:
+${stage2_ImportantInfo.mainConcept}
 
-### C. STRUKTUR
-* Layout: ${stage6_LayoutStrategy.strategy} — ${stage6_LayoutStrategy.layoutDescription}
-* Alur Baca: ${stage6_LayoutStrategy.readingFlow}
-* Hierarki Informasi: Judul identitas di bagian atas → 4–6 modul kartu materi simetris di tengah → Footer ringkasan penutup di bagian bawah
-* Hubungan Antarbagian: Alur logis terstruktur ${stage2_ImportantInfo.informationRelationship}, bertahap dan mudah dipelajari siswa
+KONTEN MODUL TERSTRUKTUR (4–6 Bagian Utama, Prinsip Less is More):
+${contentSections.map(s => `[BAGIAN ${s.bagianNumber}: ${s.judul.toUpperCase()}]
+• Teks Ringkas: "${s.teksSingkat}" (Intisari esensial, tanpa blok teks panjang)
+• Kata Kunci: ${s.kataKunci}
+• Contoh Kontekstual: ${s.contohKonkret || `Penerapan dalam materi ${stage1_Understanding.subject}`}
+• Arahan Visual: ${s.visual}
+• Ikon Representatif: ${s.ikon}`).join('\n\n')}
 
-### D. VISUAL
-* Tingkat Intensitas Visual: ${input.illustrationLevel || 'Pendukung Konsep'}
-${input.selectedVisualTypes && input.selectedVisualTypes.length > 0 ? `* Jenis Visual Prioritas: ${input.selectedVisualTypes.join(', ')}\n` : ''}* Ilustrasi Utama: ${semanticAssets.heroVisual}
-* Ilustrasi Pendukung: ${semanticAssets.supportingIllustrations.join(', ')}
-* Ikon: ${semanticAssets.icons.join(', ')}
-* Objek Visual & Simbol: ${semanticAssets.relevantObjects.join(', ')}
-* Hubungan Visual dengan Materi: Visual semantik yang secara langsung merepresentasikan fakta dan konsep ${stage1_Understanding.subject}, bukan sekadar ornamen hiasan
+FOOTER SUMMARY:
+"${footerSummary}"
 
-### E. DESAIN
-* Gaya Visual: ${resolvedStyle.name} (${resolvedStyle.category})
-* Warna: Palet edukatif harmonis aksen ${resolvedStyle.accentColor || 'Indigo/Teal'} dengan latar belakang netral bersih, kontras tinggi
-* Tipografi: Sans-serif modern berbobot tebal untuk judul kartu, teks isi dengan keterbacaan tinggi (WCAG AA min. 4.5:1)
-* Komposisi: Proporsi seimbang 45% teks ringkas terstruktur dan 55% ruang visual grafis
-* Ruang Kosong: Ruang bernapas (breathing room) yang cukup antar kartu modul, tidak padat berdesakan
-* Keterbacaan: Teks tajam, kontras tinggi, mudah dipindai (scannable) oleh siswa
-* Konsistensi Visual: Seluruh kartu modul menggunakan sudut membulat halus, batas garis rapi, dan konsistensi perataan
+### 4. VISUAL STRUCTURE
+ALUR STRUKTUR MATERI:
+${visualStructureDiagram}
 
-### F. FORMAT
-* Orientasi: ${resolvedOrientation} (${resolvedOrientation === 'Landscape' ? 'Mendatar' : 'Vertikal'})
-* Ukuran Dokumen: ${resolvedPaperSize}
-* Rasio: ${resolvedAspectRatio}
-* Resolusi Rekomendasi: 1200 × 1800 px (atau 1024 × 1536 px)
-* Kualitas Teks: Teks harus tajam dan terbaca sempurna (ultra-sharp typography)
-* Kerapian Komposisi: Bebas dari teks terpotong, tidak ada elemen bertumpuk (zero overlapping elements), tata letak bersih dan profesional untuk pembelajaran`;
+HUBUNGAN ANTARKONSEP:
+${stage2_ImportantInfo.informationRelationship}
+Pedoman: Hubungkan antar konsep secara visual dan terstruktur. Ubah materi yang cocok menjadi diagram, alur, tabel ringkas, atau kartu modular. Hindari memindahkan seluruh teks materi menjadi poster yang penuh teks.
+
+### 5. LAYOUT
+BENTUK TATA LETAK:
+${stage6_LayoutStrategy.strategy} — ${stage6_LayoutStrategy.layoutDescription}
+
+ALUR BACA (READING FLOW):
+${stage6_LayoutStrategy.readingFlow}
+
+HIERARKI VISUAL (Maksimal 3 Level Utama):
+- LEVEL 1: Judul Utama / Konsep Utama (Paling besar, tegas, langsung menarik perhatian visual)
+- LEVEL 2: Subjudul Section / Header Kartu Modul (Jelas, berkarakter tegas, membedakan tiap komponen)
+- LEVEL 3: Informasi Pendukung & Teks Singkat (Ringkas, mudah dipindai, line-height proporsional)
+
+WHITE SPACE & KOMPOSISI:
+- Berikan ruang kosong (breathing room) yang cukup antar modul dan di sekeliling batas kanvas.
+- Ruang kosong adalah bagian dari desain, bukan ruang yang terbuang.
+- Proporsi seimbang: 45% teks ringkas terstruktur dan 55% ruang visual grafis serta white space.
+
+### 6. TYPOGRAPHY
+FONT FAMILIES (Maksimal 2 Keluarga Font):
+- Heading Font: Poppins / Montserrat (Bold, bersih, tegas untuk judul dan subjudul)
+- Body Font: Open Sans / Lato (Sangat mudah dibaca, bersih, sans-serif proporsional untuk isi modul)
+
+ATURAN TIPOGRAFI:
+- Judul besar dan tegas di bagian atas kanvas
+- Subjudul kartu jelas dan kontras
+- Body text ringkas dan mudah dipindai (scannable)
+- Hindari font dekoratif, kursif rumit, atau font kaligrafi yang mengganggu keterbacaan
+- Prioritaskan keterbacaan dibanding estetika semata
+
+### 7. COLOR
+HARMONISASI WARNA (Aturan 60-30-10):
+- 60% Warna Dasar / Background: Latar belakang netral bersih dan terang untuk keterbacaan optimal
+- 30% Warna Sekunder: Kartu modular, kontainer seksi, dan garis pembatas (Slate / Soft Neutral Gray)
+- 10% Warna Aksen: Titik fokus visual, badge, dan highlight materi (${resolvedStyle.accentColor || 'Indigo/Teal'})
+
+KONTRAS & KONSISTENSI:
+- Kontras tinggi memenuhi standar WCAG AA (minimal rasio 4.5:1 terhadap background).
+- Palet warna konsisten di seluruh kanvas, tidak menggunakan terlalu banyak variasi warna liar.
+
+### 8. ILLUSTRATION
+SEMANTIC ASSETS & VISUAL ELEMENTS:
+- Hero Visual Utama: ${semanticAssets.heroVisual}
+- Ikon Fungsional: ${semanticAssets.icons.join(', ')}
+- Objek & Simbol Relevan: ${semanticAssets.relevantObjects.join(', ')}
+- Ornamen Pendukung: ${semanticAssets.supportingOrnaments.join(', ')}
+
+ATURAN IKON & ILUSTRASI:
+Setiap ikon dan ilustrasi harus memiliki hubungan semantik langsung dengan informasi yang dijelaskan. Gunakan visual untuk memperjelas konsep, membedakan kategori, menunjukkan proses, atau memperkuat contoh kontekstual. Hindari visual atau ikon hiasan acak yang tidak bermakna edukatif.
+
+### 9. ACCURACY RULES (IDENTIFY → SIMPLIFY → VISUALIZE → VERIFY)
+1. 100% Menjadikan Cakupan Materi dari Master Learning Data sebagai batas konten (content boundary).
+2. Dilarang mengarang fakta, mengubah definisi, atau membuat data fiktif.
+3. Dilarang memasukkan materi lanjutan atau topik di luar cakupan yang tidak diberikan guru.
+4. Contoh kontekstual harus realistis, aman, dan relevan dengan pengalaman belajar siswa ${stage1_Understanding.grade} (${stage1_Understanding.educationLevel}).
+5. Pertahankan konsistensi istilah keilmuan dan ketepatan konsep materi secara utuh.
+
+### 10. NEGATIVE CONSTRAINTS
+- NO wall of text, NO long monolithic paragraphs, NO dense narrative blocks.
+- NO unreadable or blurry text, NO tiny distorted fonts, NO overly decorative script fonts.
+- NO arbitrary decorative clutter, NO meaningless doodles, NO inconsistent visual styles.
+- NO factual distortion, NO hallucinated definitions outside teacher's Cakupan Materi.
+- NO scope creep (do not introduce topics from other meetings or unrequested advanced chapters).
+- NO crowded zero-margin canvas; keep generous breathing room.
+- NO overlapping card modules or clipped text labels.
+
+### 11. OUTPUT FORMAT
+- MEDIA: Professional Educational Infographic Poster
+- ORIENTATION: ${resolvedOrientation} (${resolvedOrientation === 'Landscape' ? 'Landscape (Mendatar)' : 'Portrait (Vertikal)'})
+- DOCUMENT SIZE: ${resolvedPaperSize}
+- ASPECT RATIO: ${resolvedAspectRatio}
+- RECOMMENDED RESOLUTION: 1200 × 1800 px (atau 1024 × 1536 px)
+- TYPOGRAPHIC CLARITY: Ultra-sharp typography rendering, high visual clarity for classroom presentation and high-quality educational printing.`;
 
   return {
     activeContext,

@@ -40,7 +40,9 @@ import {
   Type,
   CheckSquare,
   Square,
-  Maximize2
+  Maximize2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { 
   EducationLevel, 
@@ -427,6 +429,66 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   const [lkpdVisualStyle, setLkpdVisualStyle] = useState<LkpdVisualStyle>('Modern Edukatif');
   const [lkpdAdditionalInstructions, setLkpdAdditionalInstructions] = useState<string>('');
   const [lkpdThinkingResult, setLkpdThinkingResult] = useState<LkpdThinkingResult | null>(null);
+
+  // Mode Sederhana vs Mode Lengkap (Simplifikasi Tampilan & Pengurangan Beban Kognitif)
+  const [formMode, setFormMode] = useState<'ringkas' | 'lengkap'>('ringkas');
+  const [showAdvancedDesign, setShowAdvancedDesign] = useState<boolean>(false);
+  const [showEditDataPokok, setShowEditDataPokok] = useState<boolean>(false);
+
+  // Optimasi 1-Klik AI untuk Seluruh Parameter Pedagogik & Visual Infografis
+  const handleQuickOptimizeAll = () => {
+    const activeTopic = (materiDiajarkan || '').toLowerCase();
+    let optimalShape: InfographicStructureShape = 'Konsep Dasar';
+    if (
+      activeTopic.includes('proses') ||
+      activeTopic.includes('langkah') ||
+      activeTopic.includes('alur') ||
+      activeTopic.includes('cara') ||
+      activeTopic.includes('siklus') ||
+      activeTopic.includes('tahap')
+    ) {
+      optimalShape = 'Proses / Langkah';
+    } else if (
+      activeTopic.includes('perbedaan') ||
+      activeTopic.includes('banding') ||
+      activeTopic.includes('vs') ||
+      activeTopic.includes('komparasi')
+    ) {
+      optimalShape = 'Perbandingan';
+    } else if (
+      activeTopic.includes('struktur') ||
+      activeTopic.includes('hierarki') ||
+      activeTopic.includes('tingkatan') ||
+      activeTopic.includes('organisasi') ||
+      activeTopic.includes('anatomi') ||
+      activeTopic.includes('komponen') ||
+      activeTopic.includes('bagian')
+    ) {
+      optimalShape = 'Struktur / Komponen';
+    } else if (
+      activeTopic.includes('ciri') ||
+      activeTopic.includes('jenis') ||
+      activeTopic.includes('kategori') ||
+      activeTopic.includes('klasifikasi') ||
+      activeTopic.includes('analisis')
+    ) {
+      optimalShape = 'Analisis';
+    }
+
+    setStructureShape(optimalShape);
+
+    let comps: InfographicContentComponent[] = ['Pengertian', 'Ciri-ciri', 'Fungsi', 'Contoh', 'Kesimpulan'];
+    if (optimalShape === 'Proses / Langkah') {
+      comps = ['Tujuan', 'Langkah / Proses', 'Tips', 'Contoh', 'Kesimpulan'];
+    } else if (optimalShape === 'Perbandingan') {
+      comps = ['Pengertian', 'Karakteristik', 'Perbandingan', 'Contoh', 'Kesimpulan'];
+    } else if (optimalShape === 'Struktur / Komponen') {
+      comps = ['Pengertian', 'Unsur / Komponen', 'Fungsi', 'Karakteristik', 'Kesimpulan'];
+    }
+    setSelectedComponents(comps);
+    setDepth('Sedang');
+    setIllustrationLevel('Pendukung Konsep');
+  };
 
   // Generation & Output State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1204,22 +1266,137 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* SECTION A: DATA POKOK PEMBELAJARAN (KELAS, MAPEL, MATERI) */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
-              A
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Data Pokok Pembelajaran & Prompt
-              </h2>
-              <p className="text-xs text-slate-500">
-                Tentukan Kelas, Mata Pelajaran (Mapel), dan Materi yang akan dibuat promptnya
-              </p>
-            </div>
+      {/* MODE TOGGLE: MODE RINGKAS (PRAKTIS) VS MODE LENGKAP */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold text-slate-700 shrink-0">Tampilan Form:</span>
+          <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setFormMode('ringkas')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                formMode === 'ringkas'
+                  ? 'bg-white text-indigo-700 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ✨ Mode Ringkas (Praktis)
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormMode('lengkap')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                formMode === 'lengkap'
+                  ? 'bg-white text-indigo-700 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ⚙️ Mode Lengkap
+            </button>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleQuickOptimizeAll}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Biarkan AI memilihkan bentuk visual dan komponen paling relevan sesuai materi"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>✨ AI Pilihkan Otomatis Semua Opsi</span>
+          </button>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* RINGKASAN MASTER LEARNING DATA (TAMPIL DI MODE RINGKAS SAAT TERHUBUNG MASTER DATA) */}
+        {formMode === 'ringkas' && infographicContext && !showEditDataPokok ? (
+          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">
+                  <Check className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                    Data Pokok Pembelajaran (Master Data Siap)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Otomatis dialirkan dari Master Learning Data pertemuan ini
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowEditDataPokok(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-bold border border-slate-200 transition-colors cursor-pointer self-start sm:self-auto"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Sesuaikan Data Materi</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Mata Pelajaran & Kelas</span>
+                <span className="font-bold text-slate-900 mt-0.5 block">{subject} • {grade}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Materi yang Diajarkan</span>
+                <span className="font-bold text-slate-900 truncate mt-0.5 block" title={materiDiajarkan}>{materiDiajarkan}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Bab & Pertemuan</span>
+                <span className="font-bold text-slate-900 mt-0.5 block">{bab || '-'} • {pertemuan}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Tujuan Pembelajaran</span>
+                <span className="font-bold text-slate-900 mt-0.5 block">{learningObjectivesList.length} Tujuan Siap</span>
+              </div>
+            </div>
+
+            {scope && (
+              <div className="p-3 rounded-xl bg-indigo-50/50 border border-indigo-100 text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block mb-1">
+                  Cakupan Materi Pembahasan:
+                </span>
+                <p className="text-slate-700 text-xs line-clamp-3 leading-relaxed whitespace-pre-line font-medium">
+                  {scope}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* SECTION A: DATA POKOK PEMBELAJARAN (KELAS, MAPEL, MATERI) */}
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
+                    A
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">
+                      Data Pokok Pembelajaran & Prompt
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Tentukan Kelas, Mata Pelajaran (Mapel), dan Materi yang akan dibuat promptnya
+                    </p>
+                  </div>
+                </div>
+
+                {infographicContext && showEditDataPokok && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEditDataPokok(false)}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-200 cursor-pointer"
+                  >
+                    ✓ Tutup Form / Ringkas
+                  </button>
+                )}
+              </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 1. Jenjang Pendidikan & Kelas */}
@@ -1601,6 +1778,8 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
             </p>
           </div>
         </div>
+        </>
+        )}
 
         {/* 2. PENGATURAN SPESIFIK & GENERATE PROMPT */}
         <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
@@ -1852,254 +2031,513 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
                 </p>
               </div>
 
-              {/* C & D: KEDALAMAN MATERI & TINGKAT ILUSTRASI */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                {/* C. Tingkat Kedalaman */}
-                <div className="space-y-2">
+              {/* C. KEDALAMAN MATERI */}
+              <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                     C. Tingkat Kedalaman Materi
                   </label>
-                  <div className="space-y-1.5">
-                    {INFOGRAPHIC_DEPTH_OPTIONS.map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => setDepth(d.id)}
-                        className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
-                          depth === d.id
-                            ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 font-bold ring-1 ring-indigo-500'
-                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <div className="font-semibold">{d.label}</div>
-                        <div className="text-[11px] text-slate-500 font-normal">{d.desc}</div>
-                      </button>
-                    ))}
-                  </div>
+                  <span className="text-[11px] text-indigo-600 font-medium">
+                    Fokus pembahasan materi
+                  </span>
                 </div>
-
-                {/* D. Tingkat Ilustrasi Visual */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    D. Tingkat Ilustrasi Visual
-                  </label>
-                  <div className="space-y-1.5">
-                    {INFOGRAPHIC_ILLUSTRATION_LEVELS.map((il) => (
-                      <button
-                        key={il.id}
-                        type="button"
-                        onClick={() => setIllustrationLevel(il.id)}
-                        className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
-                          illustrationLevel === il.id
-                            ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 font-bold ring-1 ring-indigo-500'
-                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <div className="font-semibold">{il.label}</div>
-                        <div className="text-[11px] text-slate-500 font-normal">{il.desc}</div>
-                      </button>
-                    ))}
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {INFOGRAPHIC_DEPTH_OPTIONS.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setDepth(d.id)}
+                      className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                        depth === d.id
+                          ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 font-bold ring-1 ring-indigo-500 shadow-2xs'
+                          : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      <div className="font-bold text-xs">{d.label}</div>
+                      <div className="text-[11px] text-slate-500 font-normal mt-0.5">{d.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* E & F: JENIS VISUAL & GAYA DESAIN */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                {/* E. Jenis Visual Prioritas */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+              {/* PENGATURAN DESAIN & TAMPILAN LANJUTAN (COLLAPSIBLE DI MODE RINGKAS) */}
+              {formMode === 'ringkas' ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-all">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedDesign(!showAdvancedDesign)}
+                    className="w-full flex items-center justify-between text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                        <Sliders className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors block">
+                          ⚙️ Pengaturan Desain & Tampilan Visual Lanjutan (Opsional)
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {illustrationLevel} • Gaya {designStyle} • Kertas {paperSize} ({orientation})
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                      <span>{showAdvancedDesign ? 'Tutup Opsi' : 'Buka Opsi'}</span>
+                      {showAdvancedDesign ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </div>
+                  </button>
+
+                  {showAdvancedDesign && (
+                    <div className="mt-4 pt-4 border-t border-slate-200 space-y-6 animate-in fade-in duration-200">
+                      {/* D. Tingkat Ilustrasi Visual */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          D. Tingkat Ilustrasi Visual
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                          {INFOGRAPHIC_ILLUSTRATION_LEVELS.map((il) => (
+                            <button
+                              key={il.id}
+                              type="button"
+                              onClick={() => setIllustrationLevel(il.id)}
+                              className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                                illustrationLevel === il.id
+                                  ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 font-bold ring-1 ring-indigo-500'
+                                  : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                              }`}
+                            >
+                              <div className="font-semibold">{il.label}</div>
+                              <div className="text-[11px] text-slate-500 font-normal">{il.desc}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* E & F: JENIS VISUAL & GAYA DESAIN */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                        {/* E. Jenis Visual Prioritas */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                              E. Jenis Visual Prioritas
+                            </label>
+                            <span className="text-[11px] text-slate-400">Pilih elemen</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {INFOGRAPHIC_VISUAL_TYPES.map((vType) => {
+                              const isSelected = selectedVisualTypes.includes(vType);
+                              return (
+                                <button
+                                  key={vType}
+                                  type="button"
+                                  onClick={() => handleToggleVisualType(vType)}
+                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
+                                    isSelected
+                                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {vType}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* F. Gaya Desain */}
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            F. Gaya Desain Visual
+                          </label>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {INFOGRAPHIC_DESIGN_STYLES.map((style) => (
+                              <button
+                                key={style.id}
+                                type="button"
+                                onClick={() => setDesignStyle(style.id)}
+                                className={`p-2 rounded-lg text-xs font-semibold border text-center transition-all cursor-pointer ${
+                                  designStyle === style.id
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                {style.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* G & H: UKURAN KERTAS & ORIENTASI & CATATAN GURU */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                        {/* G. Ukuran Kertas & Orientasi */}
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                              G. Ukuran & Orientasi Dokumen
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {INFOGRAPHIC_PAPER_SIZES.map((sz) => (
+                                <button
+                                  key={sz}
+                                  type="button"
+                                  onClick={() => setPaperSize(sz)}
+                                  className={`py-1.5 px-2 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
+                                    paperSize === sz
+                                      ? 'bg-indigo-600 text-white border-indigo-600'
+                                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {sz}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {INFOGRAPHIC_ORIENTATIONS.map((ori) => (
+                              <button
+                                key={ori}
+                                type="button"
+                                onClick={() => setOrientation(ori)}
+                                className={`py-1.5 px-3 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
+                                  orientation === ori
+                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                {ori === 'Portrait' ? 'Vertikal (Portrait)' : 'Mendatar (Landscape)'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* H. Catatan Khusus Guru */}
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            H. Catatan Khusus Guru / Desain <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={teacherNotes}
+                            onChange={(e) => setTeacherNotes(e.target.value)}
+                            placeholder="Catatan tambahan untuk poster, misal: Gunakan warna dominan hijau tosca, tekankan poin nomor 2 dengan highlight khusus."
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs leading-relaxed focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100"
+                          />
+                        </div>
+                      </div>
+
+                      {/* I. PREVIEW RANCANGAN STRUKTUR INFOGRAFIS */}
+                      <div className="space-y-3 pt-3 border-t border-slate-200/90 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>Preview Analisis Rancangan Struktur Infografis</span>
+                              </h4>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                                Nol Saldo
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              AI menyusun urutan materi ini secara otomatis. Anda dapat menyesuaikannya sebelum generate poster:
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isEditingPreview ? (
+                              <button
+                                type="button"
+                                onClick={handleResetPreviewStructure}
+                                className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 cursor-pointer transition-all"
+                              >
+                                ↺ Reset ke Otomatis
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setIsEditingPreview(true)}
+                                className="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 cursor-pointer transition-all flex items-center gap-1.5"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>✏️ Sesuaikan Rancangan</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                          {previewStructure.map((sec, idx) => (
+                            <div 
+                              key={idx} 
+                              className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                                  Modul {sec.step}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {sec.visualHint?.split(' ')[0] || 'Visual'}
+                                </span>
+                              </div>
+                              {isEditingPreview ? (
+                                <div className="space-y-1.5 pt-1">
+                                  <input
+                                    type="text"
+                                    value={sec.title}
+                                    onChange={(e) => handleUpdatePreviewBlock(idx, 'title', e.target.value)}
+                                    className="w-full px-2 py-1 text-xs font-bold text-slate-900 border border-slate-200 rounded-md focus:border-indigo-500"
+                                  />
+                                  <textarea
+                                    rows={2}
+                                    value={sec.desc}
+                                    onChange={(e) => handleUpdatePreviewBlock(idx, 'desc', e.target.value)}
+                                    className="w-full px-2 py-1 text-[11px] text-slate-600 border border-slate-200 rounded-md focus:border-indigo-500"
+                                  />
+                                </div>
+                              ) : (
+                                <>
+                                  <h5 className="text-xs font-bold text-slate-900 line-clamp-1">{sec.title}</h5>
+                                  <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{sec.desc}</p>
+                                  {sec.visualHint && (
+                                    <p className="text-[10px] text-indigo-600 font-medium line-clamp-1 pt-0.5 flex items-center gap-1">
+                                      <span>🎨</span>
+                                      <span>{sec.visualHint}</span>
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6 pt-2 border-t border-slate-100">
+                  {/* D. Tingkat Ilustrasi Visual */}
+                  <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      E. Jenis Visual Prioritas
+                      D. Tingkat Ilustrasi Visual
                     </label>
-                    <span className="text-[11px] text-slate-400">Pilih elemen</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {INFOGRAPHIC_VISUAL_TYPES.map((vType) => {
-                      const isSelected = selectedVisualTypes.includes(vType);
-                      return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                      {INFOGRAPHIC_ILLUSTRATION_LEVELS.map((il) => (
                         <button
-                          key={vType}
+                          key={il.id}
                           type="button"
-                          onClick={() => handleToggleVisualType(vType)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
-                            isSelected
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          onClick={() => setIllustrationLevel(il.id)}
+                          className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                            illustrationLevel === il.id
+                              ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 font-bold ring-1 ring-indigo-500'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
                           }`}
                         >
-                          {vType}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* F. Gaya Desain */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    F. Gaya Desain Visual
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {INFOGRAPHIC_DESIGN_STYLES.map((style) => (
-                      <button
-                        key={style.id}
-                        type="button"
-                        onClick={() => setDesignStyle(style.id)}
-                        className={`p-2 rounded-lg text-xs font-semibold border text-center transition-all cursor-pointer ${
-                          designStyle === style.id
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {style.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* G & H: UKURAN KERTAS & ORIENTASI & CATATAN GURU */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                {/* G. Ukuran Kertas & Orientasi */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      G. Ukuran & Orientasi Dokumen
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {INFOGRAPHIC_PAPER_SIZES.map((sz) => (
-                        <button
-                          key={sz}
-                          type="button"
-                          onClick={() => setPaperSize(sz)}
-                          className={`py-1.5 px-2 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
-                            paperSize === sz
-                              ? 'bg-indigo-600 text-white border-indigo-600'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {sz}
+                          <div className="font-semibold">{il.label}</div>
+                          <div className="text-[11px] text-slate-500 font-normal">{il.desc}</div>
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {INFOGRAPHIC_ORIENTATIONS.map((ori) => (
-                      <button
-                        key={ori}
-                        type="button"
-                        onClick={() => setOrientation(ori)}
-                        className={`py-1.5 px-3 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
-                          orientation === ori
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {ori === 'Portrait' ? 'Vertikal (Portrait)' : 'Mendatar (Landscape)'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
-                {/* H. Catatan Khusus Guru */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    H. Catatan Khusus Guru / Desain <span className="text-slate-400 font-normal lowercase">(opsional)</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={teacherNotes}
-                    onChange={(e) => setTeacherNotes(e.target.value)}
-                    placeholder="Catatan tambahan untuk poster, misal: Gunakan warna dominan hijau tosca, tekankan poin nomor 2 dengan highlight khusus."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs leading-relaxed focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100"
-                  />
-                </div>
-              </div>
-
-              {/* I. PREVIEW RANCANGAN STRUKTUR INFOGRAFIS (ANALISIS AI REAL-TIME) */}
-              <div className="space-y-3 pt-3 border-t border-slate-200/90 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Preview Analisis Rancangan Struktur Infografis</span>
-                      </h4>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-                        Nol Saldo
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      AI menyusun urutan materi ini secara otomatis. Anda dapat menyesuaikannya sebelum generate poster:
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isEditingPreview ? (
-                      <button
-                        type="button"
-                        onClick={handleResetPreviewStructure}
-                        className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 cursor-pointer transition-all"
-                      >
-                        ↺ Reset ke Otomatis
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingPreview(true)}
-                        className="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 cursor-pointer transition-all flex items-center gap-1.5"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>✏️ Sesuaikan Rancangan</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                  {previewStructure.map((sec, idx) => (
-                    <div 
-                      key={idx} 
-                      className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-1.5"
-                    >
+                  {/* E & F: JENIS VISUAL & GAYA DESAIN */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    {/* E. Jenis Visual Prioritas */}
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                          Modul {sec.step}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {sec.visualHint?.split(' ')[0] || 'Visual'}
-                        </span>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          E. Jenis Visual Prioritas
+                        </label>
+                        <span className="text-[11px] text-slate-400">Pilih elemen</span>
                       </div>
-                      {isEditingPreview ? (
-                        <div className="space-y-1.5 pt-1">
-                          <input
-                            type="text"
-                            value={sec.title}
-                            onChange={(e) => handleUpdatePreviewBlock(idx, 'title', e.target.value)}
-                            className="w-full px-2 py-1 text-xs font-bold text-slate-900 border border-slate-200 rounded-md focus:border-indigo-500"
-                          />
-                          <textarea
-                            rows={2}
-                            value={sec.desc}
-                            onChange={(e) => handleUpdatePreviewBlock(idx, 'desc', e.target.value)}
-                            className="w-full px-2 py-1 text-[11px] text-slate-600 border border-slate-200 rounded-md focus:border-indigo-500"
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          <h5 className="text-xs font-bold text-slate-900 line-clamp-1">{sec.title}</h5>
-                          <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{sec.desc}</p>
-                          {sec.visualHint && (
-                            <p className="text-[10px] text-indigo-600 font-medium line-clamp-1 pt-0.5 flex items-center gap-1">
-                              <span>🎨</span>
-                              <span>{sec.visualHint}</span>
-                            </p>
-                          )}
-                        </>
-                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        {INFOGRAPHIC_VISUAL_TYPES.map((vType) => {
+                          const isSelected = selectedVisualTypes.includes(vType);
+                          return (
+                            <button
+                              key={vType}
+                              type="button"
+                              onClick={() => handleToggleVisualType(vType)}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
+                                isSelected
+                                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {vType}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
+
+                    {/* F. Gaya Desain */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        F. Gaya Desain Visual
+                      </label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {INFOGRAPHIC_DESIGN_STYLES.map((style) => (
+                          <button
+                            key={style.id}
+                            type="button"
+                            onClick={() => setDesignStyle(style.id)}
+                            className={`p-2 rounded-lg text-xs font-semibold border text-center transition-all cursor-pointer ${
+                              designStyle === style.id
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {style.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* G & H: UKURAN KERTAS & ORIENTASI & CATATAN GURU */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                    {/* G. Ukuran Kertas & Orientasi */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                          G. Ukuran & Orientasi Dokumen
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {INFOGRAPHIC_PAPER_SIZES.map((sz) => (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => setPaperSize(sz)}
+                              className={`py-1.5 px-2 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
+                                paperSize === sz
+                                  ? 'bg-indigo-600 text-white border-indigo-600'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {sz}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {INFOGRAPHIC_ORIENTATIONS.map((ori) => (
+                          <button
+                            key={ori}
+                            type="button"
+                            onClick={() => setOrientation(ori)}
+                            className={`py-1.5 px-3 rounded-lg text-xs font-bold border text-center transition-all cursor-pointer ${
+                              orientation === ori
+                                ? 'bg-indigo-600 text-white border-indigo-600'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {ori === 'Portrait' ? 'Vertikal (Portrait)' : 'Mendatar (Landscape)'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* H. Catatan Khusus Guru */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        H. Catatan Khusus Guru / Desain <span className="text-slate-400 font-normal lowercase">(opsional)</span>
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={teacherNotes}
+                        onChange={(e) => setTeacherNotes(e.target.value)}
+                        placeholder="Catatan tambahan untuk poster, misal: Gunakan warna dominan hijau tosca, tekankan poin nomor 2 dengan highlight khusus."
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-800 text-xs leading-relaxed focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100"
+                      />
+                    </div>
+                  </div>
+
+                  {/* I. PREVIEW RANCANGAN STRUKTUR INFOGRAFIS */}
+                  <div className="space-y-3 pt-3 border-t border-slate-200/90 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Preview Analisis Rancangan Struktur Infografis</span>
+                          </h4>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                            Nol Saldo
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          AI menyusun urutan materi ini secara otomatis. Anda dapat menyesuaikannya sebelum generate poster:
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isEditingPreview ? (
+                          <button
+                            type="button"
+                            onClick={handleResetPreviewStructure}
+                            className="text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 cursor-pointer transition-all"
+                          >
+                            ↺ Reset ke Otomatis
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingPreview(true)}
+                            className="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 cursor-pointer transition-all flex items-center gap-1.5"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>✏️ Sesuaikan Rancangan</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                      {previewStructure.map((sec, idx) => (
+                        <div 
+                          key={idx} 
+                          className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                              Modul {sec.step}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {sec.visualHint?.split(' ')[0] || 'Visual'}
+                            </span>
+                          </div>
+                          {isEditingPreview ? (
+                            <div className="space-y-1.5 pt-1">
+                              <input
+                                type="text"
+                                value={sec.title}
+                                onChange={(e) => handleUpdatePreviewBlock(idx, 'title', e.target.value)}
+                                className="w-full px-2 py-1 text-xs font-bold text-slate-900 border border-slate-200 rounded-md focus:border-indigo-500"
+                              />
+                              <textarea
+                                rows={2}
+                                value={sec.desc}
+                                onChange={(e) => handleUpdatePreviewBlock(idx, 'desc', e.target.value)}
+                                className="w-full px-2 py-1 text-[11px] text-slate-600 border border-slate-200 rounded-md focus:border-indigo-500"
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <h5 className="text-xs font-bold text-slate-900 line-clamp-1">{sec.title}</h5>
+                              <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">{sec.desc}</p>
+                              {sec.visualHint && (
+                                <p className="text-[10px] text-indigo-600 font-medium line-clamp-1 pt-0.5 flex items-center gap-1">
+                                  <span>🎨</span>
+                                  <span>{sec.visualHint}</span>
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* TOMBOL GENERATE INFOGRAFIS UTAMA */}
               <div className="pt-2">

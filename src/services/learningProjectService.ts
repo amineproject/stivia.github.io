@@ -84,6 +84,8 @@ export const DEFAULT_INITIAL_LEARNING_PROJECT: LearningProject = {
                   'Peserta didik mampu membedakan ciri bahasa persuasif pada berbagai jenis iklan di media massa.',
                   'Peserta didik mampu menganalisis 4 unsur utama pembentuk iklan yang efektif dan menarik.'
                 ],
+                reinforcementActivities: 'Diskusi berpasangan membandingkan 2 contoh iklan di majalah dan media sosial, dilanjutkan latihan identifikasi 4 unsur pembentuk iklan.',
+                assessmentEnabled: false,
                 userNotes: 'Fokuskan contoh pada produk lokal siswa dan etika periklanan di media sosial.',
                 version: 1,
                 updatedAt: '2026-09-30'
@@ -102,6 +104,9 @@ export const DEFAULT_INITIAL_LEARNING_PROJECT: LearningProject = {
               meetingNumber: 'Pertemuan 2',
               title: 'Struktur Teks Iklan dan Praktik Perancangan Slogan',
               status: 'in_progress',
+              isContinuation: true,
+              continuationFromMeetingId: 'meet-001',
+              continuationFromMeetingNumber: 'Pertemuan 1',
               createdAt: '2026-09-12',
               updatedAt: '2026-09-28',
               masterLearningData: {
@@ -116,6 +121,11 @@ export const DEFAULT_INITIAL_LEARNING_PROJECT: LearningProject = {
                   'Peserta didik mampu menelaah struktur pembangun teks iklan secara mendalam.',
                   'Peserta didik mampu merumuskan slogan orisinal yang memenuhi kaidah bahasa persuasif.'
                 ],
+                reinforcementActivities: 'Praktik terbimbing dalam kelompok 3-4 siswa merancang 1 slogan kreatif untuk kampanye kebersihan lingkungan sekolah.',
+                assessmentEnabled: true,
+                assessmentType: 'Formatif',
+                assessmentForms: ['Pilihan Ganda', 'Praktik'],
+                assessmentNotes: 'Asesmen formatif unjuk kerja perancangan slogan dan kuis 5 butir pemahaman struktur iklan.',
                 userNotes: 'Beri ruang diskusi kelompok kecil untuk saling menguji slogan antar-siswa.',
                 version: 1,
                 updatedAt: '2026-09-28'
@@ -490,7 +500,7 @@ export function resolveActiveHierarchy(
 
 /**
  * Helper untuk memperbarui Master Learning Data pada sebuah pertemuan secara aman.
- * Jika cakupanMateri berubah, version dinaikkan otomatis.
+ * Jika cakupanMateri atau materiDiajarkan berubah secara substantif, version dinaikkan otomatis.
  */
 export function updateMeetingMasterLearningData(
   projects: LearningProject[],
@@ -510,10 +520,11 @@ export function updateMeetingMasterLearningData(
           if (m.id !== meetingId) return m;
 
           const oldData = m.masterLearningData;
-          const isScopeChanged = newMasterData.cakupanMateri !== undefined && 
-                                 newMasterData.cakupanMateri !== oldData.cakupanMateri;
+          const isSubstantiveChange = 
+            (newMasterData.cakupanMateri !== undefined && newMasterData.cakupanMateri !== oldData.cakupanMateri) ||
+            (newMasterData.materiDiajarkan !== undefined && newMasterData.materiDiajarkan !== oldData.materiDiajarkan);
 
-          const newVersion = isScopeChanged 
+          const newVersion = isSubstantiveChange 
             ? (oldData.version || 1) + 1 
             : (oldData.version || 1);
 
@@ -526,6 +537,41 @@ export function updateMeetingMasterLearningData(
               version: newVersion,
               updatedAt: now
             }
+          };
+        })
+      }))
+    }))
+  }));
+}
+
+/**
+ * Helper untuk memperbarui metadata pertemuan (judul, kelanjutan dari pertemuan sebelumnya).
+ */
+export function updateMeetingMetadata(
+  projects: LearningProject[],
+  meetingId: string,
+  metadata: {
+    title?: string;
+    isContinuation?: boolean;
+    continuationFromMeetingId?: string;
+    continuationFromMeetingNumber?: string;
+  }
+): LearningProject[] {
+  const now = new Date().toISOString().split('T')[0];
+
+  return projects.map(p => ({
+    ...p,
+    updatedAt: now,
+    classSubjects: p.classSubjects.map(cs => ({
+      ...cs,
+      chapters: cs.chapters.map(ch => ({
+        ...ch,
+        meetings: ch.meetings.map(m => {
+          if (m.id !== meetingId) return m;
+          return {
+            ...m,
+            ...metadata,
+            updatedAt: now
           };
         })
       }))
@@ -900,6 +946,8 @@ export function createLearningProjectFromFormData(
         materiDiajarkan: input.materiPelajaran?.trim() || '',
         cakupanMateri: input.cakupanMateri?.trim() || '',
         learningObjectives: [],
+        reinforcementActivities: '',
+        assessmentEnabled: false,
         userNotes: input.catatan?.trim() || '',
         version: 1,
         updatedAt: now
@@ -909,6 +957,8 @@ export function createLearningProjectFromFormData(
         materiDiajarkan: '',
         cakupanMateri: '',
         learningObjectives: [],
+        reinforcementActivities: '',
+        assessmentEnabled: false,
         userNotes: '',
         version: 1,
         updatedAt: now
@@ -1015,25 +1065,9 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
             created_at,
             updated_at,
             learning_meetings (
-              id,
-              meeting_number,
-              title,
-              status,
-              product_states,
-              completed_at,
-              legacy_draft_id,
-              created_at,
-              updated_at,
+              *,
               master_learning_data (
-                id,
-                tema_kegiatan,
-                materi_diajarkan,
-                cakupan_materi,
-                learning_objectives,
-                user_notes,
-                version,
-                created_at,
-                updated_at
+                *
               )
             )
           )
@@ -1079,6 +1113,11 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
                   learningObjectives: Array.isArray(mldRaw?.learning_objectives) 
                     ? mldRaw.learning_objectives 
                     : [],
+                  reinforcementActivities: mldRaw?.reinforcement_activities || '',
+                  assessmentEnabled: Boolean(mldRaw?.assessment_enabled),
+                  assessmentType: mldRaw?.assessment_type || undefined,
+                  assessmentForms: Array.isArray(mldRaw?.assessment_forms) ? mldRaw.assessment_forms : undefined,
+                  assessmentNotes: mldRaw?.assessment_notes || '',
                   userNotes: mldRaw?.user_notes || '',
                   version: typeof mldRaw?.version === 'number' ? mldRaw.version : 1,
                   updatedAt: mldRaw?.updated_at || m.updated_at
@@ -1098,11 +1137,14 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
                   meetingNumber: m.meeting_number,
                   title: m.title,
                   status: (m.status || 'draft') as MeetingStatus,
+                  isContinuation: Boolean(m.is_continuation),
+                  continuationFromMeetingId: m.continuation_from_meeting_id || undefined,
+                  continuationFromMeetingNumber: m.continuation_from_meeting_number || undefined,
                   masterLearningData,
                   productStates: m.product_states ? { ...defaultProductStates, ...m.product_states } : defaultProductStates,
                   createdAt: m.created_at,
                   updatedAt: m.updated_at,
-                  completedAt: m.completed_at || undefined,
+                  completedAt: m.completedAt || m.completed_at || undefined,
                   legacyDraftId: m.legacy_draft_id || undefined
                 };
               });
@@ -1228,9 +1270,29 @@ export async function saveLearningProjectToSupabase(
         }
 
         for (const m of ch.meetings) {
-          const { error: meetErr } = await supabase
+          const meetingFullPayload: any = {
+            id: m.id,
+            chapter_id: ch.id,
+            meeting_number: m.meetingNumber,
+            title: m.title,
+            status: m.status,
+            product_states: m.productStates,
+            is_continuation: Boolean(m.isContinuation),
+            continuation_from_meeting_id: m.continuationFromMeetingId || null,
+            continuation_from_meeting_number: m.continuationFromMeetingNumber || null,
+            completed_at: m.completedAt || null,
+            legacy_draft_id: m.legacyDraftId || null,
+            created_at: m.createdAt || now,
+            updated_at: now
+          };
+
+          let { error: meetErr } = await supabase
             .from('learning_meetings')
-            .upsert({
+            .upsert(meetingFullPayload, { onConflict: 'id' });
+
+          if (meetErr) {
+            // Fallback jika kolom continuation belum ada di skema SQL database
+            const meetingFallbackPayload = {
               id: m.id,
               chapter_id: ch.id,
               meeting_number: m.meetingNumber,
@@ -1241,17 +1303,41 @@ export async function saveLearningProjectToSupabase(
               legacy_draft_id: m.legacyDraftId || null,
               created_at: m.createdAt || now,
               updated_at: now
-            }, { onConflict: 'id' });
-
-          if (meetErr) {
-            console.warn('[STIVIA Supabase] Gagal menyimpan learning_meetings:', meetErr);
+            };
+            const { error: retryMeetErr } = await supabase
+              .from('learning_meetings')
+              .upsert(meetingFallbackPayload, { onConflict: 'id' });
+            if (retryMeetErr) {
+              console.warn('[STIVIA Supabase] Gagal menyimpan learning_meetings:', retryMeetErr);
+            }
           }
 
           const mld = m.masterLearningData;
           if (mld) {
-            const { error: mldErr } = await supabase
+            const mldFullPayload: any = {
+              meeting_id: m.id,
+              tema_kegiatan: mld.temaKegiatan,
+              materi_diajarkan: mld.materiDiajarkan,
+              cakupan_materi: mld.cakupanMateri,
+              learning_objectives: mld.learningObjectives || [],
+              reinforcement_activities: mld.reinforcementActivities || '',
+              assessment_enabled: Boolean(mld.assessmentEnabled),
+              assessment_type: mld.assessmentType || null,
+              assessment_forms: mld.assessmentForms || [],
+              assessment_notes: mld.assessmentNotes || '',
+              user_notes: mld.userNotes || '',
+              version: mld.version || 1,
+              created_at: mld.updatedAt || now,
+              updated_at: now
+            };
+
+            let { error: mldErr } = await supabase
               .from('master_learning_data')
-              .upsert({
+              .upsert(mldFullPayload, { onConflict: 'meeting_id' });
+
+            if (mldErr) {
+              // Fallback jika kolom baru belum ada di skema SQL database
+              const mldFallbackPayload = {
                 meeting_id: m.id,
                 tema_kegiatan: mld.temaKegiatan,
                 materi_diajarkan: mld.materiDiajarkan,
@@ -1261,10 +1347,13 @@ export async function saveLearningProjectToSupabase(
                 version: mld.version || 1,
                 created_at: mld.updatedAt || now,
                 updated_at: now
-              }, { onConflict: 'meeting_id' });
-
-            if (mldErr) {
-              console.warn('[STIVIA Supabase] Gagal menyimpan master_learning_data:', mldErr);
+              };
+              const { error: retryMldErr } = await supabase
+                .from('master_learning_data')
+                .upsert(mldFallbackPayload, { onConflict: 'meeting_id' });
+              if (retryMldErr) {
+                console.warn('[STIVIA Supabase] Gagal menyimpan master_learning_data:', retryMldErr);
+              }
             }
           }
         }

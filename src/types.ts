@@ -1047,6 +1047,19 @@ export type MeetingStatus = 'draft' | 'in_progress' | 'ready' | 'completed';
 
 export type ProductLifecycleStatus = 'not_started' | 'draft' | 'ready';
 
+export type AssessmentType = 'Diagnostik' | 'Formatif' | 'Sumatif';
+
+export type AssessmentForm = 
+  | 'Pilihan Ganda'
+  | 'Benar-Salah'
+  | 'Menjodohkan'
+  | 'Uraian'
+  | 'Praktik'
+  | 'Proyek'
+  | 'Observasi'
+  | 'Presentasi'
+  | 'Self Assessment';
+
 export interface MeetingProductStates {
   material: ProductLifecycleStatus;
   infographic: ProductLifecycleStatus;
@@ -1061,7 +1074,15 @@ export interface MasterLearningData {
   materiDiajarkan: string;       // B. Materi yang Diajarkan (Materi pokok/utama)
   cakupanMateri: string;         // C. Cakupan Materi (Bagian/submateri yang dibahas)
   learningObjectives?: string[]; // Tujuan Pembelajaran Master
-  userNotes?: string;            // Catatan Pedagogis Guru
+  reinforcementActivities?: string; // D. Kegiatan / Latihan Penguat (Opsional)
+  
+  // E. Asesmen — Komponen Kondisional (Opsional)
+  assessmentEnabled?: boolean;   // default: false (Apakah pertemuan ini menggunakan asesmen?)
+  assessmentType?: AssessmentType; // 'Diagnostik' | 'Formatif' | 'Sumatif'
+  assessmentForms?: AssessmentForm[]; // Satu atau beberapa bentuk asesmen
+  assessmentNotes?: string;      // Catatan Asesmen (Opsional)
+
+  userNotes?: string;            // Catatan Pedagogis Guru (Opsional)
   version?: number;              // Versioning Master Context (v1, v2, etc.)
   updatedAt?: string;
 }
@@ -1071,6 +1092,9 @@ export interface MeetingSession {
   meetingNumber: string;         // Misal: "Pertemuan 1", "Pertemuan 2"
   title: string;                 // Misal: "Mengenal Ciri & Unsur Teks Iklan"
   status: MeetingStatus;         // 'draft' | 'in_progress' | 'ready' | 'completed'
+  isContinuation?: boolean;      // Penanda kelanjutan dari pertemuan sebelumnya
+  continuationFromMeetingId?: string;     // ID pertemuan yang dilanjutkan
+  continuationFromMeetingNumber?: string; // Label pertemuan asal (misal: "Pertemuan 1")
   masterLearningData: MasterLearningData;
   productStates: MeetingProductStates;
   createdAt: string;
@@ -1129,6 +1153,7 @@ export interface MateriProductContext {
   materiDiajarkan: string;
   cakupanMateri: string;
   learningObjectives: string[];
+  reinforcementActivities?: string;
   userNotes?: string;
 
   // Metadata Hirarki Pembelajaran
@@ -1185,6 +1210,7 @@ export interface LKPDProductContext {
   materiDiajarkan: string;
   cakupanMateri: string;
   learningObjectives: string[];
+  reinforcementActivities?: string;
   userNotes?: string;
 
   // Metadata Hirarki Pembelajaran
@@ -1213,7 +1239,43 @@ export interface PresentationProductContext {
   materiDiajarkan: string;
   cakupanMateri: string;
   learningObjectives: string[];
+  reinforcementActivities?: string;
   userNotes?: string;
+
+  // Metadata Hirarki Pembelajaran
+  educationLevel: EducationLevel;
+  grade: string;
+  subject: string;
+  bab: string;
+  pertemuan: string;
+  projectName?: string;
+  schoolName?: string;
+  teacherName?: string;
+
+  // Provenance & Version Awareness
+  sourceMeetingId: string;
+  sourceMasterVersion: number;
+}
+
+// ============================================================================
+// STIVIA TAHAP 3E: ASSESSMENT PRODUCT CONTEXT CONTRACT
+// Adapter penghubung MasterLearningData ke Menu Asesmen (Harian & Sumatif)
+// ============================================================================
+
+export interface AssessmentProductContext {
+  // Master Learning Data Utama
+  temaKegiatan: string;
+  materiDiajarkan: string;
+  cakupanMateri: string;
+  learningObjectives: string[];
+  reinforcementActivities?: string;
+  userNotes?: string;
+
+  // Konfigurasi Asesmen Kondisional
+  assessmentEnabled: boolean;
+  assessmentType?: AssessmentType;
+  assessmentForms?: AssessmentForm[];
+  assessmentNotes?: string;
 
   // Metadata Hirarki Pembelajaran
   educationLevel: EducationLevel;

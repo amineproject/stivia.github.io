@@ -68,6 +68,9 @@ CREATE TABLE IF NOT EXISTS public.learning_meetings (
     product_states JSONB NOT NULL DEFAULT '{"material":"not_started","infographic":"not_started","lkpd":"not_started","presentation":"not_started","assessment_harian":"not_started","assessment_sumatif":"not_started"}'::jsonb,
     completed_at TIMESTAMPTZ,
     legacy_draft_id TEXT,
+    is_continuation BOOLEAN NOT NULL DEFAULT FALSE,
+    continuation_from_meeting_id TEXT,
+    continuation_from_meeting_number TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -75,7 +78,7 @@ CREATE TABLE IF NOT EXISTS public.learning_meetings (
 CREATE INDEX IF NOT EXISTS idx_learning_meetings_chapter_id ON public.learning_meetings(chapter_id);
 
 -- 5. TABEL: master_learning_data
--- Single Source of Truth konten pembelajaran (Tema, Materi, Cakupan, TP, Catatan)
+-- Single Source of Truth konten pembelajaran (Tema, Materi, Cakupan, TP, Kegiatan, Asesmen, Catatan)
 CREATE TABLE IF NOT EXISTS public.master_learning_data (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     meeting_id TEXT NOT NULL REFERENCES public.learning_meetings(id) ON DELETE CASCADE,
@@ -83,6 +86,11 @@ CREATE TABLE IF NOT EXISTS public.master_learning_data (
     materi_diajarkan TEXT NOT NULL,
     cakupan_materi TEXT NOT NULL,
     learning_objectives JSONB DEFAULT '[]'::jsonb,
+    reinforcement_activities TEXT DEFAULT '',
+    assessment_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    assessment_type TEXT,
+    assessment_forms JSONB DEFAULT '[]'::jsonb,
+    assessment_notes TEXT DEFAULT '',
     user_notes TEXT DEFAULT '',
     version INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -91,6 +99,17 @@ CREATE TABLE IF NOT EXISTS public.master_learning_data (
 );
 
 CREATE INDEX IF NOT EXISTS idx_master_learning_data_meeting_id ON public.master_learning_data(meeting_id);
+
+-- Migrasi non-destruktif kolom baru jika tabel sudah ada sebelumnya
+ALTER TABLE public.learning_meetings ADD COLUMN IF NOT EXISTS is_continuation BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.learning_meetings ADD COLUMN IF NOT EXISTS continuation_from_meeting_id TEXT;
+ALTER TABLE public.learning_meetings ADD COLUMN IF NOT EXISTS continuation_from_meeting_number TEXT;
+
+ALTER TABLE public.master_learning_data ADD COLUMN IF NOT EXISTS reinforcement_activities TEXT DEFAULT '';
+ALTER TABLE public.master_learning_data ADD COLUMN IF NOT EXISTS assessment_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.master_learning_data ADD COLUMN IF NOT EXISTS assessment_type TEXT;
+ALTER TABLE public.master_learning_data ADD COLUMN IF NOT EXISTS assessment_forms JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.master_learning_data ADD COLUMN IF NOT EXISTS assessment_notes TEXT DEFAULT '';
 
 -- 6. TABEL: stivia_projects (Arsip Draf / Prompt Infografis / Proyek Legacy)
 CREATE TABLE IF NOT EXISTS public.stivia_projects (
