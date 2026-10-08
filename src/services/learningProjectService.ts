@@ -898,6 +898,72 @@ export function removeMeetingFromProject(
   return { updatedProjects, nextActiveMeetingId, deletedMeeting, targetProjectId };
 }
 
+/**
+ * Menghapus bab/teks dari proyek pembelajaran beserta seluruh pertemuan di dalamnya.
+ * Menghasilkan proyek terbarukan, ID bab aktif berikutnya, ID pertemuan aktif berikutnya, dan data bab yang dihapus.
+ */
+export function removeChapterFromProject(
+  projects: LearningProject[],
+  targetChapterId: string
+): {
+  updatedProjects: LearningProject[];
+  nextActiveChapterId?: string;
+  nextActiveMeetingId?: string;
+  deletedChapter?: ChapterNode;
+  targetProjectId?: string;
+} {
+  let nextActiveChapterId: string | undefined;
+  let nextActiveMeetingId: string | undefined;
+  let deletedChapter: ChapterNode | undefined;
+  let targetProjectId: string | undefined;
+  const now = new Date().toISOString().split('T')[0];
+
+  const updatedProjects = projects.map(p => {
+    let pModified = false;
+    const updatedClasses = p.classSubjects.map(cs => {
+      const chapterIndex = cs.chapters.findIndex(ch => ch.id === targetChapterId);
+      if (chapterIndex === -1) return cs;
+
+      pModified = true;
+      targetProjectId = p.id;
+      deletedChapter = cs.chapters[chapterIndex];
+
+      const remainingChapters = cs.chapters.filter(ch => ch.id !== targetChapterId);
+
+      if (remainingChapters.length > 0) {
+        const newActiveIndex = Math.min(chapterIndex, remainingChapters.length - 1);
+        const nextChapter = remainingChapters[newActiveIndex];
+        nextActiveChapterId = nextChapter.id;
+        nextActiveMeetingId = nextChapter.meetings[0]?.id;
+      } else {
+        nextActiveChapterId = undefined;
+        nextActiveMeetingId = undefined;
+      }
+
+      return {
+        ...cs,
+        chapters: remainingChapters,
+        updatedAt: now
+      };
+    });
+
+    if (!pModified) return p;
+    return {
+      ...p,
+      classSubjects: updatedClasses,
+      updatedAt: now
+    };
+  });
+
+  return {
+    updatedProjects,
+    nextActiveChapterId,
+    nextActiveMeetingId,
+    deletedChapter,
+    targetProjectId
+  };
+}
+
 export interface CreateProjectFormInput {
   namaProyek: string;
   tingkat: EducationLevel;
@@ -1030,16 +1096,293 @@ export function createLearningProjectFromFormData(
 // ============================================================================
 
 /**
- * Mengambil seluruh hierarki proyek pembelajaran milik pengguna yang sedang login dari Supabase.
- * Menggunakan nested select PostgreSQL/PostgREST untuk efisiensi maksimal (tanpa N+1 query).
+ * Status koneksi dan keberadaan tabel proyek pembelajaran di Supabase
  */
-export async function fetchLearningProjectsFromSupabase(userId: string): Promise<LearningProject[]> {
-  if (!isSupabaseConfigured || !userId) {
-    return [];
+export type SupabaseProjectStatus =
+  | 'checking'
+  | 'available'
+  | 'missing'
+  | 'forbidden'
+  | 'auth_required'
+  | 'network_error'
+  | 'query_error'
+  | 'unknown_error';
+
+export interface SupabaseErrorDetails {
+  status: SupabaseProjectStatus;
+  code?: string;
+  message: string;
+  details?: string | null;
+  hint?: string | null;
+  statusCode?: number;
+  userFriendlyMessage: string;
+}
+
+/**
+ * Mengklasifikasikan error Supabase / PostgREST secara presisi sesuai kode & konteks.
+ * Mencegah kesalahan menganggap semua kegagalan sebagai 'table not found'.
+ */
+export function classifySupabaseError(
+  error: any,
+  context?: { statusCode?: number }
+): SupabaseErrorDetails {
+  const code = (error?.code || '').toString();
+  const rawMessage = (error?.message || (typeof error === 'string' ? error : '')).toString();
+  const details = error?.details || null;
+  const hint = error?.hint || null;
+  const statusCode = context?.statusCode || error?.status || (typeof error?.statusCode === 'number' ? error.statusCode : undefined);
+  const msgLower = rawMessage.toLowerCase();
+
+  // 1. Table or Relation Missing / Schema cache issue (PostgREST PGRST205 or PostgreSQL 42P01)
+  if (
+    code === 'PGRST205' ||
+    code === '42P01' ||
+    msgLower.includes('schema cache') ||
+    (msgLower.includes('relation') && msgLower.includes('does not exist'))
+  ) {
+    return {
+      status: 'missing',
+      code: code || 'PGRST205',
+      message: rawMessage || "Could not find the table 'public.learning_projects' in the schema cache",
+      details,
+      hint,
+      statusCode: statusCode || 404,
+      userFriendlyMessage: 'Tabel public.learning_projects belum diinisialisasi di Supabase. Menjalankan skrip schema_learning_projects.sql di Supabase SQL Editor diperlukan untuk sinkronisasi cloud.',
+    };
+  }
+
+  // 2. Permission Denied / Forbidden (RLS Violation)
+  // 42501: insufficient_privilege
+  if (
+    code === '42501' ||
+    statusCode === 403 ||
+    (statusCode === 401 && msgLower.includes('permission denied')) ||
+    msgLower.includes('permission denied') ||
+    msgLower.includes('row-level security') ||
+    msgLower.includes('violates row-level security')
+  ) {
+    return {
+      status: 'forbidden',
+      code: code || '42501',
+      message: rawMessage,
+      details,
+      hint,
+      statusCode: statusCode || 403,
+      userFriendlyMessage: 'Supabase terhubung, tetapi akses ke data proyek ditolak. Periksa Row Level Security (RLS) dan policy tabel learning_projects.',
+    };
+  }
+
+  // 3. Auth Required / Session Missing or Expired
+  if (
+    code === 'PGRST301' ||
+    code === '28P01' ||
+    msgLower.includes('jwt expired') ||
+    msgLower.includes('invalid token') ||
+    msgLower.includes('not authenticated') ||
+    (msgLower.includes('session') && msgLower.includes('auth'))
+  ) {
+    return {
+      status: 'auth_required',
+      code: code || 'AUTH_REQUIRED',
+      message: rawMessage,
+      details,
+      hint,
+      statusCode: statusCode || 401,
+      userFriendlyMessage: 'Sesi login tidak aktif atau telah kedaluwarsa. Silakan masuk kembali.',
+    };
+  }
+
+  // 4. Network Error / Offline
+  if (
+    error?.name === 'TypeError' ||
+    msgLower.includes('failed to fetch') ||
+    msgLower.includes('network error') ||
+    msgLower.includes('load failed') ||
+    (typeof navigator !== 'undefined' && !navigator.onLine)
+  ) {
+    return {
+      status: 'network_error',
+      code: code || 'NETWORK_ERROR',
+      message: rawMessage || 'Network connection failed',
+      details,
+      hint,
+      statusCode: 0,
+      userFriendlyMessage: 'Koneksi ke Supabase terputus. Silakan periksa jaringan internet Anda.',
+    };
+  }
+
+  // 5. Query / Column / Schema constraint error
+  if (
+    code === '42703' || // undefined_column
+    code === '23502' || // not_null_violation
+    code === '23503' || // foreign_key_violation
+    code === '23505' || // unique_violation
+    code === '23514' || // check_violation
+    code.startsWith('42') ||
+    code.startsWith('23') ||
+    code.startsWith('22')
+  ) {
+    return {
+      status: 'query_error',
+      code,
+      message: rawMessage,
+      details,
+      hint,
+      statusCode: statusCode || 400,
+      userFriendlyMessage: `Query Supabase gagal (${code}): ${rawMessage}${hint ? ` (${hint})` : ''}`,
+    };
+  }
+
+  // 6. Unknown Error
+  return {
+    status: 'unknown_error',
+    code,
+    message: rawMessage || 'Terjadi kesalahan tidak dikenal saat mengakses cloud',
+    details,
+    hint,
+    statusCode,
+    userFriendlyMessage: `Terjadi kendala pada layanan cloud: ${rawMessage || 'Kesalahan tidak dikenal'}`,
+  };
+}
+
+// State kontrol status tabel untuk mencegah peringatan berulang & hammering
+let projectTableStatus: SupabaseProjectStatus = 'checking';
+let lastLoggedTableStatus: SupabaseProjectStatus | null = null;
+let lastTableCheckTimestamp = 0;
+const TABLE_STATUS_CACHE_TTL_MS = 60_000; // 60 detik cooldown
+
+export function getProjectTableStatus(): SupabaseProjectStatus {
+  return projectTableStatus;
+}
+
+export function setProjectTableStatus(status: SupabaseProjectStatus) {
+  projectTableStatus = status;
+}
+
+export function resetProjectTableStatus() {
+  projectTableStatus = 'checking';
+  lastLoggedTableStatus = null;
+  lastTableCheckTimestamp = 0;
+}
+
+/**
+ * Log perubahan status tabel hanya satu kali ketika transisi status terjadi.
+ * Mencegah log console.warn berulang pada setiap render komponen atau event fokus window.
+ */
+function logTableStatusChange(status: SupabaseProjectStatus, details?: SupabaseErrorDetails) {
+  if (status === lastLoggedTableStatus) {
+    return; // Hentikan warning berulang
+  }
+  lastLoggedTableStatus = status;
+
+  if (status === 'missing') {
+    console.warn(
+      '[STIVIA Supabase] Status tabel public.learning_projects: MISSING (belum dibuat di Supabase). Menggunakan local cache sebagai fallback sementara.'
+    );
+  } else if (status === 'forbidden') {
+    console.warn(
+      '[STIVIA Supabase] Status tabel public.learning_projects: FORBIDDEN. Akses ditolak (RLS). Periksa Row Level Security dan policy tabel learning_projects.'
+    );
+  } else if (status === 'network_error') {
+    console.warn(
+      '[STIVIA Supabase] Status koneksi: NETWORK_ERROR. Tidak dapat menghubungi Supabase, menggunakan data lokal.'
+    );
+  } else if (status === 'query_error') {
+    console.warn(
+      `[STIVIA Supabase] Status query: QUERY_ERROR (${details?.code || 'ERR'}): ${details?.message || ''}`
+    );
+  } else if (status === 'available') {
+    console.info('[STIVIA Supabase] Status tabel public.learning_projects: AVAILABLE. Sinkronisasi cloud aktif.');
+  }
+}
+
+/**
+ * Memeriksa ketersediaan tabel public.learning_projects secara terkontrol dengan caching.
+ */
+export async function checkLearningProjectsTable(force = false): Promise<{
+  status: SupabaseProjectStatus;
+  error?: SupabaseErrorDetails;
+}> {
+  if (!isSupabaseConfigured) {
+    projectTableStatus = 'missing';
+    return {
+      status: 'missing',
+      error: {
+        status: 'missing',
+        message: 'Supabase belum dikonfigurasi.',
+        userFriendlyMessage: 'Supabase belum dikonfigurasi.'
+      }
+    };
+  }
+
+  const now = Date.now();
+  if (!force && projectTableStatus !== 'checking' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return { status: projectTableStatus };
   }
 
   try {
-    const { data, error } = await supabase
+    const res = await supabase.from('learning_projects').select('id').limit(1);
+    lastTableCheckTimestamp = Date.now();
+
+    if (res.error) {
+      const classified = classifySupabaseError(res.error, { statusCode: res.status });
+      projectTableStatus = classified.status;
+      logTableStatusChange(classified.status, classified);
+      return { status: classified.status, error: classified };
+    }
+
+    projectTableStatus = 'available';
+    logTableStatusChange('available');
+    return { status: 'available' };
+  } catch (err: any) {
+    const classified = classifySupabaseError(err);
+    projectTableStatus = classified.status;
+    logTableStatusChange(classified.status, classified);
+    return { status: classified.status, error: classified };
+  }
+}
+
+export interface FetchLearningProjectsResult {
+  projects: LearningProject[];
+  status: SupabaseProjectStatus;
+  error?: SupabaseErrorDetails;
+}
+
+/**
+ * Mengambil seluruh hierarki proyek pembelajaran milik pengguna yang sedang login dari Supabase.
+ * Menggunakan nested select PostgreSQL/PostgREST untuk efisiensi maksimal (tanpa N+1 query).
+ * Mengembalikan status akurat (available / missing / forbidden / error) dan mendeteksi tabel kosong dengan benar.
+ */
+export async function fetchLearningProjectsFromSupabase(userId: string): Promise<FetchLearningProjectsResult> {
+  if (!isSupabaseConfigured || !userId) {
+    const status: SupabaseProjectStatus = !userId ? 'auth_required' : 'missing';
+    return {
+      projects: [],
+      status,
+      error: !userId ? {
+        status: 'auth_required',
+        message: 'Pengguna belum terautentikasi.',
+        userFriendlyMessage: 'Sesi pengguna tidak aktif.'
+      } : undefined
+    };
+  }
+
+  // Jika status tabel sudah diketahui 'missing' dan masih dalam rentang cache TTL, hindari query sia-sia
+  const now = Date.now();
+  if (projectTableStatus === 'missing' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return {
+      projects: [],
+      status: 'missing',
+      error: {
+        status: 'missing',
+        message: 'Tabel public.learning_projects belum diinisialisasi di Supabase.',
+        userFriendlyMessage: 'Tabel public.learning_projects belum dibuat di Supabase.'
+      }
+    };
+  }
+
+  try {
+    const { data, error, status: httpStatus } = await supabase
       .from('learning_projects')
       .select(`
         id,
@@ -1076,17 +1419,29 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
+    lastTableCheckTimestamp = Date.now();
+
     if (error) {
-      if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
-        console.warn('[STIVIA Supabase] Tabel public.learning_projects belum diinisialisasi di Supabase. Menggunakan local cache.');
-      } else {
-        console.warn('[STIVIA Supabase] Gagal mengambil learning_projects dari Supabase:', error);
-      }
-      return [];
+      const classified = classifySupabaseError(error, { statusCode: httpStatus });
+      projectTableStatus = classified.status;
+      logTableStatusChange(classified.status, classified);
+      return {
+        projects: [],
+        status: classified.status,
+        error: classified
+      };
     }
 
-    if (!data || !Array.isArray(data)) {
-      return [];
+    // SUKSES: Tabel tersedia di cloud
+    projectTableStatus = 'available';
+    logTableStatusChange('available');
+
+    // TAHAP 11: Empty table ([]) BUKAN error!
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return {
+        projects: [],
+        status: 'available'
+      };
     }
 
     const projects: LearningProject[] = data.map((p: any) => {
@@ -1184,27 +1539,60 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
       };
     });
 
-    return projects;
-  } catch (err) {
-    console.warn('[STIVIA Supabase] Error saat query learning projects:', err);
-    return [];
+    return {
+      projects,
+      status: 'available'
+    };
+  } catch (err: any) {
+    const classified = classifySupabaseError(err);
+    projectTableStatus = classified.status;
+    logTableStatusChange(classified.status, classified);
+    return {
+      projects: [],
+      status: classified.status,
+      error: classified
+    };
   }
 }
 
 /**
  * Menyimpan seluruh hierarki satu LearningProject ke Supabase secara aman.
  * Menjamin idempotency (tidak terjadi duplicate record) dengan upsert per ID.
+ * Mengklasifikasikan error secara presisi (missing / forbidden / query_error / network_error)
+ * dan mencegah upaya upsert berulang jika tabel sudah diketahui belum dibuat.
  */
 export async function saveLearningProjectToSupabase(
   project: LearningProject,
   userId: string
-): Promise<{ success: boolean; isSchemaMissing?: boolean; error?: string }> {
+): Promise<{
+  success: boolean;
+  status: SupabaseProjectStatus;
+  isSchemaMissing?: boolean;
+  error?: string;
+  errorDetails?: SupabaseErrorDetails;
+}> {
   if (!isSupabaseConfigured || !userId) {
-    return { success: false, error: 'Supabase belum dikonfigurasi atau sesi tidak aktif.' };
+    const status: SupabaseProjectStatus = !userId ? 'auth_required' : 'missing';
+    return {
+      success: false,
+      status,
+      error: !userId ? 'Sesi login tidak aktif.' : 'Supabase belum dikonfigurasi.'
+    };
+  }
+
+  // Jika tabel diketahui missing dalam sesi, jangan jalankan cascade upsert yang akan memicu kegagalan berulang
+  const now = Date.now();
+  if (projectTableStatus === 'missing' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return {
+      success: false,
+      status: 'missing',
+      isSchemaMissing: true,
+      error: 'Tabel database Supabase belum dibuat. Proyek disimpan di cache lokal perangkat.'
+    };
   }
 
   try {
-    const now = new Date().toISOString();
+    const nowIso = new Date().toISOString();
 
     let effectiveUserId = userId;
     const { data: authData } = await supabase.auth.getSession();
@@ -1213,7 +1601,7 @@ export async function saveLearningProjectToSupabase(
     }
 
     // 1. Upsert Proyek Utama
-    const { error: projErr } = await supabase
+    const { error: projErr, status: httpStatus } = await supabase
       .from('learning_projects')
       .upsert({
         id: project.id,
@@ -1224,16 +1612,27 @@ export async function saveLearningProjectToSupabase(
         teacher_name: project.teacherName || null,
         school_name: project.schoolName || null,
         is_legacy_adapted: Boolean(project.isLegacyAdapted),
-        created_at: project.createdAt || now,
-        updated_at: now
+        created_at: project.createdAt || nowIso,
+        updated_at: nowIso
       }, { onConflict: 'id' });
 
+    lastTableCheckTimestamp = Date.now();
+
     if (projErr) {
-      if (projErr.code === 'PGRST205' || projErr.message?.includes('schema cache')) {
-        return { success: false, isSchemaMissing: true, error: 'Tabel database Supabase belum dibuat.' };
-      }
-      return { success: false, error: projErr.message };
+      const classified = classifySupabaseError(projErr, { statusCode: httpStatus });
+      projectTableStatus = classified.status;
+      logTableStatusChange(classified.status, classified);
+
+      return {
+        success: false,
+        status: classified.status,
+        isSchemaMissing: classified.status === 'missing',
+        error: classified.userFriendlyMessage,
+        errorDetails: classified
+      };
     }
+
+    projectTableStatus = 'available';
 
     // 2. Upsert Kelas, Bab, Pertemuan, dan Master Learning Data
     for (const cs of project.classSubjects) {
@@ -1245,12 +1644,12 @@ export async function saveLearningProjectToSupabase(
           education_level: cs.educationLevel,
           grade: cs.grade,
           subject: cs.subject,
-          created_at: cs.createdAt || now,
-          updated_at: now
+          created_at: cs.createdAt || nowIso,
+          updated_at: nowIso
         }, { onConflict: 'id' });
 
       if (classErr) {
-        console.warn('[STIVIA Supabase] Gagal menyimpan learning_classes:', classErr);
+        console.warn('[STIVIA Supabase] Catatan saat menyimpan learning_classes:', classErr.message);
       }
 
       for (const ch of cs.chapters) {
@@ -1261,12 +1660,12 @@ export async function saveLearningProjectToSupabase(
             class_id: cs.id,
             chapter_number: ch.chapterNumber,
             title: ch.title,
-            created_at: ch.createdAt || now,
-            updated_at: now
+            created_at: ch.createdAt || nowIso,
+            updated_at: nowIso
           }, { onConflict: 'id' });
 
         if (chErr) {
-          console.warn('[STIVIA Supabase] Gagal menyimpan learning_chapters:', chErr);
+          console.warn('[STIVIA Supabase] Catatan saat menyimpan learning_chapters:', chErr.message);
         }
 
         for (const m of ch.meetings) {
@@ -1282,8 +1681,8 @@ export async function saveLearningProjectToSupabase(
             continuation_from_meeting_number: m.continuationFromMeetingNumber || null,
             completed_at: m.completedAt || null,
             legacy_draft_id: m.legacyDraftId || null,
-            created_at: m.createdAt || now,
-            updated_at: now
+            created_at: m.createdAt || nowIso,
+            updated_at: nowIso
           };
 
           let { error: meetErr } = await supabase
@@ -1301,14 +1700,14 @@ export async function saveLearningProjectToSupabase(
               product_states: m.productStates,
               completed_at: m.completedAt || null,
               legacy_draft_id: m.legacyDraftId || null,
-              created_at: m.createdAt || now,
-              updated_at: now
+              created_at: m.createdAt || nowIso,
+              updated_at: nowIso
             };
             const { error: retryMeetErr } = await supabase
               .from('learning_meetings')
               .upsert(meetingFallbackPayload, { onConflict: 'id' });
             if (retryMeetErr) {
-              console.warn('[STIVIA Supabase] Gagal menyimpan learning_meetings:', retryMeetErr);
+              console.warn('[STIVIA Supabase] Catatan saat menyimpan learning_meetings:', retryMeetErr.message);
             }
           }
 
@@ -1327,8 +1726,8 @@ export async function saveLearningProjectToSupabase(
               assessment_notes: mld.assessmentNotes || '',
               user_notes: mld.userNotes || '',
               version: mld.version || 1,
-              created_at: mld.updatedAt || now,
-              updated_at: now
+              created_at: mld.updatedAt || nowIso,
+              updated_at: nowIso
             };
 
             let { error: mldErr } = await supabase
@@ -1345,14 +1744,14 @@ export async function saveLearningProjectToSupabase(
                 learning_objectives: mld.learningObjectives || [],
                 user_notes: mld.userNotes || '',
                 version: mld.version || 1,
-                created_at: mld.updatedAt || now,
-                updated_at: now
+                created_at: mld.updatedAt || nowIso,
+                updated_at: nowIso
               };
               const { error: retryMldErr } = await supabase
                 .from('master_learning_data')
                 .upsert(mldFallbackPayload, { onConflict: 'meeting_id' });
               if (retryMldErr) {
-                console.warn('[STIVIA Supabase] Gagal menyimpan master_learning_data:', retryMldErr);
+                console.warn('[STIVIA Supabase] Catatan saat menyimpan master_learning_data:', retryMldErr.message);
               }
             }
           }
@@ -1377,15 +1776,23 @@ export async function saveLearningProjectToSupabase(
             }
           }
         } catch (pruneErr) {
-          console.warn('[STIVIA Supabase] Catatan saat pruning meeting yatim:', pruneErr);
+          // ignore
         }
       }
     }
 
-    return { success: true };
+    return { success: true, status: 'available' };
   } catch (err: any) {
-    console.warn('[STIVIA Supabase] Error saat saveLearningProjectToSupabase:', err);
-    return { success: false, error: err?.message || 'Gagal menyimpan ke Supabase.' };
+    const classified = classifySupabaseError(err);
+    projectTableStatus = classified.status;
+    logTableStatusChange(classified.status, classified);
+    return {
+      success: false,
+      status: classified.status,
+      isSchemaMissing: classified.status === 'missing',
+      error: classified.userFriendlyMessage,
+      errorDetails: classified
+    };
   }
 }
 
@@ -1393,18 +1800,23 @@ export async function saveLearningProjectToSupabase(
  * Menghapus proyek pembelajaran dari Supabase secara konsisten.
  * Mencakup penghapusan relasional dari bawah ke atas jika cascade tidak aktif di Supabase:
  * master_learning_data -> learning_meetings -> learning_chapters -> learning_classes -> learning_projects.
- * Jika tabel belum dibuat di database Supabase (PGRST205), fungsi mengembalikan isSchemaMissing: true
- * agar penghapusan di sisi lokal tetap berjalan mulus tanpa menghalangi pengguna.
+ * Mengklasifikasikan error dengan akurat dan mencegah pesan palsu 'tabel belum dibuat'.
  */
 export async function deleteLearningProjectFromSupabase(
   projectId: string,
   userId?: string
-): Promise<{ success: boolean; isSchemaMissing?: boolean; error?: string }> {
+): Promise<{ success: boolean; status?: SupabaseProjectStatus; isSchemaMissing?: boolean; error?: string }> {
   if (!isSupabaseConfigured) {
-    return { success: true, isSchemaMissing: true };
+    return { success: true, status: 'missing', isSchemaMissing: true };
   }
   if (!projectId) {
     return { success: false, error: 'ID Proyek tidak valid.' };
+  }
+
+  // Jika tabel diketahui missing dalam sesi, langsung return sukses di lokal
+  const now = Date.now();
+  if (projectTableStatus === 'missing' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return { success: true, status: 'missing', isSchemaMissing: true };
   }
 
   try {
@@ -1419,107 +1831,99 @@ export async function deleteLearningProjectFromSupabase(
     if (effectiveUserId) {
       query = query.eq('user_id', effectiveUserId);
     }
-    const { error: directErr } = await query;
+    const { error: directErr, status: httpStatus } = await query;
+    lastTableCheckTimestamp = Date.now();
 
     // Jika berhasil langsung di Supabase tanpa error
     if (!directErr) {
-      return { success: true };
+      projectTableStatus = 'available';
+      return { success: true, status: 'available' };
     }
 
-    // Jika tabel belum diinisialisasi / belum ada di schema cache Supabase (PGRST205)
-    if (directErr.code === 'PGRST205' || directErr.message?.includes('schema cache')) {
-      console.warn('[STIVIA Supabase] Tabel public.learning_projects belum diinisialisasi di Supabase. Proyek dihapus dari cache lokal.');
-      return { success: true, isSchemaMissing: true };
+    const classified = classifySupabaseError(directErr, { statusCode: httpStatus });
+    projectTableStatus = classified.status;
+    logTableStatusChange(classified.status, classified);
+
+    if (classified.status === 'missing') {
+      return { success: true, status: 'missing', isSchemaMissing: true };
     }
 
-    // Jika error karena RLS (Permission Denied)
-    if (directErr.code === '42501' || directErr.message?.includes('permission')) {
-      return { success: false, error: 'Izin ditolak oleh database (RLS). Pastikan Anda pemilik proyek ini.' };
+    if (classified.status === 'forbidden') {
+      return { success: false, status: 'forbidden', error: classified.userFriendlyMessage };
     }
 
     // 2. Fallback: Eksekusi penghapusan hierarki data secara eksplisit jika terjadi foreign key block (23503)
-    console.warn('[STIVIA Supabase] Direct project delete encounter note, mencoba explicit cascade delete:', directErr.message);
+    if (directErr.code === '23503') {
+      console.warn('[STIVIA Supabase] Direct project delete foreign key constraint, menjalankan explicit cascade delete:', directErr.message);
 
-    // Ambil seluruh class_id dalam project
-    const { data: classes, error: classSelectErr } = await supabase
-      .from('learning_classes')
-      .select('id')
-      .eq('project_id', projectId);
-
-    if (classSelectErr?.code === 'PGRST205') {
-      return { success: true, isSchemaMissing: true };
-    }
-
-    const classIds = (classes || []).map((c: any) => c.id).filter(Boolean);
-
-    if (classIds.length > 0) {
-      // Ambil seluruh chapter_id dalam class
-      const { data: chapters } = await supabase
-        .from('learning_chapters')
+      const { data: classes } = await supabase
+        .from('learning_classes')
         .select('id')
-        .in('class_id', classIds);
+        .eq('project_id', projectId);
 
-      const chapterIds = (chapters || []).map((ch: any) => ch.id).filter(Boolean);
+      const classIds = (classes || []).map((c: any) => c.id).filter(Boolean);
 
-      if (chapterIds.length > 0) {
-        // Ambil seluruh meeting_id dalam chapter
-        const { data: meetings } = await supabase
-          .from('learning_meetings')
+      if (classIds.length > 0) {
+        const { data: chapters } = await supabase
+          .from('learning_chapters')
           .select('id')
-          .in('chapter_id', chapterIds);
+          .in('class_id', classIds);
 
-        const meetingIds = (meetings || []).map((m: any) => m.id).filter(Boolean);
+        const chapterIds = (chapters || []).map((ch: any) => ch.id).filter(Boolean);
 
-        if (meetingIds.length > 0) {
-          // Hapus master_learning_data
-          await supabase
-            .from('master_learning_data')
-            .delete()
-            .in('meeting_id', meetingIds);
-
-          // Hapus learning_meetings
-          await supabase
+        if (chapterIds.length > 0) {
+          const { data: meetings } = await supabase
             .from('learning_meetings')
+            .select('id')
+            .in('chapter_id', chapterIds);
+
+          const meetingIds = (meetings || []).map((m: any) => m.id).filter(Boolean);
+
+          if (meetingIds.length > 0) {
+            await supabase
+              .from('master_learning_data')
+              .delete()
+              .in('meeting_id', meetingIds);
+
+            await supabase
+              .from('learning_meetings')
+              .delete()
+              .in('id', meetingIds);
+          }
+
+          await supabase
+            .from('learning_chapters')
             .delete()
-            .in('id', meetingIds);
+            .in('id', chapterIds);
         }
 
-        // Hapus learning_chapters
         await supabase
-          .from('learning_chapters')
+          .from('learning_classes')
           .delete()
-          .in('id', chapterIds);
+          .in('id', classIds);
       }
 
-      // Hapus learning_classes
-      await supabase
-        .from('learning_classes')
-        .delete()
-        .in('id', classIds);
-    }
-
-    // Terakhir: Hapus learning_projects record
-    let finalQuery = supabase.from('learning_projects').delete().eq('id', projectId);
-    if (effectiveUserId) {
-      finalQuery = finalQuery.eq('user_id', effectiveUserId);
-    }
-    const { error: finalErr } = await finalQuery;
-
-    if (finalErr) {
-      if (finalErr.code === 'PGRST205' || finalErr.message?.includes('schema cache')) {
-        return { success: true, isSchemaMissing: true };
+      let finalQuery = supabase.from('learning_projects').delete().eq('id', projectId);
+      if (effectiveUserId) {
+        finalQuery = finalQuery.eq('user_id', effectiveUserId);
       }
-      console.error('[STIVIA Supabase] Gagal menghapus learning project setelah explicit cascade:', finalErr);
-      return { success: false, error: finalErr.message };
+      const { error: finalErr } = await finalQuery;
+
+      if (finalErr) {
+        const finalClassified = classifySupabaseError(finalErr);
+        return { success: false, status: finalClassified.status, error: finalClassified.userFriendlyMessage };
+      }
+
+      return { success: true, status: 'available' };
     }
 
-    return { success: true };
+    return { success: false, status: classified.status, error: classified.userFriendlyMessage };
   } catch (err: any) {
-    if (err?.code === 'PGRST205' || err?.message?.includes('schema cache')) {
-      return { success: true, isSchemaMissing: true };
+    const classified = classifySupabaseError(err);
+    if (classified.status === 'missing') {
+      return { success: true, status: 'missing', isSchemaMissing: true };
     }
-    console.error('[STIVIA Supabase] Error saat deleteLearningProjectFromSupabase:', err);
-    return { success: false, error: err?.message || 'Gagal menghapus proyek di cloud.' };
+    return { success: false, status: classified.status, error: classified.userFriendlyMessage };
   }
 }
 
@@ -1535,6 +1939,12 @@ export async function deleteLearningMeetingFromSupabase(
     return { success: true, isSchemaMissing: true };
   }
 
+  // Jika tabel diketahui missing dalam sesi, langsung return sukses di lokal
+  const now = Date.now();
+  if (projectTableStatus === 'missing' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return { success: true, isSchemaMissing: true };
+  }
+
   try {
     // 1. Bersihkan master_learning_data secara eksplisit
     const { error: mldErr } = await supabase
@@ -1543,30 +1953,113 @@ export async function deleteLearningMeetingFromSupabase(
       .eq('meeting_id', meetingId);
 
     if (mldErr && mldErr.code !== 'PGRST116' && mldErr.code !== 'PGRST205') {
-      console.warn('[STIVIA Supabase] Catatan saat hapus master_learning_data:', mldErr);
+      console.warn('[STIVIA Supabase] Catatan saat hapus master_learning_data:', mldErr.message);
     }
 
     // 2. Hapus record pertemuan dari public.learning_meetings
-    const { error: meetErr } = await supabase
+    const { error: meetErr, status: httpStatus } = await supabase
       .from('learning_meetings')
       .delete()
       .eq('id', meetingId);
 
     if (meetErr) {
-      if (meetErr.code === 'PGRST205' || meetErr.message?.includes('schema cache')) {
+      const classified = classifySupabaseError(meetErr, { statusCode: httpStatus });
+      if (classified.status === 'missing') {
         return { success: true, isSchemaMissing: true };
       }
-      console.error('[STIVIA Supabase] Gagal menghapus meeting dari Supabase:', meetErr);
-      return { success: false, error: meetErr.message };
+      console.error('[STIVIA Supabase] Gagal menghapus meeting dari Supabase:', classified.userFriendlyMessage);
+      return { success: false, error: classified.userFriendlyMessage };
     }
 
     return { success: true };
   } catch (err: any) {
-    if (err?.code === 'PGRST205' || err?.message?.includes('schema cache')) {
+    const classified = classifySupabaseError(err);
+    if (classified.status === 'missing') {
       return { success: true, isSchemaMissing: true };
     }
     console.error('[STIVIA Supabase] Error saat delete meeting di Supabase:', err);
-    return { success: false, error: err?.message || 'Gagal menghapus pertemuan di cloud.' };
+    return { success: false, error: classified.userFriendlyMessage };
+  }
+}
+
+/**
+ * Menghapus sebuah record Bab / Teks Pembahasan dari Supabase secara cascade terkontrol:
+ * master_learning_data -> learning_meetings -> learning_chapters.
+ * Tunduk pada RLS dan aman dari orphan data.
+ */
+export async function deleteLearningChapterFromSupabase(
+  chapterId: string,
+  userId?: string
+): Promise<{ success: boolean; isSchemaMissing?: boolean; error?: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: true, isSchemaMissing: true };
+  }
+  if (!chapterId) {
+    return { success: false, error: 'ID Bab/Teks tidak valid.' };
+  }
+
+  // Jika tabel diketahui missing dalam sesi, langsung return sukses di lokal
+  const now = Date.now();
+  if (projectTableStatus === 'missing' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return { success: true, isSchemaMissing: true };
+  }
+
+  try {
+    // 1. Ambil seluruh meeting_id di dalam chapter ini untuk cascade clean master data & meeting
+    const { data: meetings, error: meetSelectErr } = await supabase
+      .from('learning_meetings')
+      .select('id')
+      .eq('chapter_id', chapterId);
+
+    if (meetSelectErr) {
+      const classified = classifySupabaseError(meetSelectErr);
+      if (classified.status === 'missing') {
+        return { success: true, isSchemaMissing: true };
+      }
+    }
+
+    const meetingIds = (meetings || []).map((m: any) => m.id).filter(Boolean);
+
+    if (meetingIds.length > 0) {
+      // Hapus master_learning_data terkait seluruh meeting di bab ini
+      await supabase
+        .from('master_learning_data')
+        .delete()
+        .in('meeting_id', meetingIds);
+
+      // Hapus seluruh learning_meetings di bab ini
+      await supabase
+        .from('learning_meetings')
+        .delete()
+        .in('id', meetingIds);
+    }
+
+    // 2. Hapus record bab di learning_chapters
+    const { error: chErr, status: httpStatus } = await supabase
+      .from('learning_chapters')
+      .delete()
+      .eq('id', chapterId);
+
+    if (chErr) {
+      const classified = classifySupabaseError(chErr, { statusCode: httpStatus });
+      if (classified.status === 'missing') {
+        return { success: true, isSchemaMissing: true };
+      }
+      if (classified.status === 'forbidden') {
+        return { success: false, error: 'Izin ditolak oleh database (RLS). Pastikan Anda pemilik data ini.' };
+      }
+      console.error('[STIVIA Supabase] Gagal menghapus chapter dari Supabase:', classified.userFriendlyMessage);
+      return { success: false, error: classified.userFriendlyMessage };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    const classified = classifySupabaseError(err);
+    if (classified.status === 'missing') {
+      return { success: true, isSchemaMissing: true };
+    }
+    console.error('[STIVIA Supabase] Error saat delete chapter di Supabase:', err);
+    return { success: false, error: classified.userFriendlyMessage };
   }
 }
 
@@ -1869,20 +2362,51 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
   learningProjects: LearningProject[];
   legacyProjects: InfographicDraft[];
   syncStatus: 'supabase_synced' | 'local_fallback' | 'empty';
+  tableStatus: SupabaseProjectStatus;
+  errorMessage?: string;
 }> {
   if (!isSupabaseConfigured || !userId) {
     return {
       learningProjects: getStoredLearningProjects(userId),
       legacyProjects: [],
-      syncStatus: 'local_fallback'
+      syncStatus: 'local_fallback',
+      tableStatus: !userId ? 'auth_required' : 'missing',
+      errorMessage: !userId ? 'Sesi login tidak aktif.' : 'Supabase belum dikonfigurasi.'
     };
   }
 
   try {
     // 1. Ambil proyek hierarki milik pengguna dari Supabase Cloud (Source of Truth)
-    const cloudProjects = await fetchLearningProjectsFromSupabase(userId);
+    const fetchResult = await fetchLearningProjectsFromSupabase(userId);
     // 2. Ambil draf legacy milik pengguna dari Supabase Cloud
     const cloudLegacyDrafts = await fetchLegacyProjectsFromSupabase(userId);
+
+    // KASUS A: Tabel belum dibuat (missing) atau akses ditolak (forbidden)
+    // TAHAP 8: Jangan mencoba push proyek lokal ke cloud jika tabel jelas belum ada (mencegah loop error berulang)
+    if (fetchResult.status === 'missing' || fetchResult.status === 'forbidden') {
+      const userLocalProjects = getStoredLearningProjects(userId);
+      return {
+        learningProjects: userLocalProjects,
+        legacyProjects: cloudLegacyDrafts,
+        syncStatus: 'local_fallback',
+        tableStatus: fetchResult.status,
+        errorMessage: fetchResult.error?.userFriendlyMessage
+      };
+    }
+
+    if (fetchResult.status === 'network_error') {
+      const userLocalProjects = getStoredLearningProjects(userId);
+      return {
+        learningProjects: userLocalProjects,
+        legacyProjects: cloudLegacyDrafts,
+        syncStatus: 'local_fallback',
+        tableStatus: 'network_error',
+        errorMessage: 'Koneksi ke Supabase terputus. Menggunakan data lokal.'
+      };
+    }
+
+    // KASUS B: Tabel AVAILABLE di Supabase
+    const cloudProjects = fetchResult.projects;
 
     if (cloudProjects.length > 0) {
       // Supabase adalah Source of Truth: simpan ke partisi lokal user ini
@@ -1893,12 +2417,13 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
       return {
         learningProjects: cloudProjects,
         legacyProjects: cloudLegacyDrafts,
-        syncStatus: 'supabase_synced'
+        syncStatus: 'supabase_synced',
+        tableStatus: 'available'
       };
     }
 
-    // 3. Jika di Supabase belum ada data:
-    // HANYA ambil data lokal yang berada pada partisi user ini (stivia_learning_projects_${userId})
+    // KASUS C: Tabel AVAILABLE tapi data cloud kosong ([]):
+    // TAHAP 11: Empty table BUKAN error. Cek apakah ada proyek lokal yang perlu disinkronkan ke cloud
     const userLocalProjects = getStoredLearningProjects(userId);
 
     if (userLocalProjects.length > 0) {
@@ -1913,25 +2438,30 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
       return {
         learningProjects: userLocalProjects,
         legacyProjects: cloudLegacyDrafts,
-        syncStatus: 'supabase_synced'
+        syncStatus: 'supabase_synced',
+        tableStatus: 'available'
       };
     }
 
-    // 4. Jika user ini memang belum memiliki proyek sama sekali (Akun Baru / Tanpa Proyek):
+    // KASUS D: User memang belum memiliki proyek sama sekali (Akun Baru / Tanpa Proyek)
     if (typeof window !== 'undefined') {
       localStorage.setItem('stivia_last_user_id', userId);
     }
     return {
       learningProjects: [],
       legacyProjects: cloudLegacyDrafts,
-      syncStatus: 'empty'
+      syncStatus: 'empty',
+      tableStatus: 'available'
     };
-  } catch (err) {
-    console.warn('[STIVIA Supabase] Gagal sinkronisasi proyek saat login:', err);
+  } catch (err: any) {
+    const classified = classifySupabaseError(err);
+    console.warn('[STIVIA Supabase] Gagal sinkronisasi proyek saat login:', classified.userFriendlyMessage);
     return {
       learningProjects: getStoredLearningProjects(userId),
       legacyProjects: [],
-      syncStatus: 'local_fallback'
+      syncStatus: 'local_fallback',
+      tableStatus: classified.status,
+      errorMessage: classified.userFriendlyMessage
     };
   }
 }

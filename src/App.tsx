@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DashboardPage } from './components/pages/DashboardPage';
@@ -42,10 +42,13 @@ import {
   saveLearningProjectToSupabase,
   deleteLearningProjectFromSupabase,
   deleteLearningMeetingFromSupabase,
+  deleteLearningChapterFromSupabase,
   deleteLegacyProjectFromSupabase,
   removeMeetingFromProject,
+  removeChapterFromProject,
   syncLearningProjectsOnLogin,
   saveLegacyProjectToSupabase,
+  getProjectTableStatus,
   DEFAULT_INITIAL_LEARNING_PROJECT
 } from './services/learningProjectService';
 import { 
@@ -93,6 +96,8 @@ export default function App() {
   // Cloud Sync State (Supabase as Source of Truth)
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'local' | 'syncing' | 'error'>('local');
+  const currentLoadedUserIdRef = useRef<string | null>(null);
+  const lastFocusSyncRef = useRef<number>(0);
 
   // User projects & active draft state (only user-created/saved projects, strictly isolated per user)
   const [projects, setProjects] = useState<InfographicDraft[]>(() => {
@@ -137,11 +142,13 @@ export default function App() {
 
     try {
       const syncResult = await syncLearningProjectsOnLogin(userId);
-      if (syncResult.syncStatus === 'supabase_synced' && syncResult.learningProjects.length > 0) {
+
+      if (syncResult.learningProjects.length > 0) {
+        // Terdapat proyek (baik dari cloud maupun partisi lokal user)
         setLearningProjects(syncResult.learningProjects);
         saveStoredLearningProjects(syncResult.learningProjects, userId);
 
-        // Validasi & restore active learning context terhadap data dari Supabase
+        // Validasi & restore active learning context terhadap data proyek
         setActiveLearningContext((prevContext) => {
           const validProj =
             syncResult.learningProjects.find((p) => p.id === prevContext.activeProjectId) ||
@@ -164,7 +171,7 @@ export default function App() {
           };
           saveStoredActiveContext(newContext, userId);
 
-          // Sinkronkan meeting pertama dari cloud project ke currentDraft
+          // Sinkronkan meeting pertama ke currentDraft
           if (validMeeting && validChapter && validClass && validProj) {
             setCurrentDraft((prevDraft) => {
               const synced = syncMeetingToCurrentDraft(
@@ -182,13 +189,20 @@ export default function App() {
           return newContext;
         });
 
-        // Sinkronkan draf legacy dari cloud jika ada
+        // Sinkronkan draf legacy jika ada
         if (syncResult.legacyProjects) {
           setProjects(syncResult.legacyProjects);
           saveStoredLegacyProjects(syncResult.legacyProjects, userId);
         }
 
-        setCloudSyncStatus('synced');
+        // TAHAP 8: Tetapkan status sinkronisasi yang jujur & akurat
+        if (syncResult.syncStatus === 'supabase_synced') {
+          setCloudSyncStatus('synced');
+        } else if (syncResult.tableStatus === 'forbidden') {
+          setCloudSyncStatus('error');
+        } else {
+          setCloudSyncStatus('local');
+        }
       } else {
         // PENTING: User belum memiliki proyek sama sekali (Akun Baru / Tanpa Proyek)
         // Jamin state memori bersih dari data akun sebelumnya (Zero Data Bleeding)
@@ -212,7 +226,13 @@ export default function App() {
           saveStoredLegacyProjects([], userId);
         }
 
-        setCloudSyncStatus('synced');
+        if (syncResult.tableStatus === 'available') {
+          setCloudSyncStatus('synced');
+        } else if (syncResult.tableStatus === 'forbidden') {
+          setCloudSyncStatus('error');
+        } else {
+          setCloudSyncStatus('local');
+        }
       }
     } catch (err) {
       console.warn('[STIVIA] Gagal memuat proyek dari cloud Supabase:', err);
@@ -285,6 +305,7 @@ export default function App() {
         if (!isMounted) return;
         setSession(data.session);
         if (data.session?.user && !isRecovery) {
+          currentLoadedUserIdRef.current = data.session.user.id;
           await fetchUserProfile(
             data.session.user.id,
             data.session.user.user_metadata?.full_name
@@ -292,6 +313,7 @@ export default function App() {
           await refreshSubscriptionSummary(data.session.user.id);
           await loadUserLearningProjectsFromCloud(data.session.user.id);
         } else {
+          currentLoadedUserIdRef.current = null;
           // Tidak ada sesi aktif (tamu / belum login)
           setLearningProjects([]);
           setActiveLearningContext({
@@ -323,8 +345,20 @@ export default function App() {
         return;
       }
 
+      // Background token refresh tidak memerlukan inisialisasi ulang memori
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(newSession);
+        return;
+      }
+
       if (newSession?.user) {
         setSession(newSession);
+        // Cegah eksekusi ganda jika data user ini sudah selesai dimuat oleh initAuth
+        if (currentLoadedUserIdRef.current === newSession.user.id) {
+          return;
+        }
+        currentLoadedUserIdRef.current = newSession.user.id;
+
         // Kosongkan state memori sebelum data user baru selesai dimuat untuk mencegah tumpang tindih data akun lama
         setLearningProjects([]);
         setActiveLearningContext({
@@ -341,6 +375,7 @@ export default function App() {
         await refreshSubscriptionSummary(newSession.user.id);
         await loadUserLearningProjectsFromCloud(newSession.user.id);
       } else {
+        currentLoadedUserIdRef.current = null;
         setSession(null);
         setUserProfile(null);
         setSubscriptionSummary(null);
@@ -363,10 +398,17 @@ export default function App() {
     };
   }, [refreshSubscriptionSummary, loadUserLearningProjectsFromCloud]);
 
-  // Reverse Sync (TEST 4): Auto-sinkronkan dari cloud saat window kembali aktif/fokus
+  // Reverse Sync (TEST 4): Auto-sinkronkan dari cloud saat window kembali aktif/fokus (ter-throttle & aman dari spam)
   useEffect(() => {
     const handleFocus = () => {
+      const now = Date.now();
+      // Cooldown 45 detik agar tidak memicu query berulang setiap kali berganti tab
+      if (now - lastFocusSyncRef.current < 45_000) return;
+      // Jangan spam refresh jika tabel Supabase diketahui MISSING
+      if (getProjectTableStatus() === 'missing') return;
+
       if (session?.user?.id && !isCloudSyncing) {
+        lastFocusSyncRef.current = now;
         loadUserLearningProjectsFromCloud(session.user.id);
       }
     };
@@ -377,6 +419,7 @@ export default function App() {
   // Handler Keluar (Logout)
   const handleLogout = async () => {
     try {
+      currentLoadedUserIdRef.current = null;
       invalidateSubscriptionCache();
       await signOutUser();
     } catch (err) {
@@ -582,9 +625,19 @@ export default function App() {
           setCloudSyncStatus('synced');
           showToast(`Proyek "${project.name}" berhasil disimpan di Cloud Supabase!`);
         } else {
-          console.warn('[STIVIA Supabase] Gagal menyimpan ke cloud:', res.error);
-          setCloudSyncStatus('local');
-          showToast(`Proyek tersimpan di perangkat lokal. (${res.error || 'Cloud sync pending'})`);
+          if (res.status === 'missing') {
+            setCloudSyncStatus('local');
+            showToast(`Proyek "${project.name}" tersimpan lokal — sinkronisasi cloud belum tersedia.`);
+          } else if (res.status === 'forbidden') {
+            setCloudSyncStatus('error');
+            showToast(`Cloud tidak dapat diakses — periksa izin/RLS.`);
+          } else if (res.status === 'auth_required') {
+            setCloudSyncStatus('error');
+            showToast(`Cloud tidak dapat diakses — sesi autentikasi kedaluwarsa.`);
+          } else {
+            setCloudSyncStatus('local');
+            showToast(`Proyek tersimpan di perangkat lokal. (${res.error || 'Sinkronisasi tertunda'})`);
+          }
         }
       } catch (err: any) {
         console.warn('[STIVIA Supabase] Error simpan proyek ke Supabase:', err);
@@ -621,11 +674,9 @@ export default function App() {
         if (res.success) {
           setCloudSyncStatus('synced');
         } else {
-          console.warn('[STIVIA Supabase] Gagal update proyek ke cloud:', res.error);
-          setCloudSyncStatus('local');
+          setCloudSyncStatus(res.status === 'forbidden' ? 'error' : 'local');
         }
       } catch (err) {
-        console.warn('[STIVIA Supabase] Error update proyek:', err);
         setCloudSyncStatus('local');
       } finally {
         setIsCloudSyncing(false);
@@ -735,6 +786,52 @@ export default function App() {
     }
 
     showToast(`Pertemuan "${deletedMeeting.title}" berhasil dihapus.`);
+  };
+
+  // Handler menghapus bab/teks pembelajaran (Multi-device sync delete & reliable cloud persistence)
+  const handleDeleteLearningChapter = async (chapterId: string) => {
+    const { updatedProjects, deletedChapter, targetProjectId, nextActiveChapterId, nextActiveMeetingId } =
+      removeChapterFromProject(learningProjects, chapterId);
+
+    if (!deletedChapter) return;
+
+    setLearningProjects(updatedProjects);
+    saveStoredLearningProjects(updatedProjects, session?.user?.id);
+
+    if (activeLearningContext.activeChapterId === chapterId) {
+      const newContext: ActiveLearningContext = {
+        ...activeLearningContext,
+        activeChapterId: nextActiveChapterId,
+        activeMeetingId: nextActiveMeetingId,
+      };
+      setActiveLearningContext(newContext);
+      saveStoredActiveContext(newContext, session?.user?.id);
+    }
+
+    if (session?.user?.id && isSupabaseConfigured) {
+      setIsCloudSyncing(true);
+      setCloudSyncStatus('syncing');
+      try {
+        const res = await deleteLearningChapterFromSupabase(chapterId, session.user.id);
+        if (!res.success && !res.isSchemaMissing) {
+          console.warn('[STIVIA Supabase] Gagal menghapus bab dari cloud:', res.error);
+          showToast(`Gagal menghapus bab: ${res.error || 'Terjadi kesalahan'}`);
+          return;
+        }
+        const targetProj = updatedProjects.find((p) => p.id === targetProjectId);
+        if (targetProj) {
+          await saveLearningProjectToSupabase(targetProj, session.user.id);
+        }
+        setCloudSyncStatus('synced');
+      } catch (err) {
+        console.warn('[STIVIA Supabase] Gagal sinkronisasi hapus bab ke Supabase:', err);
+        setCloudSyncStatus('local');
+      } finally {
+        setIsCloudSyncing(false);
+      }
+    }
+
+    showToast(`Bab "${deletedChapter.title}" berhasil dihapus.`);
   };
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -1271,6 +1368,7 @@ export default function App() {
               onDuplicateLegacyProject={handleDuplicateProject}
               onDeleteLearningProject={handleDeleteLearningProject}
               onDeleteLearningMeeting={handleDeleteLearningMeeting}
+              onDeleteLearningChapter={handleDeleteLearningChapter}
               onRefreshCloud={() => session?.user?.id ? loadUserLearningProjectsFromCloud(session.user.id) : Promise.resolve()}
               isCloudSyncing={isCloudSyncing}
               cloudSyncStatus={cloudSyncStatus}

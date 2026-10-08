@@ -59,7 +59,9 @@ import {
   removeMeetingFromProject,
   reorderMeetingInProject,
   deleteLearningMeetingFromSupabase,
-  deleteLearningProjectFromSupabase
+  deleteLearningProjectFromSupabase,
+  removeChapterFromProject,
+  deleteLearningChapterFromSupabase
 } from '../../services/learningProjectService';
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 
@@ -83,6 +85,7 @@ interface ProyekPembelajaranPageProps {
   onSaveToast: (msg: string) => void;
   onDeleteLearningProject?: (projectId: string) => void;
   onDeleteLearningMeeting?: (meetingId: string) => Promise<void> | void;
+  onDeleteLearningChapter?: (chapterId: string) => Promise<void> | void;
   onRefreshCloud?: () => Promise<void>;
   isCloudSyncing?: boolean;
   cloudSyncStatus?: 'synced' | 'local' | 'syncing' | 'error';
@@ -115,6 +118,7 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   onSaveToast,
   onDeleteLearningProject,
   onDeleteLearningMeeting,
+  onDeleteLearningChapter,
   onRefreshCloud,
   isCloudSyncing = false,
   cloudSyncStatus = 'local',
@@ -181,6 +185,8 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   const [meetingFormErrors, setMeetingFormErrors] = useState<Record<string, string>>({});
   const [meetingToDelete, setMeetingToDelete] = useState<MeetingSession | null>(null);
   const [isDeletingMeeting, setIsDeletingMeeting] = useState<boolean>(false);
+  const [chapterToDelete, setChapterToDelete] = useState<ChapterNode | null>(null);
+  const [isDeletingChapter, setIsDeletingChapter] = useState<boolean>(false);
   const [projectToDelete, setProjectToDelete] = useState<LearningProject | null>(null);
   const [isDeletingProject, setIsDeletingProject] = useState<boolean>(false);
 
@@ -663,6 +669,42 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     }
   };
 
+  // Handler Konfirmasi Penghapusan Bab / Teks Pembahasan (Cascade & Orphan-free)
+  const handleConfirmDeleteChapter = async () => {
+    if (!chapterToDelete) return;
+    const targetId = chapterToDelete.id;
+    const targetTitle = chapterToDelete.title;
+
+    setIsDeletingChapter(true);
+    try {
+      if (onDeleteLearningChapter) {
+        await onDeleteLearningChapter(targetId);
+      } else {
+        const { updatedProjects, nextActiveChapterId, nextActiveMeetingId } =
+          removeChapterFromProject(learningProjects, targetId);
+
+        onUpdateLearningProjects(updatedProjects);
+        if (activeChapter?.id === targetId) {
+          onUpdateActiveContext({
+            ...activeContext,
+            activeChapterId: nextActiveChapterId,
+            activeMeetingId: nextActiveMeetingId,
+          });
+        }
+        if (userId) {
+          await deleteLearningChapterFromSupabase(targetId, userId);
+        }
+        onSaveToast(`Bab "${targetTitle}" berhasil dihapus.`);
+      }
+      setChapterToDelete(null);
+    } catch (err: any) {
+      console.warn('Gagal menghapus bab:', err);
+      onSaveToast(`Gagal menghapus bab: ${err?.message || 'Terjadi kesalahan'}`);
+    } finally {
+      setIsDeletingChapter(false);
+    }
+  };
+
   // Handler Konfirmasi Penghapusan Proyek (Cascade & Orphan-free)
   const handleConfirmDeleteProject = async () => {
     if (!projectToDelete) return;
@@ -942,37 +984,71 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                 </div>
 
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                  {activeClassSubject?.chapters.map(ch => {
-                    const isActive = ch.id === activeChapter?.id;
-                    return (
+                  {(!activeClassSubject?.chapters || activeClassSubject.chapters.length === 0) ? (
+                    <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-2">
+                      <p className="text-xs font-semibold text-slate-500">Belum ada Bab / Teks Pembahasan</p>
+                      <p className="text-[11px] text-slate-400">
+                        Tambahkan Bab/Teks untuk mulai menyusun Pertemuan dan produk pembelajaran.
+                      </p>
                       <button
-                        key={ch.id}
                         type="button"
-                        onClick={() => {
-                          onUpdateActiveContext({
-                            ...activeContext,
-                            activeChapterId: ch.id,
-                            activeMeetingId: ch.meetings[0]?.id
-                          });
-                        }}
-                        className={`w-full text-left p-3 rounded-2xl text-xs transition-all flex items-center justify-between border cursor-pointer ${
-                          isActive
-                            ? 'bg-indigo-50 border-indigo-200 text-indigo-900 font-bold shadow-2xs'
-                            : 'bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50'
-                        }`}
+                        onClick={() => setShowAddChapterModal(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer mt-1"
                       >
-                        <div className="min-w-0 pr-2">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                            {ch.chapterNumber}
-                          </span>
-                          <span className="truncate block font-semibold">{ch.title}</span>
-                        </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0 font-bold">
-                          {ch.meetings.length} Pertemuan
-                        </span>
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Tambah Bab / Teks</span>
                       </button>
-                    );
-                  })}
+                    </div>
+                  ) : (
+                    activeClassSubject.chapters.map(ch => {
+                      const isActive = ch.id === activeChapter?.id;
+                      return (
+                        <div
+                          key={ch.id}
+                          className={`w-full p-2.5 rounded-2xl text-xs transition-all flex items-center justify-between border ${
+                            isActive
+                              ? 'bg-indigo-50 border-indigo-200 text-indigo-900 font-bold shadow-2xs'
+                              : 'bg-white border-slate-200/80 text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onUpdateActiveContext({
+                                ...activeContext,
+                                activeChapterId: ch.id,
+                                activeMeetingId: ch.meetings[0]?.id
+                              });
+                            }}
+                            className="flex-1 text-left min-w-0 pr-2 cursor-pointer"
+                          >
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                              {ch.chapterNumber}
+                            </span>
+                            <span className="truncate block font-semibold">{ch.title}</span>
+                          </button>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                              {ch.meetings.length} Pertemuan
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setChapterToDelete(ch);
+                              }}
+                              disabled={isDeletingChapter}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title={`Hapus Bab "${ch.title}"`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -2486,6 +2562,71 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
               >
                 <Trash2 className="w-4 h-4" />
                 <span>{isDeletingMeeting ? 'Menghapus...' : 'Hapus Pertemuan'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL: KONFIRMASI HAPUS BAB / TEKS PEMBAHASAN (CASCADE TERKONTROL)    */}
+      {/* ==================================================================== */}
+      {chapterToDelete && (
+        <div className="fixed inset-0 bg-slate-900/50 z-50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-slate-900">
+                  Hapus Bab / Teks?
+                </h3>
+                <p className="text-xs text-rose-600 font-semibold leading-relaxed">
+                  Tindakan ini tidak dapat dibatalkan.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/90 text-xs space-y-2.5">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Anda akan menghapus:
+                </span>
+                <p className="font-bold text-slate-900 text-sm">
+                  "{chapterToDelete.title}"
+                </p>
+              </div>
+
+              <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1 text-[11px] text-amber-900">
+                <p className="font-bold">Bab/Teks ini memiliki:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-amber-800">
+                  <li><strong>{chapterToDelete.meetings.length} Pertemuan</strong></li>
+                  <li>Data pembelajaran terkait</li>
+                </ul>
+                <p className="pt-1 text-[10px] text-amber-900/90 leading-relaxed">
+                  Jika dilanjutkan, data yang bergantung pada Bab/Teks ini juga dapat ikut terhapus.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setChapterToDelete(null)}
+                disabled={isDeletingChapter}
+                className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteChapter}
+                disabled={isDeletingChapter}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingChapter ? 'Menghapus...' : 'Hapus Bab'}</span>
               </button>
             </div>
           </div>
