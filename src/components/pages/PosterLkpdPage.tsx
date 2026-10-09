@@ -65,6 +65,17 @@ import { suggestLearningObjectives } from '../../services/stiviaThinkingFramewor
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
 import { isLKPDContextOutdated } from '../../services/productContextAdapter';
+import {
+  ProductDataSourceSelector,
+  ProductDataSourceMode
+} from '../ProductDataSourceSelector';
+import {
+  LearningProject,
+  ActiveLearningContext,
+  ClassSubjectNode,
+  ChapterNode,
+  MeetingSession
+} from '../../types';
 
 interface PosterLkpdPageProps {
   projects: InfographicDraft[];
@@ -78,6 +89,14 @@ interface PosterLkpdPageProps {
   onUsageRecorded?: () => void;
   lkpdContext?: LKPDProductContext | null;
   onRefreshFromMasterContext?: () => void;
+  learningProjects?: LearningProject[];
+  activeLearningContext?: ActiveLearningContext;
+  onSelectMeetingContext?: (
+    project: LearningProject,
+    classSubject: ClassSubjectNode,
+    chapter: ChapterNode,
+    meeting: MeetingSession
+  ) => void;
 }
 
 export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
@@ -88,8 +107,16 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
   subscriptionSummary,
   onUsageRecorded,
   lkpdContext,
-  onRefreshFromMasterContext
+  onRefreshFromMasterContext,
+  learningProjects = [],
+  activeLearningContext,
+  onSelectMeetingContext
 }) => {
+  // Pilihan Sumber Data: 'project' (Gunakan Proyek Saya) atau 'manual' (Buat Secara Manual)
+  const [sourceMode, setSourceMode] = useState<ProductDataSourceMode>(() => {
+    return lkpdContext ? 'project' : (learningProjects.length > 0 ? 'project' : 'manual');
+  });
+
   // ==========================================================================
   // STEPPER PROGRESSIF:
   // 'blueprint' -> Rancang Struktur LKPD
@@ -630,9 +657,24 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
       </div>
 
       {/* ====================================================================== */}
+      {/* PILIHAN SUMBER DATA: PROYEK SAYA ATAU MANUAL                        */}
+      {/* ====================================================================== */}
+      {activeStep === 'blueprint' && (
+        <ProductDataSourceSelector
+          currentMode={sourceMode}
+          onModeChange={setSourceMode}
+          productTitle="Poster LKPD"
+          learningProjects={learningProjects}
+          activeContext={activeLearningContext}
+          onSelectMeetingContext={onSelectMeetingContext}
+          onNavigate={onNavigate}
+        />
+      )}
+
+      {/* ====================================================================== */}
       {/* BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH - TAHAP 3C) */}
       {/* ====================================================================== */}
-      {lkpdContext && (
+      {sourceMode === 'project' && lkpdContext && (
         <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
           isOutdated 
             ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 

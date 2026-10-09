@@ -17,9 +17,21 @@ import {
   Coins,
   ShieldCheck,
   Award,
-  Layers
+  Layers,
+  Edit3
 } from 'lucide-react';
-import { NavigationTab, AssessmentProductContext, AssessmentForm, FEATURE_COSTS } from '../../types';
+import {
+  NavigationTab,
+  AssessmentProductContext,
+  AssessmentForm,
+  FEATURE_COSTS,
+  EducationLevel,
+  LearningProject,
+  ActiveLearningContext,
+  ClassSubjectNode,
+  ChapterNode,
+  MeetingSession
+} from '../../types';
 import {
   generateAssessmentInstrument,
   formatAssessmentAsPrintableText,
@@ -27,6 +39,10 @@ import {
   CognitiveLevel
 } from '../../services/assessmentEngine';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
+import {
+  ProductDataSourceSelector,
+  ProductDataSourceMode
+} from '../ProductDataSourceSelector';
 
 interface AsesmenHarianPageProps {
   onNavigate?: (tab: NavigationTab) => void;
@@ -35,6 +51,14 @@ interface AsesmenHarianPageProps {
   onUsageRecorded?: () => void;
   userId?: string;
   onSaveToast?: (msg: string) => void;
+  learningProjects?: LearningProject[];
+  activeLearningContext?: ActiveLearningContext;
+  onSelectMeetingContext?: (
+    project: LearningProject,
+    classSubject: ClassSubjectNode,
+    chapter: ChapterNode,
+    meeting: MeetingSession
+  ) => void;
 }
 
 const DEFAULT_SAMPLE_CONTEXT: AssessmentProductContext = {
@@ -68,17 +92,59 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
   subscriptionSummary,
   onUsageRecorded,
   userId,
-  onSaveToast
+  onSaveToast,
+  learningProjects = [],
+  activeLearningContext,
+  onSelectMeetingContext
 }) => {
-  const activeContext = assessmentContext || DEFAULT_SAMPLE_CONTEXT;
-  const isUsingSample = !assessmentContext;
+  // Pilihan Sumber Data: 'project' atau 'manual'
+  const [sourceMode, setSourceMode] = useState<ProductDataSourceMode>(() => {
+    return assessmentContext ? 'project' : (learningProjects.length > 0 ? 'project' : 'manual');
+  });
+
+  // State untuk Input Manual
+  const [manualSubject, setManualSubject] = useState<string>('Bahasa Indonesia');
+  const [manualEducationLevel, setManualEducationLevel] = useState<EducationLevel>('SMP');
+  const [manualGrade, setManualGrade] = useState<string>('Kelas VIII');
+  const [manualBab, setManualBab] = useState<string>('Bab 1: Teks Deskripsi');
+  const [manualPertemuan, setManualPertemuan] = useState<string>('Pertemuan 1');
+  const [manualMateri, setManualMateri] = useState<string>('Ciri dan Struktur Teks Deskripsi');
+  const [manualTema, setManualTema] = useState<string>('Mendeskripsikan Objek di Sekitar');
+  const [manualCakupan, setManualCakupan] = useState<string>(
+    '1. Pengertian dan tujuan teks deskripsi.\n2. Ciri-ciri kebahasaan teks deskripsi.\n3. Struktur identifikasi dan deskripsi bagian.'
+  );
+
+  // Buat context efektif berdasarkan mode yang dipilih
+  const effectiveContext: AssessmentProductContext = sourceMode === 'project'
+    ? (assessmentContext || DEFAULT_SAMPLE_CONTEXT)
+    : {
+        temaKegiatan: manualTema,
+        materiDiajarkan: manualMateri,
+        cakupanMateri: manualCakupan,
+        learningObjectives: [
+          `Peserta didik mampu memahami ${manualMateri}`,
+          `Peserta didik mampu menyelesaikan evaluasi materi ${manualMateri}`
+        ],
+        educationLevel: manualEducationLevel,
+        grade: manualGrade,
+        subject: manualSubject,
+        bab: manualBab,
+        pertemuan: manualPertemuan,
+        assessmentEnabled: true,
+        assessmentType: 'Formatif',
+        assessmentForms: ['Pilihan Ganda', 'Uraian'],
+        sourceMeetingId: `manual-harian-${Date.now()}`,
+        sourceMasterVersion: 1
+      };
+
+  const isUsingSample = sourceMode === 'project' && !assessmentContext;
 
   // Form State
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [cognitiveLevel, setCognitiveLevel] = useState<CognitiveLevel>('Campuran / Bertingkat (HOTS)');
   const [selectedForms, setSelectedForms] = useState<AssessmentForm[]>(
-    activeContext.assessmentForms && activeContext.assessmentForms.length > 0
-      ? activeContext.assessmentForms
+    effectiveContext.assessmentForms && effectiveContext.assessmentForms.length > 0
+      ? effectiveContext.assessmentForms
       : ['Pilihan Ganda', 'Uraian']
   );
   const [includeAnswerKey, setIncludeAnswerKey] = useState<boolean>(true);
@@ -104,7 +170,7 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
     if (!generatedInstrument) {
       handleGenerateAssessment(true);
     }
-  }, [activeContext.sourceMeetingId]);
+  }, [effectiveContext.sourceMeetingId]);
 
   const toggleForm = (form: AssessmentForm) => {
     if (selectedForms.includes(form)) {
@@ -128,7 +194,7 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
 
     setIsGenerating(true);
     try {
-      const instrument = generateAssessmentInstrument(activeContext, {
+      const instrument = generateAssessmentInstrument(effectiveContext, {
         type: 'Formatif',
         questionCount,
         cognitiveLevel,
@@ -147,7 +213,7 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
       }
 
       if (!isInitial) {
-        onSaveToast?.('Instrumen Asesmen Harian berhasil dibuat murni dari Master Data!');
+        onSaveToast?.('Instrumen Asesmen Harian berhasil dibuat!');
       }
     } catch (err) {
       console.error(err);
@@ -176,7 +242,7 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
     const element = document.createElement('a');
     const file = new Blob([text], { type: 'text/plain;charset=utf-8' });
     element.href = URL.createObjectURL(file);
-    element.download = `Asesmen_Harian_${activeContext.pertemuan.replace(/\s+/g, '_')}.txt`;
+    element.download = `Asesmen_Harian_${effectiveContext.pertemuan.replace(/\s+/g, '_')}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -236,7 +302,111 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
         )}
       </div>
 
-      {/* 2. Banner Koneksi Master Learning Data (Single Source of Truth) */}
+      {/* 2. PILIHAN SUMBER DATA: PROYEK SAYA ATAU MANUAL */}
+      <ProductDataSourceSelector
+        currentMode={sourceMode}
+        onModeChange={setSourceMode}
+        productTitle="Asesmen Harian (Formatif)"
+        learningProjects={learningProjects}
+        activeContext={activeLearningContext}
+        onSelectMeetingContext={onSelectMeetingContext}
+        onNavigate={onNavigate}
+      />
+
+      {/* 2B. FORM INPUT MANUAL KHUSUS ASESMEN (TAMPIL HANYA JIKA MODE MANUAL) */}
+      {sourceMode === 'manual' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-teal-200/90 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-lg bg-teal-100 text-teal-900 flex items-center justify-center font-bold text-xs">
+              <Edit3 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                Input Data Pembelajaran Manual
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                Tentukan identitas dan materi untuk instrumen asesmen ini secara mandiri.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Mata Pelajaran</label>
+              <input
+                type="text"
+                value={manualSubject}
+                onChange={(e) => setManualSubject(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Kelas</label>
+              <input
+                type="text"
+                value={manualGrade}
+                onChange={(e) => setManualGrade(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Bab / Teks Pokok</label>
+              <input
+                type="text"
+                value={manualBab}
+                onChange={(e) => setManualBab(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Pertemuan</label>
+              <input
+                type="text"
+                value={manualPertemuan}
+                onChange={(e) => setManualPertemuan(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Materi yang Diajarkan</label>
+              <input
+                type="text"
+                value={manualMateri}
+                onChange={(e) => setManualMateri(e.target.value)}
+                placeholder="Misal: Unsur Intrinsik Cerpen..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Tema / Fokus Pembelajaran</label>
+              <input
+                type="text"
+                value={manualTema}
+                onChange={(e) => setManualTema(e.target.value)}
+                placeholder="Misal: Memahami Alur dan Penokohan..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="text-xs">
+            <label className="font-bold text-slate-700 block mb-1">Cakupan Materi (Batasan Butir Soal)</label>
+            <textarea
+              rows={3}
+              value={manualCakupan}
+              onChange={(e) => setManualCakupan(e.target.value)}
+              placeholder="Tuliskan butir cakupan yang diuji..."
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-mono text-xs"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 2C. Banner Koneksi Master Learning Data (Single Source of Truth) */}
+      {sourceMode === 'project' && (
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -249,18 +419,18 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
                   📌 Single Source of Learning Truth
                 </span>
                 <span className="text-xs font-extrabold text-slate-900">
-                  {activeContext.pertemuan} • {activeContext.grade} ({activeContext.subject})
+                  {effectiveContext.pertemuan} • {effectiveContext.grade} ({effectiveContext.subject})
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Bab: <strong className="text-slate-800">{activeContext.bab}</strong> &bull; Tema: <strong className="text-slate-800">{activeContext.temaKegiatan}</strong>
+                Bab: <strong className="text-slate-800">{effectiveContext.bab}</strong> &bull; Tema: <strong className="text-slate-800">{effectiveContext.temaKegiatan}</strong>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-              Versi Master: v{activeContext.sourceMasterVersion || 1}
+              Versi Master: v{effectiveContext.sourceMasterVersion || 1}
             </span>
             {isUsingSample && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
@@ -274,24 +444,25 @@ export const AsesmenHarianPage: React.FC<AsesmenHarianPageProps> = ({
         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs space-y-2">
           <div>
             <span className="font-bold text-slate-700 block">Materi yang Diajarkan:</span>
-            <span className="text-slate-900 font-medium">{activeContext.materiDiajarkan}</span>
+            <span className="text-slate-900 font-medium">{effectiveContext.materiDiajarkan}</span>
           </div>
-          {activeContext.cakupanMateri && (
+          {effectiveContext.cakupanMateri && (
             <div>
               <span className="font-bold text-slate-700 block">Cakupan Materi Pembahasan (Batas Soal):</span>
               <p className="text-slate-600 font-mono text-[11px] whitespace-pre-line leading-relaxed">
-                {activeContext.cakupanMateri}
+                {effectiveContext.cakupanMateri}
               </p>
             </div>
           )}
-          {activeContext.assessmentNotes && (
+          {effectiveContext.assessmentNotes && (
             <div className="pt-1 border-t border-slate-200/60 flex items-start gap-1.5 text-teal-900">
               <span className="font-bold text-teal-700 shrink-0">Catatan Asesmen Master:</span>
-              <span>{activeContext.assessmentNotes}</span>
+              <span>{effectiveContext.assessmentNotes}</span>
             </div>
           )}
         </div>
       </div>
+      )}
 
       {/* 3. Panel Kontrol Form & Parameter Evaluasi */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">

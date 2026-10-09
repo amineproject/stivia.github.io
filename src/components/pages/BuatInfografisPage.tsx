@@ -91,6 +91,17 @@ import {
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
 import { isInfographicContextOutdated } from '../../services/productContextAdapter';
+import {
+  ProductDataSourceSelector,
+  ProductDataSourceMode
+} from '../ProductDataSourceSelector';
+import {
+  LearningProject,
+  ActiveLearningContext,
+  ClassSubjectNode,
+  ChapterNode,
+  MeetingSession
+} from '../../types';
 
 // ==========================================
 // PENGEMBANGAN FITUR INFOGRAFIS STIVIA: KONSTANTA PILIHAN
@@ -258,6 +269,14 @@ interface BuatInfografisPageProps {
   initialPromptType?: 'infografis' | 'lkpd';
   infographicContext?: InfographicProductContext | null;
   onRefreshFromMasterContext?: () => void;
+  learningProjects?: LearningProject[];
+  activeLearningContext?: ActiveLearningContext;
+  onSelectMeetingContext?: (
+    project: LearningProject,
+    classSubject: ClassSubjectNode,
+    chapter: ChapterNode,
+    meeting: MeetingSession
+  ) => void;
 }
 
 export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
@@ -272,8 +291,16 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
   onUsageRecorded,
   initialPromptType,
   infographicContext,
-  onRefreshFromMasterContext
+  onRefreshFromMasterContext,
+  learningProjects = [],
+  activeLearningContext,
+  onSelectMeetingContext
 }) => {
+  // Pilihan Sumber Data: 'project' (Gunakan Proyek Saya) atau 'manual' (Buat Secara Manual)
+  const [sourceMode, setSourceMode] = useState<ProductDataSourceMode>(() => {
+    return infographicContext ? 'project' : (learningProjects.length > 0 ? 'project' : 'manual');
+  });
+
   // Tracking Provenance Master Context (Tahap 3B)
   const [draftMasterVersion, setDraftMasterVersion] = useState<number>(
     () => infographicContext?.sourceMasterVersion || currentDraft.sourceMasterVersion || 1
@@ -1201,8 +1228,19 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
         </div>
       )}
 
+      {/* PILIHAN SUMBER DATA: PROYEK SAYA ATAU MANUAL */}
+      <ProductDataSourceSelector
+        currentMode={sourceMode}
+        onModeChange={setSourceMode}
+        productTitle="Infografis Edukatif"
+        learningProjects={learningProjects}
+        activeContext={activeLearningContext}
+        onSelectMeetingContext={onSelectMeetingContext}
+        onNavigate={onNavigate}
+      />
+
       {/* BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH - TAHAP 3B) */}
-      {infographicContext && (
+      {sourceMode === 'project' && infographicContext && (
         <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
           isOutdated 
             ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 
@@ -1311,7 +1349,7 @@ export const BuatInfografisPage: React.FC<BuatInfografisPageProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* RINGKASAN MASTER LEARNING DATA (TAMPIL DI MODE RINGKAS SAAT TERHUBUNG MASTER DATA) */}
-        {formMode === 'ringkas' && infographicContext && !showEditDataPokok ? (
+        {sourceMode === 'project' && formMode === 'ringkas' && infographicContext && !showEditDataPokok ? (
           <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">

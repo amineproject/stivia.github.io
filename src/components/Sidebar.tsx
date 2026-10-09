@@ -179,8 +179,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Ruang Belajar
               </span>
             </div>
-            {renderNavButton('infografis_saya', 'Proyek Saya', <FolderKanban className="w-4.5 h-4.5" />)}
             {renderNavButton('buat_proyek', 'Buat Proyek Baru', <FolderPlus className="w-4.5 h-4.5" />)}
+            {renderNavButton('infografis_saya', 'Proyek Saya', <FolderKanban className="w-4.5 h-4.5" />)}
 
             {/* SECTION: STUDIO PRODUK */}
             <div className="pt-3 pb-1 px-3">

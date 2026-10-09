@@ -49,6 +49,17 @@ import { isPresentationContextOutdated } from '../../services/productContextAdap
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
+import {
+  ProductDataSourceSelector,
+  ProductDataSourceMode
+} from '../ProductDataSourceSelector';
+import {
+  LearningProject,
+  ActiveLearningContext,
+  ClassSubjectNode,
+  ChapterNode,
+  MeetingSession
+} from '../../types';
 
 interface PresentasiPageProps {
   onNavigate?: (tab: NavigationTab) => void;
@@ -59,6 +70,14 @@ interface PresentasiPageProps {
   onSubmitForm?: (draft: InfographicDraft) => void;
   presentationContext?: PresentationProductContext | null;
   onRefreshFromMasterContext?: () => void;
+  learningProjects?: LearningProject[];
+  activeLearningContext?: ActiveLearningContext;
+  onSelectMeetingContext?: (
+    project: LearningProject,
+    classSubject: ClassSubjectNode,
+    chapter: ChapterNode,
+    meeting: MeetingSession
+  ) => void;
 }
 
 export const PresentasiPage: React.FC<PresentasiPageProps> = ({
@@ -69,8 +88,16 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
   onUsageRecorded,
   onSubmitForm,
   presentationContext,
-  onRefreshFromMasterContext
+  onRefreshFromMasterContext,
+  learningProjects = [],
+  activeLearningContext,
+  onSelectMeetingContext
 }) => {
+  // Pilihan Sumber Data: 'project' (Gunakan Proyek Saya) atau 'manual' (Buat Secara Manual)
+  const [sourceMode, setSourceMode] = useState<ProductDataSourceMode>(() => {
+    return presentationContext ? 'project' : (learningProjects.length > 0 ? 'project' : 'manual');
+  });
+
   // ==========================================================================
   // TRACKING PROVENANCE MASTER CONTEXT (TAHAP 3D)
   // ==========================================================================
@@ -484,9 +511,22 @@ export const PresentasiPage: React.FC<PresentasiPageProps> = ({
       </div>
 
       {/* ====================================================================== */}
+      {/* PILIHAN SUMBER DATA: PROYEK SAYA ATAU MANUAL                        */}
+      {/* ====================================================================== */}
+      <ProductDataSourceSelector
+        currentMode={sourceMode}
+        onModeChange={setSourceMode}
+        productTitle="Presentasi 10 Slide (Gamma AI)"
+        learningProjects={learningProjects}
+        activeContext={activeLearningContext}
+        onSelectMeetingContext={onSelectMeetingContext}
+        onNavigate={onNavigate}
+      />
+
+      {/* ====================================================================== */}
       {/* BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH - TAHAP 3D) */}
       {/* ====================================================================== */}
-      {presentationContext && (
+      {sourceMode === 'project' && presentationContext && (
         <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
           isOutdated 
             ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 

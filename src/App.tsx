@@ -568,6 +568,34 @@ export default function App() {
     showToast(`Master Context ${meeting.meetingNumber} dimuat ke Studio ${productTab.toUpperCase()}!`);
   };
 
+  // Handler memilih pertemuan pembelajaran langsung dari selector sumber data di 5 studio produk
+  const handleSwitchMeetingContext = (
+    project: LearningProject,
+    classSubject: ClassSubjectNode,
+    chapter: ChapterNode,
+    meeting: MeetingSession
+  ) => {
+    const nextContext: ActiveLearningContext = {
+      activeProjectId: project.id,
+      activeClassSubjectId: classSubject.id,
+      activeChapterId: chapter.id,
+      activeMeetingId: meeting.id
+    };
+    setActiveLearningContext(nextContext);
+    if (session?.user?.id) {
+      saveStoredActiveContext(nextContext, session.user.id);
+    }
+
+    // Sinkronkan ke currentDraft
+    const syncedDraft = syncMeetingToCurrentDraft(meeting, chapter, classSubject, project, currentDraft);
+    setCurrentDraft(syncedDraft);
+    if (session?.user?.id) {
+      saveStoredCurrentDraft(syncedDraft, session.user.id);
+    }
+
+    showToast(`Data pembelajaran ${meeting.meetingNumber} (${project.name}) dipilih!`);
+  };
+
   // Handler membuat proyek pembelajaran baru dari form Buat Proyek (1 Data -> Banyak Produk)
   const handleCreateLearningProject = async (input: CreateProjectFormInput) => {
     const { project, activeContext } = createLearningProjectFromFormData(input);
@@ -1232,6 +1260,9 @@ export default function App() {
               onUsageRecorded={() => refreshSubscriptionSummary()}
               onSubmitForm={handleFormSubmit}
               materiContext={activeMateriContext}
+              learningProjects={learningProjects}
+              activeLearningContext={activeLearningContext}
+              onSelectMeetingContext={handleSwitchMeetingContext}
             />
           )}
 
@@ -1252,6 +1283,9 @@ export default function App() {
               onUsageRecorded={() => refreshSubscriptionSummary()}
               initialPromptType="infografis"
               infographicContext={activeInfographicContext}
+              learningProjects={learningProjects}
+              activeLearningContext={activeLearningContext}
+              onSelectMeetingContext={handleSwitchMeetingContext}
             />
           )}
 
@@ -1271,6 +1305,9 @@ export default function App() {
               subscriptionSummary={subscriptionSummary}
               onUsageRecorded={() => refreshSubscriptionSummary()}
               lkpdContext={activeLkpdContext}
+              learningProjects={learningProjects}
+              activeLearningContext={activeLearningContext}
+              onSelectMeetingContext={handleSwitchMeetingContext}
             />
           )}
 
@@ -1287,6 +1324,9 @@ export default function App() {
               onUsageRecorded={() => refreshSubscriptionSummary()}
               onSubmitForm={handleFormSubmit}
               presentationContext={activePresentationContext}
+              learningProjects={learningProjects}
+              activeLearningContext={activeLearningContext}
+              onSelectMeetingContext={handleSwitchMeetingContext}
             />
           )}
 
@@ -1302,6 +1342,9 @@ export default function App() {
               onUsageRecorded={() => refreshSubscriptionSummary()}
               userId={session?.user?.id}
               onSaveToast={showToast}
+              learningProjects={learningProjects}
+              activeLearningContext={activeLearningContext}
+              onSelectMeetingContext={handleSwitchMeetingContext}
             />
           )}
 
@@ -1317,6 +1360,9 @@ export default function App() {
               onUsageRecorded={() => refreshSubscriptionSummary()}
               userId={session?.user?.id}
               onSaveToast={showToast}
+              learningProjects={learningProjects}
+              activeLearningContext={activeLearningContext}
+              onSelectMeetingContext={handleSwitchMeetingContext}
             />
           )}
 

@@ -17,9 +17,21 @@ import {
   Coins,
   ShieldCheck,
   Layers,
-  GraduationCap
+  GraduationCap,
+  Edit3
 } from 'lucide-react';
-import { NavigationTab, AssessmentProductContext, AssessmentForm, FEATURE_COSTS } from '../../types';
+import {
+  NavigationTab,
+  AssessmentProductContext,
+  AssessmentForm,
+  FEATURE_COSTS,
+  EducationLevel,
+  LearningProject,
+  ActiveLearningContext,
+  ClassSubjectNode,
+  ChapterNode,
+  MeetingSession
+} from '../../types';
 import {
   generateAssessmentInstrument,
   formatAssessmentAsPrintableText,
@@ -27,6 +39,10 @@ import {
   CognitiveLevel
 } from '../../services/assessmentEngine';
 import { checkCanGenerate, recordGenerateUsage } from '../../services/subscriptionService';
+import {
+  ProductDataSourceSelector,
+  ProductDataSourceMode
+} from '../ProductDataSourceSelector';
 
 interface AsesmenSumatifPageProps {
   onNavigate?: (tab: NavigationTab) => void;
@@ -35,6 +51,14 @@ interface AsesmenSumatifPageProps {
   onUsageRecorded?: () => void;
   userId?: string;
   onSaveToast?: (msg: string) => void;
+  learningProjects?: LearningProject[];
+  activeLearningContext?: ActiveLearningContext;
+  onSelectMeetingContext?: (
+    project: LearningProject,
+    classSubject: ClassSubjectNode,
+    chapter: ChapterNode,
+    meeting: MeetingSession
+  ) => void;
 }
 
 const DEFAULT_SAMPLE_CONTEXT: AssessmentProductContext = {
@@ -68,10 +92,52 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
   subscriptionSummary,
   onUsageRecorded,
   userId,
-  onSaveToast
+  onSaveToast,
+  learningProjects = [],
+  activeLearningContext,
+  onSelectMeetingContext
 }) => {
-  const activeContext = assessmentContext || DEFAULT_SAMPLE_CONTEXT;
-  const isUsingSample = !assessmentContext;
+  // Pilihan Sumber Data: 'project' atau 'manual'
+  const [sourceMode, setSourceMode] = useState<ProductDataSourceMode>(() => {
+    return assessmentContext ? 'project' : (learningProjects.length > 0 ? 'project' : 'manual');
+  });
+
+  // State untuk Input Manual
+  const [manualSubject, setManualSubject] = useState<string>('Bahasa Indonesia');
+  const [manualEducationLevel, setManualEducationLevel] = useState<EducationLevel>('SMP');
+  const [manualGrade, setManualGrade] = useState<string>('Kelas VIII');
+  const [manualBab, setManualBab] = useState<string>('Bab 2: Teks Iklan');
+  const [manualPertemuan, setManualPertemuan] = useState<string>('Evaluasi Sumatif Bab');
+  const [manualMateri, setManualMateri] = useState<string>('Teks Iklan: Kaidah, Struktur, dan Bahasa Persuasif');
+  const [manualTema, setManualTema] = useState<string>('Evaluasi Sumatif Akhir Bab');
+  const [manualCakupan, setManualCakupan] = useState<string>(
+    '1. Definisi dan fungsi sosial teks iklan.\n2. Kaidah kebahasaan persuasif dan imperatif.\n3. Struktur judul (Headline), tubuh naskah (Body Copy), dan CTA.'
+  );
+
+  // Buat context efektif berdasarkan mode yang dipilih
+  const effectiveContext: AssessmentProductContext = sourceMode === 'project'
+    ? (assessmentContext || DEFAULT_SAMPLE_CONTEXT)
+    : {
+        temaKegiatan: manualTema,
+        materiDiajarkan: manualMateri,
+        cakupanMateri: manualCakupan,
+        learningObjectives: [
+          `Peserta didik mampu menguasai seluruh materi pokok ${manualBab}`,
+          `Peserta didik mampu menyelesaikan evaluasi sumatif ${manualBab}`
+        ],
+        educationLevel: manualEducationLevel,
+        grade: manualGrade,
+        subject: manualSubject,
+        bab: manualBab,
+        pertemuan: manualPertemuan,
+        assessmentEnabled: true,
+        assessmentType: 'Sumatif',
+        assessmentForms: ['Pilihan Ganda', 'Menjodohkan', 'Uraian'],
+        sourceMeetingId: `manual-sumatif-${Date.now()}`,
+        sourceMasterVersion: 1
+      };
+
+  const isUsingSample = sourceMode === 'project' && !assessmentContext;
 
   // Form State
   const [questionCount, setQuestionCount] = useState<number>(10);
@@ -103,7 +169,7 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
     if (!generatedInstrument) {
       handleGenerateAssessment(true);
     }
-  }, [activeContext.sourceMeetingId]);
+  }, [effectiveContext.sourceMeetingId]);
 
   const toggleForm = (form: AssessmentForm) => {
     if (selectedForms.includes(form)) {
@@ -126,7 +192,7 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
 
     setIsGenerating(true);
     try {
-      const instrument = generateAssessmentInstrument(activeContext, {
+      const instrument = generateAssessmentInstrument(effectiveContext, {
         type: 'Sumatif',
         questionCount,
         cognitiveLevel,
@@ -144,7 +210,7 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
       }
 
       if (!isInitial) {
-        onSaveToast?.('Instrumen Asesmen Sumatif berhasil dibuat murni dari Master Data!');
+        onSaveToast?.('Instrumen Asesmen Sumatif berhasil dibuat!');
       }
     } catch (err) {
       console.error(err);
@@ -173,7 +239,7 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
     const element = document.createElement('a');
     const file = new Blob([text], { type: 'text/plain;charset=utf-8' });
     element.href = URL.createObjectURL(file);
-    element.download = `Asesmen_Sumatif_${activeContext.bab.replace(/\s+/g, '_')}.txt`;
+    element.download = `Asesmen_Sumatif_${effectiveContext.bab.replace(/\s+/g, '_')}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -233,7 +299,111 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
         )}
       </div>
 
-      {/* 2. Banner Koneksi Master Learning Data (Single Source of Truth) */}
+      {/* 2. PILIHAN SUMBER DATA: PROYEK SAYA ATAU MANUAL */}
+      <ProductDataSourceSelector
+        currentMode={sourceMode}
+        onModeChange={setSourceMode}
+        productTitle="Asesmen Sumatif (Akhir Bab)"
+        learningProjects={learningProjects}
+        activeContext={activeLearningContext}
+        onSelectMeetingContext={onSelectMeetingContext}
+        onNavigate={onNavigate}
+      />
+
+      {/* 2B. FORM INPUT MANUAL KHUSUS ASESMEN SUMATIF (TAMPIL HANYA JIKA MODE MANUAL) */}
+      {sourceMode === 'manual' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-purple-200/90 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-900 flex items-center justify-center font-bold text-xs">
+              <Edit3 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                Input Data Pembelajaran Manual
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                Tentukan identitas dan cakupan bab untuk ujian sumatif ini secara mandiri.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Mata Pelajaran</label>
+              <input
+                type="text"
+                value={manualSubject}
+                onChange={(e) => setManualSubject(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Kelas</label>
+              <input
+                type="text"
+                value={manualGrade}
+                onChange={(e) => setManualGrade(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Bab / Teks Pokok</label>
+              <input
+                type="text"
+                value={manualBab}
+                onChange={(e) => setManualBab(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Posisi / Keterangan</label>
+              <input
+                type="text"
+                value={manualPertemuan}
+                onChange={(e) => setManualPertemuan(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Materi yang Diuji</label>
+              <input
+                type="text"
+                value={manualMateri}
+                onChange={(e) => setManualMateri(e.target.value)}
+                placeholder="Misal: Teks Iklan: Kaidah, Struktur, dan Bahasa Persuasif..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 block mb-1">Tema / Evaluasi</label>
+              <input
+                type="text"
+                value={manualTema}
+                onChange={(e) => setManualTema(e.target.value)}
+                placeholder="Misal: Evaluasi Sumatif Akhir Bab..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="text-xs">
+            <label className="font-bold text-slate-700 block mb-1">Cakupan Materi Pembahasan (Batasan Soal)</label>
+            <textarea
+              rows={3}
+              value={manualCakupan}
+              onChange={(e) => setManualCakupan(e.target.value)}
+              placeholder="Tuliskan cakupan materi yang diujikan secara menyeluruh..."
+              className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-mono text-xs"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 2C. Banner Koneksi Master Learning Data (Single Source of Truth) */}
+      {sourceMode === 'project' && (
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -246,18 +416,18 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
                   📌 Single Source of Learning Truth
                 </span>
                 <span className="text-xs font-extrabold text-slate-900">
-                  {activeContext.bab} • {activeContext.grade} ({activeContext.subject})
+                  {effectiveContext.bab} • {effectiveContext.grade} ({effectiveContext.subject})
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Evaluasi Penutup Unit &bull; Posisi: <strong className="text-slate-800">{activeContext.pertemuan}</strong>
+                Evaluasi Penutup Unit &bull; Posisi: <strong className="text-slate-800">{effectiveContext.pertemuan}</strong>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-              Versi Master: v{activeContext.sourceMasterVersion || 1}
+              Versi Master: v{effectiveContext.sourceMasterVersion || 1}
             </span>
             {isUsingSample && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
@@ -271,18 +441,19 @@ export const AsesmenSumatifPage: React.FC<AsesmenSumatifPageProps> = ({
         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs space-y-2">
           <div>
             <span className="font-bold text-slate-700 block">Materi yang Diuji:</span>
-            <span className="text-slate-900 font-medium">{activeContext.materiDiajarkan}</span>
+            <span className="text-slate-900 font-medium">{effectiveContext.materiDiajarkan}</span>
           </div>
-          {activeContext.cakupanMateri && (
+          {effectiveContext.cakupanMateri && (
             <div>
               <span className="font-bold text-slate-700 block">Cakupan Materi Pembahasan (Batas Soal):</span>
               <p className="text-slate-600 font-mono text-[11px] whitespace-pre-line leading-relaxed">
-                {activeContext.cakupanMateri}
+                {effectiveContext.cakupanMateri}
               </p>
             </div>
           )}
         </div>
       </div>
+      )}
 
       {/* 3. Panel Kontrol Form & Parameter Evaluasi Sumatif */}
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">

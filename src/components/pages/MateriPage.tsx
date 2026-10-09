@@ -58,6 +58,17 @@ import {
   generateSectionsFromCakupan,
   isMateriContextOutdated
 } from '../../services/productContextAdapter';
+import {
+  ProductDataSourceSelector,
+  ProductDataSourceMode
+} from '../ProductDataSourceSelector';
+import {
+  LearningProject,
+  ActiveLearningContext,
+  ClassSubjectNode,
+  ChapterNode,
+  MeetingSession
+} from '../../types';
 
 interface MateriPageProps {
   onNavigate?: (tab: NavigationTab) => void;
@@ -68,6 +79,14 @@ interface MateriPageProps {
   onSubmitForm?: (draft: InfographicDraft) => void;
   materiContext?: MateriProductContext | null;
   onRefreshFromMasterContext?: () => void;
+  learningProjects?: LearningProject[];
+  activeLearningContext?: ActiveLearningContext;
+  onSelectMeetingContext?: (
+    project: LearningProject,
+    classSubject: ClassSubjectNode,
+    chapter: ChapterNode,
+    meeting: MeetingSession
+  ) => void;
 }
 
 export const MateriPage: React.FC<MateriPageProps> = ({
@@ -78,8 +97,16 @@ export const MateriPage: React.FC<MateriPageProps> = ({
   onUsageRecorded,
   onSubmitForm,
   materiContext,
-  onRefreshFromMasterContext
+  onRefreshFromMasterContext,
+  learningProjects = [],
+  activeLearningContext,
+  onSelectMeetingContext
 }) => {
+  // Pilihan Sumber Data: 'project' (Gunakan Proyek Saya) atau 'manual' (Buat Secara Manual)
+  const [sourceMode, setSourceMode] = useState<ProductDataSourceMode>(() => {
+    return materiContext ? 'project' : (learningProjects.length > 0 ? 'project' : 'manual');
+  });
+
   // Mode Tampilan: 'form' (Perancangan) atau 'preview' (Dokumen A4 Siap Cetak)
   const [viewMode, setViewMode] = useState<'form' | 'preview'>('form');
 
@@ -787,9 +814,24 @@ export const MateriPage: React.FC<MateriPageProps> = ({
       </div>
 
       {/* ====================================================================== */}
-      {/* 1B. BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH)        */}
+      {/* 1B. PILIHAN SUMBER DATA: PROYEK SAYA ATAU MANUAL                        */}
       {/* ====================================================================== */}
-      {materiContext && (
+      {viewMode === 'form' && (
+        <ProductDataSourceSelector
+          currentMode={sourceMode}
+          onModeChange={setSourceMode}
+          productTitle="Materi Dokumen A4"
+          learningProjects={learningProjects}
+          activeContext={activeLearningContext}
+          onSelectMeetingContext={onSelectMeetingContext}
+          onNavigate={onNavigate}
+        />
+      )}
+
+      {/* ====================================================================== */}
+      {/* 1C. BANNER KONEKSI MASTER LEARNING DATA (SINGLE SOURCE OF TRUTH)        */}
+      {/* ====================================================================== */}
+      {sourceMode === 'project' && materiContext && (
         <div className={`rounded-3xl p-5 sm:p-6 border transition-all ${
           isOutdated 
             ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs' 
