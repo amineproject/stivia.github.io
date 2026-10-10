@@ -644,6 +644,21 @@ export function updateMeetingProductState(
 }
 
 /**
+ * Mengekstrak nilai integer murni dari string seperti "Bab 2", "Pertemuan 10", atau angka.
+ * Digunakan untuk menjamin kompatibilitas skema database PostgreSQL (tipe INTEGER vs TEXT).
+ */
+export function parseIntegerNumber(val: any, fallback = 1): number {
+  if (typeof val === 'number') {
+    return isNaN(val) ? fallback : Math.floor(val);
+  }
+  if (!val) return fallback;
+  const match = String(val).match(/\d+/);
+  if (!match) return fallback;
+  const parsed = parseInt(match[0], 10);
+  return isNaN(parsed) ? fallback : parsed;
+}
+
+/**
  * Membandingkan nomor pertemuan secara alami/numerik (Pertemuan 1, Pertemuan 2, ... Pertemuan 10).
  */
 export function compareMeetingNumbers(
@@ -961,6 +976,62 @@ export function removeChapterFromProject(
     nextActiveMeetingId,
     deletedChapter,
     targetProjectId
+  };
+}
+
+/**
+ * Memperbarui data Bab / Teks Pembahasan (nomor bab dan/atau judul) dalam struktur proyek.
+ */
+export function updateChapterInProject(
+  projects: LearningProject[],
+  targetChapterId: string,
+  updates: { chapterNumber?: string; title?: string }
+): { updatedProjects: LearningProject[]; targetProjectId?: string; updatedChapter?: ChapterNode } {
+  const now = new Date().toISOString().split('T')[0];
+  let targetProjectId: string | undefined;
+  let updatedChapter: ChapterNode | undefined;
+
+  const updatedProjects = projects.map(p => {
+    let pModified = false;
+    const updatedClasses = p.classSubjects.map(cs => {
+      let csModified = false;
+      const updatedChapters = cs.chapters.map(ch => {
+        if (ch.id !== targetChapterId) return ch;
+
+        pModified = true;
+        csModified = true;
+        targetProjectId = p.id;
+
+        const updated: ChapterNode = {
+          ...ch,
+          chapterNumber: updates.chapterNumber !== undefined ? updates.chapterNumber.trim() : ch.chapterNumber,
+          title: updates.title !== undefined ? updates.title.trim() : ch.title,
+          updatedAt: now
+        };
+        updatedChapter = updated;
+        return updated;
+      });
+
+      if (!csModified) return cs;
+      return {
+        ...cs,
+        chapters: updatedChapters,
+        updatedAt: now
+      };
+    });
+
+    if (!pModified) return p;
+    return {
+      ...p,
+      classSubjects: updatedClasses,
+      updatedAt: now
+    };
+  });
+
+  return {
+    updatedProjects,
+    targetProjectId,
+    updatedChapter
   };
 }
 
@@ -1451,11 +1522,21 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
         .map((c: any) => {
           const chapters: ChapterNode[] = ((c.learning_chapters || []) as any[])
             .slice()
-            .sort((a, b) => (a.chapter_number || a.created_at || '').localeCompare(b.chapter_number || b.created_at || ''))
+            .sort((a, b) => {
+              const numA = typeof a.chapter_number === 'number' ? a.chapter_number : parseIntegerNumber(a.chapter_number, 0);
+              const numB = typeof b.chapter_number === 'number' ? b.chapter_number : parseIntegerNumber(b.chapter_number, 0);
+              if (numA !== numB) return numA - numB;
+              return String(a.chapter_number || a.created_at || '').localeCompare(String(b.chapter_number || b.created_at || ''));
+            })
             .map((ch: any) => {
               const meetings: MeetingSession[] = ((ch.learning_meetings || []) as any[])
                 .slice()
-                .sort((a, b) => compareMeetingNumbers(a.meeting_number, b.meeting_number, a.created_at, b.created_at))
+                .sort((a, b) => compareMeetingNumbers(
+                  typeof a.meeting_number === 'number' ? String(a.meeting_number) : a.meeting_number,
+                  typeof b.meeting_number === 'number' ? String(b.meeting_number) : b.meeting_number,
+                  a.created_at,
+                  b.created_at
+                ))
                 .map((m: any) => {
                 const mldRaw = Array.isArray(m.master_learning_data) 
                   ? m.master_learning_data[0] 
@@ -1487,14 +1568,22 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
                   assessment_sumatif: 'not_started'
                 };
 
+                const meetingNumberStr = typeof m.meeting_number === 'number'
+                  ? `Pertemuan ${m.meeting_number}`
+                  : (m.meeting_number ? String(m.meeting_number) : 'Pertemuan 1');
+
+                const continuationMeetingNumberStr = typeof m.continuation_from_meeting_number === 'number'
+                  ? `Pertemuan ${m.continuation_from_meeting_number}`
+                  : (m.continuation_from_meeting_number ? String(m.continuation_from_meeting_number) : undefined);
+
                 return {
                   id: m.id,
-                  meetingNumber: m.meeting_number,
-                  title: m.title,
+                  meetingNumber: meetingNumberStr,
+                  title: m.title || 'Pertemuan',
                   status: (m.status || 'draft') as MeetingStatus,
                   isContinuation: Boolean(m.is_continuation),
                   continuationFromMeetingId: m.continuation_from_meeting_id || undefined,
-                  continuationFromMeetingNumber: m.continuation_from_meeting_number || undefined,
+                  continuationFromMeetingNumber: continuationMeetingNumberStr,
                   masterLearningData,
                   productStates: m.product_states ? { ...defaultProductStates, ...m.product_states } : defaultProductStates,
                   createdAt: m.created_at,
@@ -1504,9 +1593,13 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
                 };
               });
 
+              const chapterNumberStr = typeof ch.chapter_number === 'number'
+                ? `Bab ${ch.chapter_number}`
+                : (ch.chapter_number ? String(ch.chapter_number) : 'Bab 1');
+
               return {
                 id: ch.id,
-                chapterNumber: ch.chapter_number,
+                chapterNumber: chapterNumberStr,
                 title: ch.title,
                 meetings,
                 createdAt: ch.created_at,
@@ -1561,16 +1654,20 @@ export async function fetchLearningProjectsFromSupabase(userId: string): Promise
  * Mengklasifikasikan error secara presisi (missing / forbidden / query_error / network_error)
  * dan mencegah upaya upsert berulang jika tabel sudah diketahui belum dibuat.
  */
-export async function saveLearningProjectToSupabase(
-  project: LearningProject,
-  userId: string
-): Promise<{
+export interface SaveProjectResult {
   success: boolean;
   status: SupabaseProjectStatus;
   isSchemaMissing?: boolean;
   error?: string;
   errorDetails?: SupabaseErrorDetails;
-}> {
+  failedTable?: string;
+  failedRecordId?: string;
+}
+
+export async function saveLearningProjectToSupabase(
+  project: LearningProject,
+  userId: string
+): Promise<SaveProjectResult> {
   if (!isSupabaseConfigured || !userId) {
     const status: SupabaseProjectStatus = !userId ? 'auth_required' : 'missing';
     return {
@@ -1600,7 +1697,7 @@ export async function saveLearningProjectToSupabase(
       effectiveUserId = authData.session.user.id;
     }
 
-    // 1. Upsert Proyek Utama
+    // 1. Upsert Proyek Utama ke learning_projects
     const { error: projErr, status: httpStatus } = await supabase
       .from('learning_projects')
       .upsert({
@@ -1627,16 +1724,18 @@ export async function saveLearningProjectToSupabase(
         success: false,
         status: classified.status,
         isSchemaMissing: classified.status === 'missing',
-        error: classified.userFriendlyMessage,
-        errorDetails: classified
+        error: `Gagal menyimpan entitas Proyek (learning_projects): ${classified.userFriendlyMessage}`,
+        errorDetails: classified,
+        failedTable: 'learning_projects',
+        failedRecordId: project.id
       };
     }
 
     projectTableStatus = 'available';
 
-    // 2. Upsert Kelas, Bab, Pertemuan, dan Master Learning Data
+    // 2. Upsert Kelas, Bab, Pertemuan, dan Master Learning Data secara berurutan
     for (const cs of project.classSubjects) {
-      const { error: classErr } = await supabase
+      const { error: classErr, status: classHttpStatus } = await supabase
         .from('learning_classes')
         .upsert({
           id: cs.id,
@@ -1649,33 +1748,72 @@ export async function saveLearningProjectToSupabase(
         }, { onConflict: 'id' });
 
       if (classErr) {
-        console.warn('[STIVIA Supabase] Catatan saat menyimpan learning_classes:', classErr.message);
+        const classified = classifySupabaseError(classErr, { statusCode: classHttpStatus });
+        return {
+          success: false,
+          status: classified.status,
+          isSchemaMissing: classified.status === 'missing',
+          error: `Gagal menyimpan kelas "${cs.subject}" (learning_classes): ${classified.userFriendlyMessage}`,
+          errorDetails: classified,
+          failedTable: 'learning_classes',
+          failedRecordId: cs.id
+        };
       }
 
       for (const ch of cs.chapters) {
-        const { error: chErr } = await supabase
+        const chapterPayload: any = {
+          id: ch.id,
+          class_id: cs.id,
+          chapter_number: ch.chapterNumber,
+          title: ch.title,
+          created_at: ch.createdAt || nowIso,
+          updated_at: nowIso
+        };
+
+        let { error: chErr, status: chHttpStatus } = await supabase
           .from('learning_chapters')
-          .upsert({
-            id: ch.id,
-            class_id: cs.id,
-            chapter_number: ch.chapterNumber,
-            title: ch.title,
-            created_at: ch.createdAt || nowIso,
-            updated_at: nowIso
-          }, { onConflict: 'id' });
+          .upsert(chapterPayload, { onConflict: 'id' });
+
+        // Adaptasi skema: Jika kolom di database bertipe INTEGER (error 22P02)
+        if (chErr && (chErr.code === '22P02' || chErr.message?.toLowerCase().includes('integer'))) {
+          chapterPayload.chapter_number = parseIntegerNumber(ch.chapterNumber, 1);
+          const retryCh = await supabase
+            .from('learning_chapters')
+            .upsert(chapterPayload, { onConflict: 'id' });
+          chErr = retryCh.error;
+          chHttpStatus = retryCh.status;
+        }
 
         if (chErr) {
-          console.warn('[STIVIA Supabase] Catatan saat menyimpan learning_chapters:', chErr.message);
+          const classified = classifySupabaseError(chErr, { statusCode: chHttpStatus });
+          return {
+            success: false,
+            status: classified.status,
+            isSchemaMissing: classified.status === 'missing',
+            error: `Gagal menyimpan bab "${ch.title}" (learning_chapters): ${classified.userFriendlyMessage}`,
+            errorDetails: classified,
+            failedTable: 'learning_chapters',
+            failedRecordId: ch.id
+          };
         }
 
         for (const m of ch.meetings) {
+          const safeProductStates: MeetingProductStates = {
+            material: m.productStates?.material || 'not_started',
+            infographic: m.productStates?.infographic || 'not_started',
+            lkpd: m.productStates?.lkpd || 'not_started',
+            presentation: m.productStates?.presentation || 'not_started',
+            assessment_harian: m.productStates?.assessment_harian || 'not_started',
+            assessment_sumatif: m.productStates?.assessment_sumatif || 'not_started'
+          };
+
           const meetingFullPayload: any = {
             id: m.id,
             chapter_id: ch.id,
             meeting_number: m.meetingNumber,
             title: m.title,
-            status: m.status,
-            product_states: m.productStates,
+            status: m.status || 'draft',
+            product_states: safeProductStates,
             is_continuation: Boolean(m.isContinuation),
             continuation_from_meeting_id: m.continuationFromMeetingId || null,
             continuation_from_meeting_number: m.continuationFromMeetingNumber || null,
@@ -1685,74 +1823,110 @@ export async function saveLearningProjectToSupabase(
             updated_at: nowIso
           };
 
-          let { error: meetErr } = await supabase
+          let { error: meetErr, status: meetHttpStatus } = await supabase
             .from('learning_meetings')
             .upsert(meetingFullPayload, { onConflict: 'id' });
 
-          if (meetErr) {
-            // Fallback jika kolom continuation belum ada di skema SQL database
+          // Adaptasi skema: Jika kolom di database bertipe INTEGER (error 22P02)
+          if (meetErr && (meetErr.code === '22P02' || meetErr.message?.toLowerCase().includes('integer'))) {
+            meetingFullPayload.meeting_number = parseIntegerNumber(m.meetingNumber, 1);
+            if (meetingFullPayload.continuation_from_meeting_number) {
+              meetingFullPayload.continuation_from_meeting_number = parseIntegerNumber(meetingFullPayload.continuation_from_meeting_number, 1);
+            }
+            const retryMeet = await supabase
+              .from('learning_meetings')
+              .upsert(meetingFullPayload, { onConflict: 'id' });
+            meetErr = retryMeet.error;
+            meetHttpStatus = retryMeet.status;
+          }
+
+          // Fallback jika kolom continuation belum ada di skema SQL database
+          if (meetErr && (meetErr.message?.includes('is_continuation') || meetErr.message?.includes('continuation_from_meeting_id') || meetErr.code === 'PGRST204')) {
             const meetingFallbackPayload = {
               id: m.id,
               chapter_id: ch.id,
-              meeting_number: m.meetingNumber,
+              meeting_number: typeof meetingFullPayload.meeting_number === 'number' ? meetingFullPayload.meeting_number : m.meetingNumber,
               title: m.title,
-              status: m.status,
-              product_states: m.productStates,
+              status: m.status || 'draft',
+              product_states: safeProductStates,
               completed_at: m.completedAt || null,
               legacy_draft_id: m.legacyDraftId || null,
               created_at: m.createdAt || nowIso,
               updated_at: nowIso
             };
-            const { error: retryMeetErr } = await supabase
+            const retryMeetErr = await supabase
               .from('learning_meetings')
               .upsert(meetingFallbackPayload, { onConflict: 'id' });
-            if (retryMeetErr) {
-              console.warn('[STIVIA Supabase] Catatan saat menyimpan learning_meetings:', retryMeetErr.message);
-            }
+            meetErr = retryMeetErr.error;
+            meetHttpStatus = retryMeetErr.status;
+          }
+
+          if (meetErr) {
+            const classified = classifySupabaseError(meetErr, { statusCode: meetHttpStatus });
+            return {
+              success: false,
+              status: classified.status,
+              isSchemaMissing: classified.status === 'missing',
+              error: `Gagal menyimpan pertemuan "${m.title}" (learning_meetings): ${classified.userFriendlyMessage}`,
+              errorDetails: classified,
+              failedTable: 'learning_meetings',
+              failedRecordId: m.id
+            };
           }
 
           const mld = m.masterLearningData;
           if (mld) {
             const mldFullPayload: any = {
               meeting_id: m.id,
-              tema_kegiatan: mld.temaKegiatan,
-              materi_diajarkan: mld.materiDiajarkan,
-              cakupan_materi: mld.cakupanMateri,
-              learning_objectives: mld.learningObjectives || [],
+              tema_kegiatan: mld.temaKegiatan || m.title || '',
+              materi_diajarkan: mld.materiDiajarkan || m.title || '',
+              cakupan_materi: mld.cakupanMateri || '',
+              learning_objectives: Array.isArray(mld.learningObjectives) ? mld.learningObjectives : [],
               reinforcement_activities: mld.reinforcementActivities || '',
               assessment_enabled: Boolean(mld.assessmentEnabled),
               assessment_type: mld.assessmentType || null,
-              assessment_forms: mld.assessmentForms || [],
+              assessment_forms: Array.isArray(mld.assessmentForms) ? mld.assessmentForms : [],
               assessment_notes: mld.assessmentNotes || '',
               user_notes: mld.userNotes || '',
-              version: mld.version || 1,
+              version: typeof mld.version === 'number' ? mld.version : 1,
               created_at: mld.updatedAt || nowIso,
               updated_at: nowIso
             };
 
-            let { error: mldErr } = await supabase
+            let { error: mldErr, status: mldHttpStatus } = await supabase
               .from('master_learning_data')
               .upsert(mldFullPayload, { onConflict: 'meeting_id' });
 
-            if (mldErr) {
-              // Fallback jika kolom baru belum ada di skema SQL database
+            if (mldErr && (mldErr.message?.includes('reinforcement_activities') || mldErr.message?.includes('assessment_enabled') || mldErr.code === 'PGRST204')) {
               const mldFallbackPayload = {
                 meeting_id: m.id,
-                tema_kegiatan: mld.temaKegiatan,
-                materi_diajarkan: mld.materiDiajarkan,
-                cakupan_materi: mld.cakupanMateri,
-                learning_objectives: mld.learningObjectives || [],
+                tema_kegiatan: mld.temaKegiatan || m.title || '',
+                materi_diajarkan: mld.materiDiajarkan || m.title || '',
+                cakupan_materi: mld.cakupanMateri || '',
+                learning_objectives: Array.isArray(mld.learningObjectives) ? mld.learningObjectives : [],
                 user_notes: mld.userNotes || '',
-                version: mld.version || 1,
+                version: typeof mld.version === 'number' ? mld.version : 1,
                 created_at: mld.updatedAt || nowIso,
                 updated_at: nowIso
               };
-              const { error: retryMldErr } = await supabase
+              const retryMldErr = await supabase
                 .from('master_learning_data')
                 .upsert(mldFallbackPayload, { onConflict: 'meeting_id' });
-              if (retryMldErr) {
-                console.warn('[STIVIA Supabase] Catatan saat menyimpan master_learning_data:', retryMldErr.message);
-              }
+              mldErr = retryMldErr.error;
+              mldHttpStatus = retryMldErr.status;
+            }
+
+            if (mldErr) {
+              const classified = classifySupabaseError(mldErr, { statusCode: mldHttpStatus });
+              return {
+                success: false,
+                status: classified.status,
+                isSchemaMissing: classified.status === 'missing',
+                error: `Gagal menyimpan Master Learning Data (${mld.temaKegiatan || m.title}): ${classified.userFriendlyMessage}`,
+                errorDetails: classified,
+                failedTable: 'master_learning_data',
+                failedRecordId: m.id
+              };
             }
           }
         }
@@ -1776,7 +1950,7 @@ export async function saveLearningProjectToSupabase(
             }
           }
         } catch (pruneErr) {
-          // ignore
+          // ignore non-fatal prune error
         }
       }
     }
@@ -2059,6 +2233,158 @@ export async function deleteLearningChapterFromSupabase(
       return { success: true, isSchemaMissing: true };
     }
     console.error('[STIVIA Supabase] Error saat delete chapter di Supabase:', err);
+    return { success: false, error: classified.userFriendlyMessage };
+  }
+}
+
+/**
+ * Menghapus sebuah record Kelas & Mapel (learning_classes) dari Supabase secara cascade terkontrol:
+ * master_learning_data -> learning_meetings -> learning_chapters -> learning_classes.
+ */
+export async function deleteLearningClassFromSupabase(
+  classId: string,
+  userId?: string
+): Promise<{ success: boolean; isSchemaMissing?: boolean; error?: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: true, isSchemaMissing: true };
+  }
+  if (!classId) {
+    return { success: false, error: 'ID Kelas/Mapel tidak valid.' };
+  }
+
+  const now = Date.now();
+  if (projectTableStatus === 'missing' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return { success: true, isSchemaMissing: true };
+  }
+
+  try {
+    // 1. Ambil seluruh chapter di dalam kelas ini
+    const { data: chapters } = await supabase
+      .from('learning_chapters')
+      .select('id')
+      .eq('class_id', classId);
+
+    const chapterIds = (chapters || []).map((ch: any) => ch.id).filter(Boolean);
+
+    if (chapterIds.length > 0) {
+      // 2. Ambil seluruh pertemuan
+      const { data: meetings } = await supabase
+        .from('learning_meetings')
+        .select('id')
+        .in('chapter_id', chapterIds);
+
+      const meetingIds = (meetings || []).map((m: any) => m.id).filter(Boolean);
+
+      if (meetingIds.length > 0) {
+        await supabase
+          .from('master_learning_data')
+          .delete()
+          .in('meeting_id', meetingIds);
+
+        await supabase
+          .from('learning_meetings')
+          .delete()
+          .in('id', meetingIds);
+      }
+
+      await supabase
+        .from('learning_chapters')
+        .delete()
+        .in('id', chapterIds);
+    }
+
+    // 3. Hapus kelas
+    const { error: classErr, status: httpStatus } = await supabase
+      .from('learning_classes')
+      .delete()
+      .eq('id', classId);
+
+    if (classErr) {
+      const classified = classifySupabaseError(classErr, { statusCode: httpStatus });
+      if (classified.status === 'missing') {
+        return { success: true, isSchemaMissing: true };
+      }
+      if (classified.status === 'forbidden') {
+        return { success: false, error: 'Izin ditolak oleh database (RLS). Pastikan Anda pemilik data ini.' };
+      }
+      return { success: false, error: classified.userFriendlyMessage };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    const classified = classifySupabaseError(err);
+    if (classified.status === 'missing') {
+      return { success: true, isSchemaMissing: true };
+    }
+    return { success: false, error: classified.userFriendlyMessage };
+  }
+}
+
+/**
+ * Memperbarui metadata Bab / Teks Pembahasan (chapter_number & title) langsung di Supabase.
+ * Aman dan idempotent, tidak memengaruhi relasi pertemuan di dalamnya.
+ */
+export async function updateLearningChapterInSupabase(
+  chapterId: string,
+  updates: { chapterNumber?: string; title?: string },
+  userId?: string
+): Promise<{ success: boolean; isSchemaMissing?: boolean; error?: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: true, isSchemaMissing: true };
+  }
+  if (!chapterId) {
+    return { success: false, error: 'ID Bab/Teks tidak valid.' };
+  }
+
+  const now = Date.now();
+  if (projectTableStatus === 'missing' && now - lastTableCheckTimestamp < TABLE_STATUS_CACHE_TTL_MS) {
+    return { success: true, isSchemaMissing: true };
+  }
+
+  try {
+    const payload: Record<string, any> = {
+      updated_at: new Date().toISOString()
+    };
+    if (updates.chapterNumber !== undefined) {
+      payload.chapter_number = updates.chapterNumber.trim();
+    }
+    if (updates.title !== undefined) {
+      payload.title = updates.title.trim();
+    }
+
+    let { error, status: httpStatus } = await supabase
+      .from('learning_chapters')
+      .update(payload)
+      .eq('id', chapterId);
+
+    // Adaptasi skema: Jika kolom di database bertipe INTEGER (error 22P02)
+    if (error && (error.code === '22P02' || error.message?.toLowerCase().includes('integer')) && updates.chapterNumber !== undefined) {
+      payload.chapter_number = parseIntegerNumber(updates.chapterNumber, 1);
+      const retry = await supabase
+        .from('learning_chapters')
+        .update(payload)
+        .eq('id', chapterId);
+      error = retry.error;
+      httpStatus = retry.status;
+    }
+
+    if (error) {
+      const classified = classifySupabaseError(error, { statusCode: httpStatus });
+      if (classified.status === 'missing') {
+        return { success: true, isSchemaMissing: true };
+      }
+      if (classified.status === 'forbidden') {
+        return { success: false, error: 'Izin ditolak oleh database (RLS). Pastikan Anda pemilik data ini.' };
+      }
+      return { success: false, error: classified.userFriendlyMessage };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    const classified = classifySupabaseError(err);
+    if (classified.status === 'missing') {
+      return { success: true, isSchemaMissing: true };
+    }
     return { success: false, error: classified.userFriendlyMessage };
   }
 }
@@ -2358,18 +2684,22 @@ export async function deleteLegacyProjectFromSupabase(
  *    - Jika akun baru dan belum ada proyek, kembalikan [] (empty).
  * 4. Jamin tidak terjadi kebocoran atau tumpang tindih data antar-akun.
  */
-export async function syncLearningProjectsOnLogin(userId: string): Promise<{
+export interface LoginSyncResult {
   learningProjects: LearningProject[];
   legacyProjects: InfographicDraft[];
   syncStatus: 'supabase_synced' | 'local_fallback' | 'empty';
+  dataSource: 'cloud' | 'local_cache' | 'recovery' | 'empty';
   tableStatus: SupabaseProjectStatus;
   errorMessage?: string;
-}> {
+}
+
+export async function syncLearningProjectsOnLogin(userId: string): Promise<LoginSyncResult> {
   if (!isSupabaseConfigured || !userId) {
     return {
       learningProjects: getStoredLearningProjects(userId),
       legacyProjects: [],
       syncStatus: 'local_fallback',
+      dataSource: 'local_cache',
       tableStatus: !userId ? 'auth_required' : 'missing',
       errorMessage: !userId ? 'Sesi login tidak aktif.' : 'Supabase belum dikonfigurasi.'
     };
@@ -2381,31 +2711,20 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
     // 2. Ambil draf legacy milik pengguna dari Supabase Cloud
     const cloudLegacyDrafts = await fetchLegacyProjectsFromSupabase(userId);
 
-    // KASUS A: Tabel belum dibuat (missing) atau akses ditolak (forbidden)
-    // TAHAP 8: Jangan mencoba push proyek lokal ke cloud jika tabel jelas belum ada (mencegah loop error berulang)
-    if (fetchResult.status === 'missing' || fetchResult.status === 'forbidden') {
+    // KASUS A: Tabel belum dibuat (missing), akses ditolak (forbidden), atau koneksi gagal (network_error)
+    if (fetchResult.status === 'missing' || fetchResult.status === 'forbidden' || fetchResult.status === 'network_error') {
       const userLocalProjects = getStoredLearningProjects(userId);
       return {
         learningProjects: userLocalProjects,
         legacyProjects: cloudLegacyDrafts,
         syncStatus: 'local_fallback',
+        dataSource: userLocalProjects.length > 0 ? 'local_cache' : 'empty',
         tableStatus: fetchResult.status,
-        errorMessage: fetchResult.error?.userFriendlyMessage
+        errorMessage: fetchResult.error?.userFriendlyMessage || (fetchResult.status === 'network_error' ? 'Koneksi ke Supabase terputus. Menggunakan data lokal.' : undefined)
       };
     }
 
-    if (fetchResult.status === 'network_error') {
-      const userLocalProjects = getStoredLearningProjects(userId);
-      return {
-        learningProjects: userLocalProjects,
-        legacyProjects: cloudLegacyDrafts,
-        syncStatus: 'local_fallback',
-        tableStatus: 'network_error',
-        errorMessage: 'Koneksi ke Supabase terputus. Menggunakan data lokal.'
-      };
-    }
-
-    // KASUS B: Tabel AVAILABLE di Supabase
+    // KASUS B: Tabel AVAILABLE di Supabase dan berisi data cloud milik pengguna
     const cloudProjects = fetchResult.projects;
 
     if (cloudProjects.length > 0) {
@@ -2418,27 +2737,24 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
         learningProjects: cloudProjects,
         legacyProjects: cloudLegacyDrafts,
         syncStatus: 'supabase_synced',
+        dataSource: 'cloud',
         tableStatus: 'available'
       };
     }
 
     // KASUS C: Tabel AVAILABLE tapi data cloud kosong ([]):
-    // TAHAP 11: Empty table BUKAN error. Cek apakah ada proyek lokal yang perlu disinkronkan ke cloud
+    // Pertahankan cache lokal pengguna secara aman. Jangan menimpa dengan data kosong atau mengunggah massal tanpa pemeriksaan.
     const userLocalProjects = getStoredLearningProjects(userId);
 
     if (userLocalProjects.length > 0) {
-      for (const p of userLocalProjects) {
-        if (!p.id.startsWith('proj-lp-sample')) {
-          await saveLearningProjectToSupabase(p, userId);
-        }
-      }
       if (typeof window !== 'undefined') {
         localStorage.setItem('stivia_last_user_id', userId);
       }
       return {
         learningProjects: userLocalProjects,
         legacyProjects: cloudLegacyDrafts,
-        syncStatus: 'supabase_synced',
+        syncStatus: 'local_fallback',
+        dataSource: 'local_cache',
         tableStatus: 'available'
       };
     }
@@ -2451,15 +2767,18 @@ export async function syncLearningProjectsOnLogin(userId: string): Promise<{
       learningProjects: [],
       legacyProjects: cloudLegacyDrafts,
       syncStatus: 'empty',
+      dataSource: 'empty',
       tableStatus: 'available'
     };
   } catch (err: any) {
     const classified = classifySupabaseError(err);
     console.warn('[STIVIA Supabase] Gagal sinkronisasi proyek saat login:', classified.userFriendlyMessage);
+    const userLocalProjects = getStoredLearningProjects(userId);
     return {
-      learningProjects: getStoredLearningProjects(userId),
+      learningProjects: userLocalProjects,
       legacyProjects: [],
       syncStatus: 'local_fallback',
+      dataSource: userLocalProjects.length > 0 ? 'local_cache' : 'empty',
       tableStatus: classified.status,
       errorMessage: classified.userFriendlyMessage
     };

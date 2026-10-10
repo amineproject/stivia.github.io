@@ -61,7 +61,9 @@ import {
   deleteLearningMeetingFromSupabase,
   deleteLearningProjectFromSupabase,
   removeChapterFromProject,
-  deleteLearningChapterFromSupabase
+  deleteLearningChapterFromSupabase,
+  updateChapterInProject,
+  updateLearningChapterInSupabase
 } from '../../services/learningProjectService';
 import { suggestLearningObjectives } from '../../services/stiviaThinkingFramework';
 
@@ -187,6 +189,11 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
   const [isDeletingMeeting, setIsDeletingMeeting] = useState<boolean>(false);
   const [chapterToDelete, setChapterToDelete] = useState<ChapterNode | null>(null);
   const [isDeletingChapter, setIsDeletingChapter] = useState<boolean>(false);
+  const [chapterToEdit, setChapterToEdit] = useState<ChapterNode | null>(null);
+  const [editChapterNumber, setEditChapterNumber] = useState('');
+  const [editChapterTitle, setEditChapterTitle] = useState('');
+  const [editChapterError, setEditChapterError] = useState('');
+  const [isSavingChapterEdit, setIsSavingChapterEdit] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<LearningProject | null>(null);
   const [isDeletingProject, setIsDeletingProject] = useState<boolean>(false);
 
@@ -551,6 +558,67 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
     setShowAddChapterModal(false);
     setNewChapterTitle('');
     onSaveToast(`Bab "${newChapterTitle}" berhasil ditambahkan.`);
+  };
+
+  // Handler Buka Modal Edit Bab / Teks Pembahasan
+  const handleOpenEditChapterModal = (ch: ChapterNode) => {
+    setChapterToEdit(ch);
+    setEditChapterNumber(ch.chapterNumber || 'Bab 1');
+    // Jika title diawali dengan format "Bab X: Judul", ambil hanya judulnya agar input nyaman diedit
+    let cleanTitle = ch.title || '';
+    const prefixRegex = new RegExp(`^${ch.chapterNumber}\\s*:\\s*`, 'i');
+    if (prefixRegex.test(cleanTitle)) {
+      cleanTitle = cleanTitle.replace(prefixRegex, '').trim();
+    }
+    setEditChapterTitle(cleanTitle);
+    setEditChapterError('');
+    setIsSavingChapterEdit(false);
+  };
+
+  // Handler Simpan Perubahan Bab / Teks Pembahasan
+  const handleSaveEditChapter = async () => {
+    if (!chapterToEdit) return;
+    const cleanNum = editChapterNumber.trim();
+    const cleanTit = editChapterTitle.trim();
+
+    if (!cleanNum || !cleanTit) {
+      setEditChapterError('Nomor bab dan judul pembahasan wajib diisi.');
+      return;
+    }
+
+    setIsSavingChapterEdit(true);
+    setEditChapterError('');
+
+    try {
+      // Bentuk judul rapi: "Bab X: Judul Pembahasan"
+      const formattedTitle = cleanTit.toLowerCase().startsWith(cleanNum.toLowerCase())
+        ? cleanTit
+        : `${cleanNum}: ${cleanTit}`;
+
+      const { updatedProjects } = updateChapterInProject(learningProjects, chapterToEdit.id, {
+        chapterNumber: cleanNum,
+        title: formattedTitle
+      });
+
+      onUpdateLearningProjects(updatedProjects);
+
+      // Sinkronisasi langsung ke Supabase jika terkonfigurasi
+      if (userId) {
+        await updateLearningChapterInSupabase(
+          chapterToEdit.id,
+          { chapterNumber: cleanNum, title: formattedTitle },
+          userId
+        );
+      }
+
+      onSaveToast(`Bab "${cleanTit}" berhasil diperbarui.`);
+      setChapterToEdit(null);
+    } catch (err: any) {
+      console.warn('Gagal memperbarui bab:', err);
+      setEditChapterError(`Gagal memperbarui bab: ${err?.message || 'Terjadi kesalahan'}`);
+    } finally {
+      setIsSavingChapterEdit(false);
+    }
   };
 
   // Handler Tambah/Buat Pertemuan Baru (Unit Pembelajaran dengan Master Learning Data)
@@ -1028,10 +1096,21 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                             <span className="truncate block font-semibold">{ch.title}</span>
                           </button>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
                               {ch.meetings.length} Pertemuan
                             </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditChapterModal(ch);
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                              title={`Edit Bab "${ch.title}"`}
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1055,17 +1134,37 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
               {/* Kolom Kanan: Daftar Pertemuan pada Bab Terpilih */}
               <div className="lg:col-span-7 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                    4. Pertemuan Pembelajaran
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleOpenAddMeetingModal}
-                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Buat Pertemuan</span>
-                  </button>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                      4. Pertemuan Pembelajaran
+                    </label>
+                    {activeChapter && (
+                      <span className="text-[11px] text-slate-500 font-medium truncate hidden sm:inline">
+                        · {activeChapter.chapterNumber}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {activeChapter && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditChapterModal(activeChapter)}
+                        className="text-xs font-semibold text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        title={`Edit Bab / Teks "${activeChapter.title}"`}
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span className="hidden sm:inline">Edit Bab</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleOpenAddMeetingModal}
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Buat Pertemuan</span>
+                    </button>
+                  </div>
                 </div>
 
                 {(!activeChapter?.meetings || activeChapter.meetings.length === 0) ? (
@@ -2138,6 +2237,94 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
                 className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
               >
                 Tambah Bab
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL EDIT BAB / TEKS PEMBAHASAN                                     */}
+      {/* ==================================================================== */}
+      {chapterToEdit && (
+        <div className="fixed inset-0 bg-slate-900/40 z-50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                Edit Bab / Teks Pembahasan
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Perbarui nomor bab atau topik pembahasan. Seluruh pertemuan dan produk di dalamnya tetap aman.
+              </p>
+            </div>
+
+            {editChapterError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{editChapterError}</span>
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Nomor Bab / Unit
+                </label>
+                <input
+                  type="text"
+                  value={editChapterNumber}
+                  onChange={(e) => setEditChapterNumber(e.target.value)}
+                  placeholder="Misal: Bab 3 atau Teks 2"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Judul Bab / Teks Pembahasan
+                </label>
+                <input
+                  type="text"
+                  value={editChapterTitle}
+                  onChange={(e) => setEditChapterTitle(e.target.value)}
+                  placeholder="Misal: Menggali Nilai Moral dalam Cerita Fantasi"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 space-y-1">
+                <p className="font-semibold text-slate-700">Catatan Pembaruan:</p>
+                <p>
+                  Bab ini menaungi <strong>{chapterToEdit.meetings.length} pertemuan</strong>. Perubahan nama akan otomatis sinkron ke silabus lokal dan database cloud.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setChapterToEdit(null)}
+                disabled={isSavingChapterEdit}
+                className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-800 font-bold text-xs cursor-pointer transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditChapter}
+                disabled={isSavingChapterEdit}
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-sm"
+              >
+                {isSavingChapterEdit ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Simpan Perubahan</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -44,8 +44,13 @@ import {
   MateriDocument,
   MateriSection,
   SupportingItem,
+  ReadingModelText,
+  ConceptMisconception,
+  GlossaryEntry,
   DEFAULT_SAMPLE_MATERI,
+  DEFAULT_SAMPLE_INFORMATIKA,
   SUGGESTED_SECTION_PRESETS,
+  generateDeepAcademicMaterial,
   synthesizeSummaryFromSections,
   generateUnderstandingQuestionsFromSections,
   estimateA4PageCount,
@@ -56,6 +61,7 @@ import { checkCanGenerate, recordGenerateUsage } from '../../services/subscripti
 import { getWhatsAppTopUpUrl } from '../../lib/whatsapp';
 import {
   generateSectionsFromCakupan,
+  synthesizeDeepMateriDocumentFromContext,
   isMateriContextOutdated
 } from '../../services/productContextAdapter';
 import {
@@ -161,19 +167,50 @@ export const MateriPage: React.FC<MateriPageProps> = ({
   const [newObjectiveInput, setNewObjectiveInput] = useState<string>('');
   const [isSuggestingObjectives, setIsSuggestingObjectives] = useState<boolean>(false);
 
+  // Apersepsi & Pertanyaan Pemantik Kontekstual
+  const [apersepsi, setApersepsi] = useState<string>(() => DEFAULT_SAMPLE_MATERI.apersepsi || '');
+  const [includeApersepsi, setIncludeApersepsi] = useState<boolean>(true);
+
   // Bagian-Bagian Materi Pembelajaran (Dinamis dari Cakupan Materi jika ada)
   const [sections, setSections] = useState<MateriSection[]>(() => {
     if (materiContext?.cakupanMateri) {
-      return generateSectionsFromCakupan(materiContext.cakupanMateri, materiContext.materiDiajarkan);
+      return generateSectionsFromCakupan(materiContext.cakupanMateri, materiContext.materiDiajarkan, materiContext.subject);
     }
     return DEFAULT_SAMPLE_MATERI.sections;
   });
+
+  // Model Teks Wacana Bacaan Pendukung Lengkap
+  const [supportingReadingText, setSupportingReadingText] = useState<ReadingModelText>(
+    () => DEFAULT_SAMPLE_MATERI.supportingReadingText || {
+      title: 'Model Wacana Telaah',
+      category: 'Wacana Otentik',
+      content: '',
+      analysisNotes: ''
+    }
+  );
+  const [includeSupportingReadingText, setIncludeSupportingReadingText] = useState<boolean>(true);
+
+  // Antisipasi Miskonsepsi Siswa & Fakta Ilmiah
+  const [misconceptions, setMisconceptions] = useState<ConceptMisconception[]>(
+    () => DEFAULT_SAMPLE_MATERI.misconceptions || []
+  );
+  const [includeMisconceptions, setIncludeMisconceptions] = useState<boolean>(true);
+  const [newMisconceptionInput, setNewMisconceptionInput] = useState<string>('');
+  const [newClarificationInput, setNewClarificationInput] = useState<string>('');
+
+  // Glosarium Istilah Kunci
+  const [glosarium, setGlosarium] = useState<GlossaryEntry[]>(
+    () => DEFAULT_SAMPLE_MATERI.glosarium || []
+  );
+  const [includeGlosarium, setIncludeGlosarium] = useState<boolean>(true);
+  const [newTermInput, setNewTermInput] = useState<string>('');
+  const [newDefInput, setNewDefInput] = useState<string>('');
 
   // Materi Pendukung (Opsional)
   const [supportingItems, setSupportingItems] = useState<SupportingItem[]>(
     DEFAULT_SAMPLE_MATERI.supportingItems || []
   );
-  const [showSupportingSection, setShowSupportingSection] = useState<boolean>(true);
+  const [showSupportingSection, setShowSupportingSection] = useState<boolean>(false);
 
   // Rangkuman (Opsional)
   const [includeSummary, setIncludeSummary] = useState<boolean>(true);
@@ -186,6 +223,13 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     DEFAULT_SAMPLE_MATERI.understandingCheck || []
   );
   const [newQuestionInput, setNewQuestionInput] = useState<string>('');
+
+  // Referensi & Sumber Rujukan Resmi
+  const [references, setReferences] = useState<string[]>(
+    () => DEFAULT_SAMPLE_MATERI.references || []
+  );
+  const [includeReferences, setIncludeReferences] = useState<boolean>(true);
+  const [newReferenceInput, setNewReferenceInput] = useState<string>('');
 
   // Catatan Guru (Opsional)
   const [teacherNotes, setTeacherNotes] = useState<string>(
@@ -231,14 +275,19 @@ export const MateriPage: React.FC<MateriPageProps> = ({
         setTeacherNotes(materiContext.userNotes);
       }
 
-      // Jika pertemuan berganti secara eksplisit, muat ulang sections sesuai cakupan materi baru
+      // Jika pertemuan berganti secara eksplisit, susun materi mendalam otomatis
       if (materiContext.sourceMeetingId !== docMeetingId) {
         setDocMeetingId(materiContext.sourceMeetingId);
         setDocMasterVersion(materiContext.sourceMasterVersion);
-        if (materiContext.cakupanMateri) {
-          const autoSections = generateSectionsFromCakupan(materiContext.cakupanMateri, materiContext.materiDiajarkan);
-          setSections(autoSections);
-        }
+        const autoDoc = synthesizeDeepMateriDocumentFromContext(materiContext);
+        setApersepsi(autoDoc.apersepsi || '');
+        setSections(autoDoc.sections);
+        if (autoDoc.supportingReadingText) setSupportingReadingText(autoDoc.supportingReadingText);
+        if (autoDoc.misconceptions && autoDoc.misconceptions.length > 0) setMisconceptions(autoDoc.misconceptions);
+        if (autoDoc.glosarium && autoDoc.glosarium.length > 0) setGlosarium(autoDoc.glosarium);
+        if (autoDoc.summary) setSummary(autoDoc.summary);
+        if (autoDoc.understandingCheck && autoDoc.understandingCheck.length > 0) setUnderstandingQuestions(autoDoc.understandingCheck);
+        if (autoDoc.references && autoDoc.references.length > 0) setReferences(autoDoc.references);
       }
     } else if (currentDraft) {
       // Fallback Legacy Mode (jika tidak ada active meeting context)
@@ -258,7 +307,7 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     currentDraft
   ]);
 
-  // Handler sinkronisasi ulang eksplisit dari Master Context terbaru
+  // Handler sinkronisasi ulang eksplisit dari Master Context terbaru (Deep Learning Engine)
   const handleSyncToLatestMasterContext = () => {
     if (!materiContext) return;
     setTitle(materiContext.materiDiajarkan);
@@ -275,13 +324,20 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     if (materiContext.userNotes) {
       setTeacherNotes(materiContext.userNotes);
     }
-    if (materiContext.cakupanMateri) {
-      const autoSections = generateSectionsFromCakupan(materiContext.cakupanMateri, materiContext.materiDiajarkan);
-      setSections(autoSections);
-    }
+
+    const autoDoc = synthesizeDeepMateriDocumentFromContext(materiContext);
+    setApersepsi(autoDoc.apersepsi || '');
+    setSections(autoDoc.sections);
+    if (autoDoc.supportingReadingText) setSupportingReadingText(autoDoc.supportingReadingText);
+    if (autoDoc.misconceptions && autoDoc.misconceptions.length > 0) setMisconceptions(autoDoc.misconceptions);
+    if (autoDoc.glosarium && autoDoc.glosarium.length > 0) setGlosarium(autoDoc.glosarium);
+    if (autoDoc.summary) setSummary(autoDoc.summary);
+    if (autoDoc.understandingCheck && autoDoc.understandingCheck.length > 0) setUnderstandingQuestions(autoDoc.understandingCheck);
+    if (autoDoc.references && autoDoc.references.length > 0) setReferences(autoDoc.references);
+
     setDocMasterVersion(materiContext.sourceMasterVersion);
     setDocMeetingId(materiContext.sourceMeetingId);
-    showToast(`Struktur materi telah diselaraskan dengan Master Context v${materiContext.sourceMasterVersion}!`);
+    showToast(`Dokumen materi telah diselaraskan & disusun mendalam dari Master Context v${materiContext.sourceMasterVersion}!`);
   };
 
   const isOutdated = Boolean(
@@ -424,7 +480,115 @@ export const MateriPage: React.FC<MateriPageProps> = ({
   };
 
   // ============================================================================
-  // MUAT CONTOH SAMPEL MATERI
+  // HANDLERS KHUSUS DEEP LEARNING MATERIAL ENGINE
+  // ============================================================================
+  const handleSynthesizeDeepMaterial = () => {
+    const activeSubj = isCustomSubject ? customSubject : subject;
+    const doc = generateDeepAcademicMaterial({
+      subject: activeSubj,
+      topic: title.trim(),
+      educationLevel,
+      grade,
+      bab,
+      pertemuan,
+      cakupanMateri: materiContext?.cakupanMateri || '',
+      learningObjectives,
+      userNotes: teacherNotes,
+      schoolName: institutionName,
+      teacherName: teacherName,
+      sourceMeetingId: materiContext?.sourceMeetingId || docMeetingId,
+      sourceMasterVersion: materiContext?.sourceMasterVersion || docMasterVersion
+    });
+
+    setApersepsi(doc.apersepsi || '');
+    setIncludeApersepsi(true);
+    setSections(doc.sections);
+    if (doc.supportingReadingText) {
+      setSupportingReadingText(doc.supportingReadingText);
+      setIncludeSupportingReadingText(true);
+    }
+    if (doc.misconceptions && doc.misconceptions.length > 0) {
+      setMisconceptions(doc.misconceptions);
+      setIncludeMisconceptions(true);
+    }
+    if (doc.glosarium && doc.glosarium.length > 0) {
+      setGlosarium(doc.glosarium);
+      setIncludeGlosarium(true);
+    }
+    if (doc.summary) {
+      setSummary(doc.summary);
+      setIncludeSummary(true);
+    }
+    if (doc.understandingCheck && doc.understandingCheck.length > 0) {
+      setUnderstandingQuestions(doc.understandingCheck);
+      setIncludeUnderstandingCheck(true);
+    }
+    if (doc.references && doc.references.length > 0) {
+      setReferences(doc.references);
+      setIncludeReferences(true);
+    }
+
+    showToast('✨ Dokumen bahan ajar mendalam, model wacana, miskonsepsi, & referensi berhasil disusun!');
+  };
+
+  // Handlers CRUD Miskonsepsi
+  const handleAddMisconception = () => {
+    if (!newMisconceptionInput.trim() || !newClarificationInput.trim()) {
+      showToast('⚠️ Mohon isi kekeliruan siswa dan klarifikasi fakta ilmiah.');
+      return;
+    }
+    setMisconceptions(prev => [
+      ...prev,
+      {
+        misconception: newMisconceptionInput.trim(),
+        clarification: newClarificationInput.trim()
+      }
+    ]);
+    setNewMisconceptionInput('');
+    setNewClarificationInput('');
+    showToast('Miskonsepsi baru berhasil ditambahkan.');
+  };
+
+  const handleRemoveMisconception = (idx: number) => {
+    setMisconceptions(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // Handlers CRUD Glosarium
+  const handleAddGlossary = () => {
+    if (!newTermInput.trim() || !newDefInput.trim()) {
+      showToast('⚠️ Mohon isi nama istilah dan definisinya.');
+      return;
+    }
+    setGlosarium(prev => [
+      ...prev,
+      {
+        term: newTermInput.trim(),
+        definition: newDefInput.trim()
+      }
+    ]);
+    setNewTermInput('');
+    setNewDefInput('');
+    showToast('Istilah glosarium baru berhasil ditambahkan.');
+  };
+
+  const handleRemoveGlossary = (idx: number) => {
+    setGlosarium(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // Handlers CRUD Referensi
+  const handleAddReference = () => {
+    if (!newReferenceInput.trim()) return;
+    setReferences(prev => [...prev, newReferenceInput.trim()]);
+    setNewReferenceInput('');
+    showToast('Referensi baru berhasil ditambahkan.');
+  };
+
+  const handleRemoveReference = (idx: number) => {
+    setReferences(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // ============================================================================
+  // MUAT CONTOH SAMPEL MATERI LENGKAP & MENDALAM
   // ============================================================================
   const handleLoadSampleIklan = () => {
     setSubject(DEFAULT_SAMPLE_MATERI.subject);
@@ -435,63 +599,65 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     setTitle(DEFAULT_SAMPLE_MATERI.title);
     setTeacherNotes(DEFAULT_SAMPLE_MATERI.teacherNotes || '');
     setLearningObjectives([...DEFAULT_SAMPLE_MATERI.learningObjectives]);
+    setApersepsi(DEFAULT_SAMPLE_MATERI.apersepsi || '');
+    setIncludeApersepsi(true);
     setSections(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_MATERI.sections)));
-    setSupportingItems(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_MATERI.supportingItems || [])));
+    if (DEFAULT_SAMPLE_MATERI.supportingReadingText) {
+      setSupportingReadingText(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_MATERI.supportingReadingText)));
+      setIncludeSupportingReadingText(true);
+    }
+    if (DEFAULT_SAMPLE_MATERI.misconceptions) {
+      setMisconceptions(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_MATERI.misconceptions)));
+      setIncludeMisconceptions(true);
+    }
+    if (DEFAULT_SAMPLE_MATERI.glosarium) {
+      setGlosarium(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_MATERI.glosarium)));
+      setIncludeGlosarium(true);
+    }
     setSummary(DEFAULT_SAMPLE_MATERI.summary || '');
     setUnderstandingQuestions([...(DEFAULT_SAMPLE_MATERI.understandingCheck || [])]);
+    if (DEFAULT_SAMPLE_MATERI.references) {
+      setReferences([...DEFAULT_SAMPLE_MATERI.references]);
+      setIncludeReferences(true);
+    }
     setIncludeSummary(true);
     setIncludeUnderstandingCheck(true);
-    showToast('📄 Contoh Materi Ajar Bahasa Indonesia (Teks Iklan) berhasil dimuat!');
+    showToast('📄 Contoh Bahan Ajar Bahasa Indonesia (Teks Iklan) berhasil dimuat!');
   };
 
   const handleLoadSampleInformatika = () => {
-    setSubject('Informatika');
-    setEducationLevel('SMA');
-    setGrade('Kelas X');
-    setBab('Bab 2: Struktur Data dan Algoritma Graf');
-    setPertemuan('Pertemuan 1');
-    setTitle('Pemodelan Relasi Informasi Menggunakan Struktur Data Graph');
-    setTeacherNotes('Gunakan ilustrasi rute perjalanan Google Maps untuk memudahkan analogi vertex dan edge.');
-    setLearningObjectives([
-      'Peserta didik mampu memahami definisi vertex dan edge pada struktur graf secara komprehensif.',
-      'Peserta didik mampu membedakan graf berarah (directed) dan tidak berarah (undirected) melalui studi kasus.',
-      'Peserta didik mampu menganalisis efisiensi representasi graf menggunakan adjacency list dan matrix.'
-    ]);
-    setSections([
-      {
-        id: 'inf-1',
-        title: 'A. Konsep Dasar Struktur Data Graph',
-        content: 'Graph adalah struktur data non-linear yang terdiri atas kumpulan simpul (vertices atau nodes) dan garis penghubung yang merepresentasikan relasi antarsimpul tersebut (edges). Berbeda dengan pohon (tree) yang memiliki struktur hierarkis ketat dengan simpul akar tunggal, graf memungkinkan adanya siklus dan keterhubungan bebas antarsimpul. Karakteristik ini menjadikan graf sebagai instrumen pemodelan paling representatif untuk persoalan jaringan di dunia nyata.'
-      },
-      {
-        id: 'inf-2',
-        title: 'B. Terminologi dan Komponen Utama Graf',
-        content: 'Dalam membedah arsitektur graf, terdapat beberapa istilah fundamental yang wajib dikuasai:\n1. Vertex (V): Simpul entitas diskret, misalnya nama kota, pengguna media sosial, atau server jaringan.\n2. Edge (E): Garis keterhubungan antara dua simpul. Edge dapat memiliki arah (directed) atau tanpa arah (undirected).\n3. Degree (Derajat): Jumlah sisi yang terhubung ke suatu simpul. Pada graf berarah, degree dibagi menjadi in-degree dan out-degree.\n4. Weight (Bobot): Nilai numerik yang diasosiasikan pada sisi untuk merepresentasikan jarak tempuh, biaya, atau latensi waktu.'
-      },
-      {
-        id: 'inf-3',
-        title: 'C. Tabel Perbandingan Struktur Data Pohon vs Graf',
-        content: 'Analisis perbedaan karakteristik arsitektural antara pohon (tree) dan graf (graph):',
-        isTable: true,
-        tableData: {
-          headers: ['Aspek Karakteristik', 'Struktur Data Pohon (Tree)', 'Struktur Data Graf (Graph)'],
-          rows: [
-            ['Bentuk Struktur', 'Hierarkis dengan satu simpul akar (root).', 'Non-hierarkis berbentuk jaringan interkoneksi.'],
-            ['Keberadaan Siklus', 'Tidak memiliki siklus tertutup (acyclic).', 'Dapat membentuk siklus (cyclic) maupun tanpa siklus.'],
-            ['Arah Hubungan', 'Umumnya terarah dari induk ke anak (parent-child).', 'Dapat berarah (directed) maupun bolak-balik.'],
-            ['Penerapan Nyata', 'Struktur folder komputer, skema silsilah keluarga.', 'Peta rute GPS, algoritma rekomendasi pertemanan.']
-          ]
-        }
-      }
-    ]);
-    setSummary('Graf adalah struktur data non-linear berbasis simpul (vertex) dan relasi penghubung (edge) yang sangat fleksibel untuk memodelkan keterhubungan kompleks dunia nyata, mulai dari rute navigasi terpendek hingga jejaring sosial digital.');
-    setUnderstandingQuestions([
-      'Jelaskan perbedaan mendasar antara directed graph dan undirected graph menggunakan analogi rute jalan raya satu arah dan dua arah!',
-      'Mengapa struktur data graf lebih dipilih dibandingkan array biasa saat memodelkan relasi jaringan internet?'
-    ]);
+    setSubject(DEFAULT_SAMPLE_INFORMATIKA.subject);
+    setEducationLevel(DEFAULT_SAMPLE_INFORMATIKA.educationLevel);
+    setGrade(DEFAULT_SAMPLE_INFORMATIKA.grade);
+    setBab(DEFAULT_SAMPLE_INFORMATIKA.bab);
+    setPertemuan(DEFAULT_SAMPLE_INFORMATIKA.pertemuan);
+    setTitle(DEFAULT_SAMPLE_INFORMATIKA.title);
+    setTeacherNotes(DEFAULT_SAMPLE_INFORMATIKA.teacherNotes || '');
+    setLearningObjectives([...DEFAULT_SAMPLE_INFORMATIKA.learningObjectives]);
+    setApersepsi(DEFAULT_SAMPLE_INFORMATIKA.apersepsi || '');
+    setIncludeApersepsi(true);
+    setSections(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_INFORMATIKA.sections)));
+    if (DEFAULT_SAMPLE_INFORMATIKA.supportingReadingText) {
+      setSupportingReadingText(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_INFORMATIKA.supportingReadingText)));
+      setIncludeSupportingReadingText(true);
+    }
+    if (DEFAULT_SAMPLE_INFORMATIKA.misconceptions) {
+      setMisconceptions(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_INFORMATIKA.misconceptions)));
+      setIncludeMisconceptions(true);
+    }
+    if (DEFAULT_SAMPLE_INFORMATIKA.glosarium) {
+      setGlosarium(JSON.parse(JSON.stringify(DEFAULT_SAMPLE_INFORMATIKA.glosarium)));
+      setIncludeGlosarium(true);
+    }
+    setSummary(DEFAULT_SAMPLE_INFORMATIKA.summary || '');
+    setUnderstandingQuestions([...(DEFAULT_SAMPLE_INFORMATIKA.understandingCheck || [])]);
+    if (DEFAULT_SAMPLE_INFORMATIKA.references) {
+      setReferences([...DEFAULT_SAMPLE_INFORMATIKA.references]);
+      setIncludeReferences(true);
+    }
     setIncludeSummary(true);
     setIncludeUnderstandingCheck(true);
-    showToast('💻 Contoh Materi Ajar Informatika (Graph) berhasil dimuat!');
+    showToast('💻 Contoh Bahan Ajar Informatika (Graph) berhasil dimuat!');
   };
 
   // ============================================================================
@@ -540,6 +706,35 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     setIsGenerating(true);
 
     try {
+      const activeSubj = isCustomSubject ? customSubject : subject;
+
+      // Jika bagian materi masih berupa placeholder 1 baris atau belum diperkaya, perkaya secara otomatis dengan Deep Engine
+      const isSkeletal = sections.some(s => s.content.includes('Pendidik dapat menjabarkan penjelasan konseptual') || s.content.length < 80);
+      if (isSkeletal || !apersepsi || !supportingReadingText.content) {
+        const enriched = generateDeepAcademicMaterial({
+          subject: activeSubj,
+          topic: title.trim(),
+          educationLevel,
+          grade,
+          bab: bab.trim(),
+          pertemuan: pertemuan.trim(),
+          cakupanMateri: materiContext?.cakupanMateri || '',
+          learningObjectives,
+          userNotes: teacherNotes,
+          schoolName: institutionName,
+          teacherName: teacherName,
+          sourceMeetingId: materiContext?.sourceMeetingId || docMeetingId,
+          sourceMasterVersion: materiContext?.sourceMasterVersion || docMasterVersion
+        });
+        if (isSkeletal) setSections(enriched.sections);
+        if (!apersepsi && enriched.apersepsi) setApersepsi(enriched.apersepsi);
+        if (!supportingReadingText.content && enriched.supportingReadingText) setSupportingReadingText(enriched.supportingReadingText);
+        if (misconceptions.length === 0 && enriched.misconceptions) setMisconceptions(enriched.misconceptions);
+        if (glosarium.length === 0 && enriched.glosarium) setGlosarium(enriched.glosarium);
+        if (!summary && enriched.summary) setSummary(enriched.summary);
+        if (references.length === 0 && enriched.references) setReferences(enriched.references);
+      }
+
       // 2. Konsumsi saldo (Biaya: 2 Saldo Prompt) secara atomik di Supabase (Admin otomatis bypass unlimited)
       if (userId) {
         const usageSuccess = await recordGenerateUsage(userId, 'material', 2);
@@ -553,7 +748,7 @@ export const MateriPage: React.FC<MateriPageProps> = ({
 
       setHasGenerated(true);
       setViewMode('preview');
-      showToast('📄 Dokumen Materi Ajar A4 siap cetak berhasil disusun!');
+      showToast('📄 Dokumen Bahan Ajar Mendalam Siap Cetak berhasil disusun!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       // Sinkronkan ke parent jika ada onSubmitForm
@@ -596,16 +791,26 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     bab,
     pertemuan,
     title,
+    apersepsi,
+    includeApersepsi,
     teacherNotes,
     includeTeacherNotesInDoc,
     learningObjectives,
     sections,
+    supportingReadingText,
+    includeSupportingReadingText,
+    misconceptions,
+    includeMisconceptions,
+    glosarium,
+    includeGlosarium,
     supportingItems,
     summary,
     includeSummary,
     understandingCheck: understandingQuestions,
     includeUnderstandingCheck,
     includeStudentNotesSheet,
+    references,
+    includeReferences,
     institutionName,
     teacherName,
     sourceMeetingId: materiContext?.sourceMeetingId || docMeetingId,
@@ -637,7 +842,11 @@ export const MateriPage: React.FC<MateriPageProps> = ({
     if (currentMateriDoc.bab) fullText += `Bab/Topik: ${currentMateriDoc.bab}\n`;
     if (currentMateriDoc.pertemuan) fullText += `Pertemuan: ${currentMateriDoc.pertemuan}\n\n`;
 
-    fullText += `TUJUAN PEMBELAJARAN:\n`;
+    if (currentMateriDoc.includeApersepsi && currentMateriDoc.apersepsi) {
+      fullText += `APERSEPSI & PERTANYAAN PEMANTIK:\n"${currentMateriDoc.apersepsi}"\n\n`;
+    }
+
+    fullText += `TUJUAN PEMBELAJARAN (CAPAIAN KOMPETENSI):\n`;
     currentMateriDoc.learningObjectives.forEach((obj, i) => {
       fullText += `${i + 1}. ${obj}\n`;
     });
@@ -655,19 +864,56 @@ export const MateriPage: React.FC<MateriPageProps> = ({
       }
     });
 
+    if (currentMateriDoc.includeSupportingReadingText && currentMateriDoc.supportingReadingText?.content) {
+      fullText += `=== MODEL WACANA TELAAH: ${currentMateriDoc.supportingReadingText.title.toUpperCase()} ===\n`;
+      fullText += `${currentMateriDoc.supportingReadingText.content}\n\n`;
+      if (currentMateriDoc.supportingReadingText.analysisNotes) {
+        fullText += `Catatan Analisis Pendidik: ${currentMateriDoc.supportingReadingText.analysisNotes}\n\n`;
+      }
+    }
+
+    if (currentMateriDoc.includeMisconceptions && currentMateriDoc.misconceptions && currentMateriDoc.misconceptions.length > 0) {
+      fullText += `=== ANTISIPASI MISKONSEPSI SISWA & FAKTA ILMIAH ===\n`;
+      currentMateriDoc.misconceptions.forEach((m, i) => {
+        fullText += `${i + 1}. Kekeliruan: ${m.misconception}\n   Fakta Benar: ${m.clarification}\n`;
+      });
+      fullText += `\n`;
+    }
+
+    if (currentMateriDoc.includeGlosarium && currentMateriDoc.glosarium && currentMateriDoc.glosarium.length > 0) {
+      fullText += `=== GLOSARIUM ISTILAH KUNCI ===\n`;
+      currentMateriDoc.glosarium.forEach(g => {
+        fullText += `• ${g.term}: ${g.definition}\n`;
+      });
+      fullText += `\n`;
+    }
+
     if (currentMateriDoc.includeSummary && currentMateriDoc.summary) {
-      fullText += `RANGKUMAN:\n${currentMateriDoc.summary}\n\n`;
+      fullText += `RANGKUMAN MATERI:\n${currentMateriDoc.summary}\n\n`;
     }
 
     if (currentMateriDoc.includeUnderstandingCheck && currentMateriDoc.understandingCheck) {
-      fullText += `CEK PEMAHAMAN:\n`;
+      fullText += `CEK PEMAHAMAN & LATIHAN SISWA (HOTS):\n`;
       currentMateriDoc.understandingCheck.forEach((q, i) => {
         fullText += `${i + 1}. ${q}\n`;
       });
+      fullText += `\n`;
+    }
+
+    if (currentMateriDoc.includeReferences && currentMateriDoc.references && currentMateriDoc.references.length > 0) {
+      fullText += `REFERENSI & SUMBER RUJUKAN RESMI:\n`;
+      currentMateriDoc.references.forEach((ref, i) => {
+        fullText += `[${i + 1}] ${ref}\n`;
+      });
+      fullText += `\n`;
+    }
+
+    if (currentMateriDoc.includeTeacherNotesInDoc && currentMateriDoc.teacherNotes) {
+      fullText += `CATATAN PENDIDIK:\n${currentMateriDoc.teacherNotes}\n\n`;
     }
 
     navigator.clipboard.writeText(fullText);
-    showToast('📋 Seluruh teks materi ajar berhasil disalin ke clipboard!');
+    showToast('📋 Seluruh teks dokumen bahan ajar berhasil disalin ke clipboard!');
   };
 
   const handleSaveToProjects = () => {
@@ -769,6 +1015,15 @@ export const MateriPage: React.FC<MateriPageProps> = ({
                 title="Muat contoh materi struktur graf Informatika"
               >
                 <span>Contoh Graph</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSynthesizeDeepMaterial}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                title="Susun dokumen bahan ajar mendalam secara otomatis (lengkap dengan wacana otentik, miskonsepsi, glosarium, dan rujukan)"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Susun Materi Mendalam</span>
               </button>
               {hasGenerated ? (
                 <button
@@ -1146,6 +1401,50 @@ export const MateriPage: React.FC<MateriPageProps> = ({
             {formErrors.objectives && <p className="text-[10px] text-rose-500 font-bold">{formErrors.objectives}</p>}
           </div>
 
+          {/* TAB B2: APERSEPSI & PERTANYAAN PEMANTIK KONTEKSTUAL */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold text-xs">
+                  B2
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 uppercase tracking-tight">
+                    Apersepsi & Pertanyaan Pemantik Kontekstual
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    Jembatan penghubung antara pengalaman nyata siswa dengan konsep inti yang akan dipelajari.
+                  </p>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer self-start sm:self-auto">
+                <input
+                  type="checkbox"
+                  checked={includeApersepsi}
+                  onChange={(e) => setIncludeApersepsi(e.target.checked)}
+                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="font-bold">Sertakan di Dokumen</span>
+              </label>
+            </div>
+
+            {includeApersepsi && (
+              <div className="space-y-2">
+                <textarea
+                  rows={4}
+                  value={apersepsi}
+                  onChange={(e) => setApersepsi(e.target.value)}
+                  placeholder="Cerita pengantar kontekstual, analogi kehidupan sehari-hari, dan pertanyaan pemantik yang merangsang nalar kritis siswa..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-800 leading-relaxed font-sans"
+                />
+                <p className="text-[10px] text-slate-400">
+                  💡 Tips: Apersepsi memancing keterlibatan emosi dan rasa ingin tahu peserta didik sebelum masuk ke substansi teori formal.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* TAB 3: ISI MATERI PEMBELAJARAN (DINAMIS — FITUR UTAMA) */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
@@ -1327,14 +1626,262 @@ export const MateriPage: React.FC<MateriPageProps> = ({
             {formErrors.sections && <p className="text-[10px] text-rose-500 font-bold">{formErrors.sections}</p>}
           </div>
 
-          {/* TAB 4: RANGKUMAN & MATERI PENDUKUNG (OPSIONAL) */}
+          {/* TAB D: MODEL TEKS WACANA BACAAN PENDUKUNG LENGKAP */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold text-xs">
+                  D
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 uppercase tracking-tight">
+                    Model Teks Wacana / Studi Kasus Pendukung Lengkap
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    Menghadirkan contoh teks utuh beranotasi atau studi kasus nyata yang dibedah bersama siswa.
+                  </p>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer self-start sm:self-auto">
+                <input
+                  type="checkbox"
+                  checked={includeSupportingReadingText}
+                  onChange={(e) => setIncludeSupportingReadingText(e.target.checked)}
+                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="font-bold">Sertakan di Dokumen</span>
+              </label>
+            </div>
+
+            {includeSupportingReadingText && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Judul Model Wacana / Teks:
+                    </label>
+                    <input
+                      type="text"
+                      value={supportingReadingText.title}
+                      onChange={(e) => setSupportingReadingText(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Contoh: Model Teks Iklan Otentik"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Kategori / Sumber:
+                    </label>
+                    <input
+                      type="text"
+                      value={supportingReadingText.category}
+                      onChange={(e) => setSupportingReadingText(prev => ({ ...prev, category: e.target.value }))}
+                      placeholder="Contoh: Wacana Otentik Analisis"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Isi Teks Model Wacana / Studi Kasus Lengkap:
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={supportingReadingText.content}
+                    onChange={(e) => setSupportingReadingText(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder="Tuliskan atau tempel wacana bacaan lengkap yang menjadi objek kajian..."
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-800 leading-relaxed font-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Catatan Telaah / Analisis Pendidik (Untuk Panduan Siswa):
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={supportingReadingText.analysisNotes || ''}
+                    onChange={(e) => setSupportingReadingText(prev => ({ ...prev, analysisNotes: e.target.value }))}
+                    placeholder="Catatan telaah struktur kalimat, fungsi persuasif, atau prinsip yang terkandung dalam wacana..."
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-800 leading-relaxed font-sans"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* TAB E: ANTISIPASI MISKONSEPSI SISWA & FAKTA ILMIAH */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold text-xs">
+                  E
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 uppercase tracking-tight">
+                    Antisipasi Miskonsepsi Siswa & Klarifikasi Konsep
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    Mencegah kekeliruan pemahaman konsep yang sering dialami peserta didik melalui klarifikasi ilmiah.
+                  </p>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer self-start sm:self-auto">
+                <input
+                  type="checkbox"
+                  checked={includeMisconceptions}
+                  onChange={(e) => setIncludeMisconceptions(e.target.checked)}
+                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="font-bold">Sertakan di Dokumen</span>
+              </label>
+            </div>
+
+            {includeMisconceptions && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  {misconceptions.map((m, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 relative">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[10px] font-black uppercase text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                          Miskonsepsi {idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMisconception(idx)}
+                          className="text-slate-400 hover:text-rose-600"
+                          title="Hapus miskonsepsi"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-900 font-medium">❌ {m.misconception}</p>
+                      <p className="text-xs text-emerald-800 bg-emerald-50/70 p-2 rounded-lg border border-emerald-200">
+                        ✅ <strong>Klarifikasi:</strong> {m.clarification}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Form Tambah Miskonsepsi */}
+                <div className="p-3 rounded-2xl bg-slate-50 border border-dashed border-slate-300 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-700 block">+ Tambah Miskonsepsi & Klarifikasi Baru:</span>
+                  <input
+                    type="text"
+                    value={newMisconceptionInput}
+                    onChange={(e) => setNewMisconceptionInput(e.target.value)}
+                    placeholder="Kekeliruan / salah paham yang sering terjadi pada siswa..."
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    value={newClarificationInput}
+                    onChange={(e) => setNewClarificationInput(e.target.value)}
+                    placeholder="Penjelasan / fakta ilmiah yang meluruskan kekeliruan tersebut..."
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddMisconception}
+                    className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambahkan ke Tabel</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* TAB F: GLOSARIUM ISTILAH KUNCI */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold text-xs">
+                  F
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 uppercase tracking-tight">
+                    Glosarium Istilah Kunci
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    Daftar kosakata ilmiah, istilah khusus, atau terminologi penting beserta definisinya.
+                  </p>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer self-start sm:self-auto">
+                <input
+                  type="checkbox"
+                  checked={includeGlosarium}
+                  onChange={(e) => setIncludeGlosarium(e.target.checked)}
+                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="font-bold">Sertakan di Dokumen</span>
+              </label>
+            </div>
+
+            {includeGlosarium && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {glosarium.map((g, idx) => (
+                    <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-slate-900 text-xs block">{g.term}</span>
+                        <p className="text-[11px] text-slate-600 leading-snug">{g.definition}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveGlossary(idx)}
+                        className="text-slate-400 hover:text-rose-600 p-1"
+                        title="Hapus istilah"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Form Tambah Glosarium */}
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={newTermInput}
+                    onChange={(e) => setNewTermInput(e.target.value)}
+                    placeholder="Nama istilah baru..."
+                    className="w-full sm:w-1/3 px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    value={newDefInput}
+                    onChange={(e) => setNewDefInput(e.target.value)}
+                    placeholder="Definisi ringkas dan jelas..."
+                    className="w-full sm:flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddGlossary}
+                    className="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambah</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* TAB G: RANGKUMAN & CEK PEMAHAMAN (OPSIONAL) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Rangkuman Materi */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold text-xs">
-                    D
+                    G1
                   </div>
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">
                     Rangkuman Materi
