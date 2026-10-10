@@ -598,7 +598,7 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span>Lembar Kerja Peserta Didik (Poster LKPD)</span>
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                STIVIA v3.2
+                STIVIA v3.5
               </span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">

@@ -205,7 +205,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
           </span>
         </div>
 
-        {/* KARTU SOROTAN PENGEMBANGAN VERSI 3.2 */}
+        {/* KARTU SOROTAN PENGEMBANGAN VERSI 3.5 */}
         <div className="bg-gradient-to-br from-indigo-900 via-[#1e2b8f] to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-lg shadow-indigo-950/15 border border-indigo-800/40 relative overflow-hidden">
           <div className="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute right-8 bottom-0 w-32 h-32 bg-blue-500/10 rounded-full blur-xl pointer-events-none" />
@@ -223,48 +223,48 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                 </span>
               </div>
               <span className="text-xs text-indigo-200/80 font-medium">
-                Pembaruan September 2026
+                Pembaruan Akbar v3.5
               </span>
             </div>
 
             <div className="space-y-2">
               <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                Catatan Pengembangan STIVIA 3.2
+                Catatan Pengembangan STIVIA 3.5
               </h3>
               <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed font-normal">
-                Pembaruan terpadu STIVIA 3.2 memperluas Analisis 7 Tahap Kerangka Berpikir untuk pembuatan media ajar yang semakin lengkap, mencakup modul Generator Poster LKPD Pembelajaran, Kendali Pertemuan Kurikulum otomatis, serta penguatan keamanan database Supabase Row Level Security (RLS) dan Server-Side RPC.
+                Pembaruan akbar STIVIA 3.5 menghadirkan ekosistem perangkat ajar lengkap berbasis 1 Master Learning Data guru, mencakup Deep Learning Material Engine (dokumen A4 siap cetak & ekspor Word), Generator Poster LKPD, Presentasi Gamma AI, Asesmen, serta sinkronisasi database cloud Supabase 5-tingkat yang tangguh dan aman.
               </p>
             </div>
 
-            {/* 3 Pilar Pengembangan v3.2 */}
+            {/* 3 Pilar Pengembangan v3.5 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
               <div className="p-3.5 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs space-y-1.5">
                 <div className="flex items-center gap-2 text-indigo-200">
                   <FileText className="w-4 h-4 text-amber-300" />
-                  <span className="text-xs font-bold text-white">Poster LKPD Edukatif</span>
+                  <span className="text-xs font-bold text-white">Deep Material Engine</span>
                 </div>
                 <p className="text-[11px] text-indigo-100/80 leading-relaxed">
-                  Menghasilkan naskah lembar kerja peserta didik terstruktur dan prompt poster visual siap cetak (A4/A3) untuk aktivitas penemuan bermakna.
+                  Menyusun bahan ajar mendalam A4 lengkap dengan wacana model beranotasi, tabel miskonsepsi, glosarium, latihan, dan ekspor Word (.docx).
                 </p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs space-y-1.5">
                 <div className="flex items-center gap-2 text-indigo-200">
                   <BookOpen className="w-4 h-4 text-emerald-300" />
-                  <span className="text-xs font-bold text-white">Kendali Pertemuan Silabus</span>
+                  <span className="text-xs font-bold text-white">1 Master Data Multi-Produk</span>
                 </div>
                 <p className="text-[11px] text-indigo-100/80 leading-relaxed">
-                  Batas materi presisi per pertemuan kelas tanpa pengulangan materi pengantar, menjaga kontinuitas dan target kurikulum pembelajaran.
+                  Satu input data pembelajaran langsung mengalir ke Dokumen Materi, Poster LKPD, Prompt Infografis, Presentasi Gamma AI, dan Soal Asesmen.
                 </p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs space-y-1.5">
                 <div className="flex items-center gap-2 text-indigo-200">
                   <ShieldCheck className="w-4 h-4 text-cyan-300" />
-                  <span className="text-xs font-bold text-white">Keamanan Supabase RLS</span>
+                  <span className="text-xs font-bold text-white">Cloud Sync 5-Tingkat</span>
                 </div>
                 <p className="text-[11px] text-indigo-100/80 leading-relaxed">
-                  Perlindungan saldo prompt dengan Row Level Security ketat, RPC server-side atomik, dan in-memory cache deduplikasi bebas query berulang.
+                  Persistensi hierarki proyek multi-perangkat via Supabase RLS, adaptasi skema INTEGER/TEXT cerdas, dan perlindungan cache lokal anti-hilang.
                 </p>
               </div>
             </div>
@@ -310,7 +310,7 @@ export const PengaturanPage: React.FC<PengaturanPageProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                Informasi platform, lisensi edukasi, profil pengembang, dan log rilis versi terdahulu (v3.1, v3.0, v2.2e).
+                Informasi platform, lisensi edukasi, profil pengembang, dan log rilis versi terdahulu (v3.2, v3.1, v3.0, v2.2e).
               </p>
             </div>
           </div>

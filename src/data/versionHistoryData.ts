@@ -10,17 +10,44 @@ export interface VersionItem {
   bugFixes: string[];
 }
 
-export const APP_CURRENT_VERSION = '3.2';
+export const APP_CURRENT_VERSION = '3.5';
 export const APP_VERSION_LABEL = `v${APP_CURRENT_VERSION}`;
 export const APP_FULL_VERSION_LABEL = `STIVIA Versi ${APP_CURRENT_VERSION}`;
-export const APP_UPDATE_NAME = 'GENERATOR POSTER LKPD, KENDALI PERTEMUAN KURIKULUM & INTEGRASI SUBSCRIPTION AMAN';
+export const APP_UPDATE_NAME = 'MULTI-PRODUCT LEARNING ENGINE, DEEP ACADEMIC MATERI & ROBUST CLOUD PERSISTENCE';
 export const APP_TAGLINE = 'Belajar Lebih Visual, Mengajar Lebih Mudah';
 
 export const STIVIA_VERSION_HISTORY: VersionItem[] = [
   {
+    version: '3.5',
+    updateName: 'MULTI-PRODUCT LEARNING ENGINE, DEEP ACADEMIC MATERI & ROBUST CLOUD PERSISTENCE',
+    status: 'Rilis Terbaru',
+    tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
+    releaseDate: 'Oktober 2026',
+    description: 'Pembaruan akbar STIVIA 3.5 menandai lompatan besar platform sebagai ekosistem persiapan mengajar terpadu guru. Dari 1 input Master Learning Data, STIVIA mengorkestrasi pembuatan Dokumen Materi Pembelajaran A4 mendalam (lengkap dengan teks model beranotasi, tabel miskonsepsi, glosarium, dan daftar pustaka), Lembar Kerja LKPD eksploratif, Prompt Infografis visual, Slide Presentasi Gamma AI, hingga Asesmen Pembelajaran. Didukung sinkronisasi cloud Supabase 5-tingkat yang tangguh dengan toleransi skema mandiri (INTEGER/TEXT) dan Row Level Security ketat.',
+    newFeatures: [
+      'Deep Learning Material Engine: Penyusunan bahan ajar mendalam siap cetak dan ekspor Word (.docx) dengan struktur akademis lengkap (Apersepsi & Pertanyaan Pemantik, Teks Model Beranotasi, Tabel Miskonsepsi Siswa & Klarifikasi Ilmiah, Glosarium Istilah, Rangkuman Esensial, Uji Pemahaman, dan Daftar Pustaka Kredibel).',
+      'Orkestrasi Multi-Produk Terintegrasi (1 Data Guru -> Banyak Produk): Master Learning Data tunggal otomatis mengalir ke Dokumen Materi A4, Poster LKPD, Infografis Visual, Presentasi Gamma AI, dan Soal Asesmen tanpa perlu input ulang.',
+      'Sinkronisasi Multi-Device 5-Tingkat Supabase: Persistensi hierarki pembelajaran terpadu (learning_projects -> learning_classes -> learning_chapters -> learning_meetings -> master_learning_data) dengan isolasi akun mutlak dan kepemilikan aman via RLS.',
+      'Adaptor Skema Cerdas & Self-Healing: Eliminasi error PostgreSQL 22P02 dengan auto-detection tipe INTEGER/TEXT untuk nomor bab dan nomor pertemuan, menjamin kompatibilitas tanpa kegagalan simpan.',
+      'Pelaporan Sinkronisasi Jujur & Proteksi Anti-Wipe Cache Lokal: Sistem secara transparan membedakan sumber data (Cloud vs Cache Lokal), mencegah laporan keberhasilan palsu, dan melindungi cache lokal dari pembersihan otomatis.',
+      'Lifecycle Status Produk Pertemuan (product_states): Pelacakan status kesiapan tiap produk per sesi pertemuan langsung di database cloud dan antarmuka guru.'
+    ],
+    improvements: [
+      'Penyempurnaan Form Builder & Editor Bahan Ajar dengan tab navigasi interaktif, pratinjau instan lembar A4, dan tombol cetak/PDF browser.',
+      'Peningkatan keandalan cascade delete untuk proyek, kelas, bab, dan pertemuan tanpa meninggalkan data yatim (orphan records).',
+      'Pembaruan kartu informasi sistem dan catatan rilis versi 3.5 pada menu Pengaturan dan profil guru.',
+      'Ekspor Word (.docx) berstruktur rapi dengan tabel miskonsepsi, teks bacaan, dan gaya tipografi profesional.'
+    ],
+    bugFixes: [
+      'Perbaikan total laporan keberhasilan palsu saat operasi penyimpanan tabel turunan Supabase mengalami kendala.',
+      'Penanganan aman tipe data integer pada PostgREST untuk mencegah kegagalan sorting dan localeCompare.',
+      'Pencegahan penghapusan cache lokal saat pengguna login dengan akun yang data cloud-nya masih kosong.'
+    ]
+  },
+  {
     version: '3.2',
     updateName: 'GENERATOR POSTER LKPD, KENDALI PERTEMUAN KURIKULUM & INTEGRASI SUBSCRIPTION AMAN',
-    status: 'Rilis Terbaru',
+    status: 'Versi Sebelumnya',
     tagline: 'Belajar Lebih Visual, Mengajar Lebih Mudah',
     releaseDate: 'September 2026',
     description: 'Pembaruan akbar STIVIA 3.2 menghadirkan perluasan inovatif Kerangka Berpikir 7 Tahap untuk Generator Poster LKPD Pembelajaran siap cetak, fitur Kendali Pertemuan Kurikulum otomatis tanpa repetisi materi dasar, integrasi keamanan database Supabase Row Level Security (RLS) ketat dengan Server-Side RPC untuk kuota prompt, serta antarmuka edukasi terpadu yang semakin responsif dan ramah bagi pendidik di Indonesia.',

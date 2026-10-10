@@ -1,5 +1,5 @@
 /**
- * LKPD ENGINE — STIVIA v3.2
+ * LKPD ENGINE — STIVIA v3.5
  * Sistem Analisis 7 Tahap & Generator Universal Prompt Poster LKPD Otomatis
  * 
  * Prinsip Utama:
