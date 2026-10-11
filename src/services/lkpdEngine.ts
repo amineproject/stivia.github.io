@@ -168,6 +168,11 @@ export interface GeneratedLkpdDocument {
   totalResponses: number;
   reflectionQuestions: string[];
   teacherNotesSection: string;
+  teacherRubric?: {
+    criteria: { aspect: string; weight: number; description: string; scoreGuidance: string }[];
+    totalMaxScore: number;
+    scoringFormula: string;
+  };
   createdAt: string;
 }
 
@@ -511,8 +516,17 @@ export function generateLkpdFromBlueprint(blueprint: LkpdBlueprintDesign): Gener
 
   // Hitung distribusi pertanyaan berdasarkan komposisi aktivitas dan jenis soal yang dipilih
   const totalWanted = blueprint.totalResponses || 8;
-  const activityList = blueprint.activityComposition.filter(a => a.count > 0);
-  const questionTypeList = blueprint.questionTypes.filter(q => q.count > 0);
+  const activityList = (blueprint.activityComposition || [
+    { category: 'Memahami', count: 2 },
+    { category: 'Mengidentifikasi', count: 2 },
+    { category: 'Menganalisis', count: 2 },
+    { category: 'Refleksi', count: 1 }
+  ]).filter(a => a.count > 0);
+  const questionTypeList = (blueprint.questionTypes || [
+    { type: 'Pilihan Ganda', count: 3 },
+    { type: 'Isian Singkat', count: 2 },
+    { type: 'Uraian', count: 3 }
+  ]).filter(q => q.count > 0);
 
   // Buat antrean jenis soal yang harus dialokasikan
   const qTypePool: LkpdQuestionType[] = [];
@@ -708,6 +722,30 @@ export function generateLkpdFromBlueprint(blueprint: LkpdBlueprintDesign): Gener
       `2. Bagian aktivitas mana yang paling menantang bagi saya, dan bagaimana stimulus membantu pemahaman saya?`
     ],
     teacherNotesSection: `Nilai: [ .......... ] | Catatan Guru: [ ................................................................ ]`,
+    teacherRubric: {
+      criteria: [
+        {
+          aspect: 'Ketepatan Konseptual & Rujukan Stimulus',
+          weight: 40,
+          description: `Kemampuan mengidentifikasi fakta pada stimulus dan menghubungkannya dengan konsep pokok ${blueprint.materi}.`,
+          scoreGuidance: 'Skor 86-100: Sangat tepat & merujuk data stimulus secara akurat; Skor 70-85: Cukup tepat dengan rujukan parsial; Skor <70: Kurang tepat atau mengabaikan stimulus.'
+        },
+        {
+          aspect: 'Kedalaman Analisis & Pemecahan Masalah (HOTS)',
+          weight: 35,
+          description: 'Kemampuan mengurai hubungan sebab-akibat, membandingkan data, dan merumuskan solusi logis.',
+          scoreGuidance: 'Skor 86-100: Argumentasi logis, kritis, dan solutif; Skor 70-85: Argumentasi cukup logis namun solusi umum; Skor <70: Belum menunjukkan penalaran mendalam.'
+        },
+        {
+          aspect: 'Kerapian, Bahasa, dan Refleksi Bermakna',
+          weight: 25,
+          description: 'Sistematika pengerjaan lembar kerja, kesesuaian bahasa Indonesia yang baik, dan kejujuran refleksi diri.',
+          scoreGuidance: 'Skor 86-100: Sangat rapi, bahasa komunikatif & refleksi mendalam; Skor 70-85: Rapi & cukup komunikatif; Skor <70: Perlu bimbingan kerapian pengerjaan.'
+        }
+      ],
+      totalMaxScore: 100,
+      scoringFormula: 'Nilai Akhir = (Total Skor Perolehan Aspek / 100) × 100'
+    },
     createdAt: new Date().toISOString()
   };
 }
@@ -1356,3 +1394,387 @@ ${posterPromptText}
 - preserve all essential learning activities;
 - print-ready 8K vector clarity.`;
 }
+
+// ============================================================================
+// EXPORT LKPD TO DOCX (WORD PRINT-READY FORMAT)
+// ============================================================================
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  Table,
+  TableRow,
+  TableCell,
+  HeadingLevel,
+  AlignmentType,
+  WidthType,
+  BorderStyle
+} from 'docx';
+
+/**
+ * Ekspor Lembar Kerja Peserta Didik (LKPD) ke format Microsoft Word (.docx)
+ * Berisi kop lembar kerja, identitas siswa, tujuan, stimulus, soal bergaris, dan rubrik penilaian guru.
+ */
+export async function exportLkpdToDocx(
+  doc: GeneratedLkpdDocument,
+  includeTeacherRubric: boolean = true
+): Promise<{ success: boolean; filename?: string; error?: string }> {
+  try {
+    const tableBorderConfig = {
+      top: { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' },
+      left: { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' },
+      right: { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' }
+    };
+
+    const docChildren: any[] = [];
+
+    // 1. Judul Dokumen & Subtitle
+    docChildren.push(
+      new Paragraph({
+        text: 'LEMBAR KERJA PESERTA DIDIK (LKPD)',
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 120 }
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 240 },
+        children: [
+          new TextRun({
+            text: doc.title,
+            bold: true,
+            size: 28,
+            color: '0F172A'
+          })
+        ]
+      })
+    );
+
+    // 2. Tabel Metadata & Identitas Siswa
+    const studentInfoTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              borders: tableBorderConfig,
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: 'Mata Pelajaran: ', bold: true }),
+                    new TextRun(doc.subject)
+                  ]
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: 'Jenjang / Kelas: ', bold: true }),
+                    new TextRun(`${doc.educationLevel} ${doc.grade}`)
+                  ]
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: 'Alokasi Waktu: ', bold: true }),
+                    new TextRun(doc.timeAllocation)
+                  ]
+                })
+              ]
+            }),
+            new TableCell({
+              borders: tableBorderConfig,
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: 'Nama Siswa / Kelompok: ', bold: true }),
+                    new TextRun('..................................................')
+                  ]
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: 'Nomor Absen / Kelas: ', bold: true }),
+                    new TextRun('..................................................')
+                  ]
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: 'Nilai / Catatan Guru: ', bold: true }),
+                    new TextRun('[                 ]')
+                  ]
+                })
+              ]
+            })
+          ]
+        })
+      ]
+    });
+
+    docChildren.push(studentInfoTable);
+    docChildren.push(new Paragraph({ text: '', spacing: { after: 240 } }));
+
+    // 3. Tujuan Pembelajaran
+    docChildren.push(
+      new Paragraph({
+        text: 'I. TUJUAN PEMBELAJARAN',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    doc.learningObjectives.forEach((tp, idx) => {
+      docChildren.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: `${idx + 1}. `, bold: true }),
+            new TextRun(tp)
+          ],
+          spacing: { after: 60 }
+        })
+      );
+    });
+
+    // 4. Petunjuk Pengerjaan
+    docChildren.push(
+      new Paragraph({
+        text: 'II. PETUNJUK PENGERJAAN',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 200, after: 100 }
+      })
+    );
+    doc.generalInstructions.forEach((inst, idx) => {
+      docChildren.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: `${idx + 1}. `, bold: true }),
+            new TextRun(inst)
+          ],
+          spacing: { after: 60 }
+        })
+      );
+    });
+
+    // 5. Stimulus Pembelajaran
+    docChildren.push(
+      new Paragraph({
+        text: `III. STIMULUS PEMBELAJARAN (${doc.stimulus.type.toUpperCase()})`,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 100 }
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({ text: doc.stimulus.title, bold: true, size: 22 })
+        ],
+        spacing: { after: 80 }
+      })
+    );
+
+    const stimulusLines = doc.stimulus.content.split('\n');
+    stimulusLines.forEach(line => {
+      if (line.trim()) {
+        docChildren.push(
+          new Paragraph({
+            children: [new TextRun(line)],
+            spacing: { after: 60 }
+          })
+        );
+      }
+    });
+
+    docChildren.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `Catatan Stimulus: ${doc.stimulus.contextualHint}`, italics: true, color: '059669' })
+        ],
+        spacing: { before: 80, after: 200 }
+      })
+    );
+
+    // 6. Rangkaian Aktivitas dan Tugas/Soal Siswa
+    docChildren.push(
+      new Paragraph({
+        text: 'IV. KEGIATAN & TUGAS EKSPLORASI SISWA',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 120 }
+      })
+    );
+
+    doc.sections.forEach((sec, sIdx) => {
+      docChildren.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: `Aktivitas ${sIdx + 1}: ${sec.title}`, bold: true, size: 22, color: '0F172A' })
+          ],
+          spacing: { before: 180, after: 60 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: sec.instruction, italics: true, color: '475569' })],
+          spacing: { after: 120 }
+        })
+      );
+
+      sec.questions.forEach((q) => {
+        docChildren.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `[Tugas ${q.number}] `, bold: true, color: '059669' }),
+              new TextRun({ text: q.prompt, bold: true }),
+              new TextRun({ text: ` (${q.cognitiveLevel})`, italics: true, color: '64748B', size: 18 })
+            ],
+            spacing: { before: 100, after: 60 }
+          })
+        );
+
+        // Jika Pilihan Ganda
+        if (q.options && q.options.length > 0) {
+          q.options.forEach(opt => {
+            docChildren.push(
+              new Paragraph({
+                children: [new TextRun({ text: `   ${opt}` })],
+                spacing: { after: 40 }
+              })
+            );
+          });
+        }
+
+        // Ruang Tulis Jawaban Siswa
+        const linesCount = q.answerLineCount || 3;
+        for (let l = 0; l < linesCount; l++) {
+          docChildren.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: '.....................................................................................................................................................',
+                  color: '94A3B8'
+                })
+              ],
+              spacing: { after: 50 }
+            })
+          );
+        }
+      });
+    });
+
+    // 7. Refleksi Pembelajaran Siswa
+    docChildren.push(
+      new Paragraph({
+        text: 'V. REFLEKSI PEMBELAJARAN SISWA',
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 100 }
+      })
+    );
+    doc.reflectionQuestions.forEach((rf) => {
+      docChildren.push(
+        new Paragraph({
+          children: [new TextRun({ text: rf, bold: true })],
+          spacing: { after: 60 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: '.....................................................................................................................................................',
+              color: '94A3B8'
+            })
+          ],
+          spacing: { after: 80 }
+        })
+      );
+    });
+
+    // 8. Rubrik Penilaian Guru (Jika diaktifkan)
+    if (includeTeacherRubric && doc.teacherRubric) {
+      docChildren.push(
+        new Paragraph({
+          text: 'LAMPIRAN GURU: PEDOMAN PENSKORAN & RUBRIK PENILAIAN',
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 300, after: 120 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: `Formula Penilaian: ${doc.teacherRubric.scoringFormula}`, italics: true })
+          ],
+          spacing: { after: 120 }
+        })
+      );
+
+      const rubricRows = [
+        new TableRow({
+          children: [
+            new TableCell({
+              borders: tableBorderConfig,
+              children: [new Paragraph({ children: [new TextRun({ text: 'Aspek Penilaian', bold: true })] })]
+            }),
+            new TableCell({
+              borders: tableBorderConfig,
+              children: [new Paragraph({ children: [new TextRun({ text: 'Bobot', bold: true })] })]
+            }),
+            new TableCell({
+              borders: tableBorderConfig,
+              children: [new Paragraph({ children: [new TextRun({ text: 'Deskripsi Indikator & Panduan Skor', bold: true })] })]
+            })
+          ]
+        })
+      ];
+
+      doc.teacherRubric.criteria.forEach(crit => {
+        rubricRows.push(
+          new TableRow({
+            children: [
+              new TableCell({
+                borders: tableBorderConfig,
+                children: [new Paragraph({ children: [new TextRun({ text: crit.aspect, bold: true })] })]
+              }),
+              new TableCell({
+                borders: tableBorderConfig,
+                children: [new Paragraph({ children: [new TextRun({ text: `${crit.weight}%` })] })]
+              }),
+              new TableCell({
+                borders: tableBorderConfig,
+                children: [
+                  new Paragraph({ children: [new TextRun({ text: crit.description })], spacing: { after: 40 } }),
+                  new Paragraph({ children: [new TextRun({ text: crit.scoreGuidance, italics: true, size: 18, color: '475569' })] })
+                ]
+              })
+            ]
+          })
+        );
+      });
+
+      docChildren.push(new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: rubricRows
+      }));
+    }
+
+    // Bangun Dokumen
+    const wordDoc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: docChildren
+        }
+      ]
+    });
+
+    const blob = await Packer.toBlob(wordDoc);
+    const cleanTitle = (doc.materi || 'LKPD')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .substring(0, 30);
+    const filename = `LKPD_${cleanTitle}_STIVIA.docx`;
+
+    if (typeof window !== 'undefined') {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    return { success: true, filename };
+  } catch (err: any) {
+    console.error('Gagal mengekspor LKPD ke DOCX:', err);
+    return { success: false, error: err?.message || 'Gagal mengekspor dokumen LKPD' };
+  }
+}
+

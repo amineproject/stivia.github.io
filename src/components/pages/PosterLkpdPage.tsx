@@ -30,7 +30,8 @@ import {
   ChevronRight,
   HelpCircle,
   Save,
-  CheckSquare
+  CheckSquare,
+  Download
 } from 'lucide-react';
 import {
   EducationLevel,
@@ -57,6 +58,7 @@ import {
   generateLkpdFromBlueprint,
   generatePosterPagesFromLkpd,
   buildUniversalPosterPromptFromLkpd,
+  exportLkpdToDocx,
   LkpdPaperSize,
   LkpdOrientation,
   LkpdVisualStyle
@@ -239,6 +241,8 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [showLimitModal, setShowLimitModal] = useState<boolean>(false);
   const [limitReason, setLimitReason] = useState<string>('');
+  const [isExportingDocx, setIsExportingDocx] = useState<boolean>(false);
+  const [showTeacherRubric, setShowTeacherRubric] = useState<boolean>(true);
 
   // Edit Mode untuk Review Dokumen
   const [isEditingDoc, setIsEditingDoc] = useState<boolean>(false);
@@ -552,6 +556,24 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
 
   const handlePrintPoster = () => {
     window.print();
+  };
+
+  const handleExportDocx = async () => {
+    if (!generatedDocument) return;
+    setIsExportingDocx(true);
+    try {
+      const res = await exportLkpdToDocx(generatedDocument, showTeacherRubric);
+      if (res.success) {
+        setCopyToast(`📄 Dokumen Word "${res.filename}" berhasil diunduh!`);
+      } else {
+        setCopyToast(`⚠️ Gagal unduh Word: ${res.error || 'Terjadi kesalahan'}`);
+      }
+    } catch (e: any) {
+      setCopyToast(`⚠️ Gagal ekspor Word: ${e?.message || 'Terjadi kendala'}`);
+    } finally {
+      setIsExportingDocx(false);
+      setTimeout(() => setCopyToast(null), 3000);
+    }
   };
 
   const handleSaveDraftProject = () => {
@@ -1417,7 +1439,28 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
               <span>Kembali ke Rancangan</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportDocx}
+                disabled={isExportingDocx}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isExportingDocx ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 text-emerald-700" />
+                )}
+                <span>Unduh Word (.docx)</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePrintPoster}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-600" />
+                <span>Cetak A4</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsEditingDoc(!isEditingDoc)}
@@ -1612,6 +1655,54 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
               <div className="border-b border-dashed border-slate-300 h-6"></div>
             </div>
 
+            {/* VI. Rubrik Penilaian & Pedoman Guru */}
+            {generatedDocument.teacherRubric && (
+              <div className="p-4 sm:p-5 rounded-xl border border-emerald-300 bg-emerald-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-emerald-700 text-white flex items-center justify-center text-[10px] font-bold">
+                      ✓
+                    </span>
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      VI. Pedoman Penskoran & Rubrik Penilaian Guru
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                    Total: {generatedDocument.teacherRubric.totalMaxScore} Poin
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 italic">
+                  {generatedDocument.teacherRubric.scoringFormula}
+                </p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-emerald-200 text-emerald-950 font-bold bg-emerald-100/60">
+                        <th className="p-2">Aspek Penilaian</th>
+                        <th className="p-2 w-20 text-center">Bobot</th>
+                        <th className="p-2">Indikator & Panduan Skor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-emerald-100 bg-white">
+                      {generatedDocument.teacherRubric.criteria.map((cr, cIdx) => (
+                        <tr key={cIdx} className="hover:bg-slate-50">
+                          <td className="p-2.5 font-bold text-slate-800 align-top">{cr.aspect}</td>
+                          <td className="p-2.5 text-center font-bold text-emerald-700 align-top">{cr.weight}%</td>
+                          <td className="p-2.5 text-slate-700 space-y-1 align-top">
+                            <p className="font-medium">{cr.description}</p>
+                            <p className="text-[11px] text-slate-500 italic bg-slate-50 p-1.5 rounded border border-slate-100">
+                              {cr.scoreGuidance}
+                            </p>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Bottom Call-to-action */}
             <div className="pt-4 text-center">
               <button
@@ -1667,6 +1758,19 @@ export const PosterLkpdPage: React.FC<PosterLkpdPageProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportDocx}
+                disabled={isExportingDocx}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isExportingDocx ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 text-emerald-700" />
+                )}
+                <span>Unduh Word (.docx)</span>
+              </button>
               <button
                 type="button"
                 onClick={handleCopyPrompt}
