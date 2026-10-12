@@ -689,6 +689,78 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Handler membuat banyak proyek sekaligus (Mode Kolektif Excel)
+  const handleCreateCollectiveProjects = async (newProjects: LearningProject[]) => {
+    if (!newProjects || newProjects.length === 0) return;
+
+    // 1. Gabungkan ke daftar proyek yang ada
+    const updated = [...newProjects, ...learningProjects];
+    setLearningProjects(updated);
+    saveStoredLearningProjects(updated, session?.user?.id);
+
+    // 2. Set konteks aktif ke proyek pertama yang baru diimpor
+    const firstProj = newProjects[0];
+    const firstCs = firstProj?.classSubjects[0];
+    const firstCh = firstCs?.chapters[0];
+    const firstMeet = firstCh?.meetings[0];
+
+    if (firstProj && firstCs && firstCh && firstMeet) {
+      const nextContext: ActiveLearningContext = {
+        activeProjectId: firstProj.id,
+        activeClassSubjectId: firstCs.id,
+        activeChapterId: firstCh.id,
+        activeMeetingId: firstMeet.id
+      };
+      setActiveLearningContext(nextContext);
+      saveStoredActiveContext(nextContext, session?.user?.id);
+
+      // Sinkronkan ke currentDraft jika ada materi nyata
+      if (firstMeet.masterLearningData?.materiDiajarkan?.trim() || firstMeet.masterLearningData?.temaKegiatan?.trim()) {
+        const syncedDraft = syncMeetingToCurrentDraft(
+          firstMeet,
+          firstCh,
+          firstCs,
+          firstProj,
+          currentDraft
+        );
+        setCurrentDraft(syncedDraft);
+        saveStoredCurrentDraft(syncedDraft, session?.user?.id);
+      }
+    }
+
+    // 3. Persistensi ke Supabase Cloud (jika user terautentikasi)
+    if (session?.user?.id && isSupabaseConfigured) {
+      setIsCloudSyncing(true);
+      setCloudSyncStatus('syncing');
+      let successCount = 0;
+      try {
+        for (const proj of newProjects) {
+          const res = await saveLearningProjectToSupabase(proj, session.user.id);
+          if (res.success) successCount++;
+        }
+        if (successCount === newProjects.length) {
+          setCloudSyncStatus('synced');
+          showToast(`Berhasil menyimpan ${newProjects.length} proyek ke Cloud Supabase!`);
+        } else {
+          setCloudSyncStatus('local');
+          showToast(`${successCount}/${newProjects.length} proyek tersinkron ke cloud, seluruhnya aman di lokal.`);
+        }
+      } catch (err) {
+        console.warn('Gagal sinkronisasi proyek kolektif ke cloud:', err);
+        setCloudSyncStatus('local');
+        showToast(`Proyek berhasil disimpan di perangkat lokal.`);
+      } finally {
+        setIsCloudSyncing(false);
+      }
+    } else {
+      showToast(`Berhasil membuat ${newProjects.length} proyek pembelajaran baru secara kolektif!`);
+    }
+
+    // 4. Arahkan ke Proyek Saya
+    setActiveTab('proyek_saya');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Handler memperbarui proyek pembelajaran (Master data, status, penambahan bab/pertemuan/kelas)
   const handleUpdateLearningProjects = async (
     updated: LearningProject[],
@@ -1268,6 +1340,7 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onCreateProject={handleCreateLearningProject}
+              onCreateCollectiveProjects={handleCreateCollectiveProjects}
               authorName={currentUserName}
               authorSchool={currentUserSchool}
             />

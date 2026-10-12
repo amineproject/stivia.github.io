@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL;
-const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawUrl = (typeof import.meta !== 'undefined' && import.meta?.env) ? import.meta.env.VITE_SUPABASE_URL : process?.env?.VITE_SUPABASE_URL;
+const rawAnonKey = (typeof import.meta !== 'undefined' && import.meta?.env) ? import.meta.env.VITE_SUPABASE_ANON_KEY : process?.env?.VITE_SUPABASE_ANON_KEY;
 
 /**
  * Mengetahui apakah variabel lingkungan Supabase sudah dikonfigurasi dengan benar.

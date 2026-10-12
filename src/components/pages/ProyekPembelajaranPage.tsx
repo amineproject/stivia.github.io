@@ -31,8 +31,16 @@ import {
   Sliders,
   CheckSquare,
   FolderPlus,
-  Info
+  Info,
+  Download,
+  FileSpreadsheet,
+  Upload
 } from 'lucide-react';
+import {
+  exportProjectsToExcel,
+  exportProjectsToJSONBackup,
+  parseJSONBackupFile
+} from '../../services/projectExcelService';
 import {
   InfographicDraft,
   NavigationTab,
@@ -846,8 +854,47 @@ export const ProyekPembelajaranPage: React.FC<ProyekPembelajaranPageProps> = ({
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-3 self-start sm:self-auto">
+        {/* Tab Switcher & Export Actions */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          {/* Tombol Ekspor Excel */}
+          {learningProjects.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    exportProjectsToExcel(learningProjects);
+                    onSaveToast('Data proyek pembelajaran berhasil diunduh sebagai file Excel (.xlsx).');
+                  } catch (e: any) {
+                    onSaveToast(`Gagal mengunduh Excel: ${e?.message || 'Error'}`);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title="Unduh seluruh proyek pembelajaran tersimpan sebagai file Excel"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Unduh Excel</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    exportProjectsToJSONBackup(learningProjects);
+                    onSaveToast('Cadangan proyek (JSON) berhasil diunduh.');
+                  } catch (e: any) {
+                    onSaveToast(`Gagal mencadangkan: ${e?.message || 'Error'}`);
+                  }
+                }}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all cursor-pointer hidden md:flex items-center gap-1"
+                title="Cadangkan data lengkap proyek ke format JSON"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+                <span>Backup JSON</span>
+              </button>
+            </div>
+          )}
+
           {/* Switcher Tab */}
           <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
             <button
