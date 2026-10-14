@@ -6,7 +6,7 @@
   "packageManager": "npm@10.9.8",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && node -e \"import('node:fs').then(fs => fs.copyFileSync('dist/index.html', 'dist/200.html'))\"",
+    "build": "vite build && node -e \"import('node:fs').then(fs => { try { fs.unlinkSync('dist/_redirects'); } catch {} fs.copyFileSync('dist/index.html', 'dist/200.html'); })\"",
     "deploy": "wrangler deploy",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
