@@ -6,8 +6,8 @@
   "packageManager": "npm@10.9.8",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && node -e \"import('node:fs').then(fs => { try { fs.unlinkSync('dist/_redirects'); } catch {} fs.copyFileSync('dist/index.html', 'dist/200.html'); })\"",
-    "deploy": "wrangler deploy",
+    "build": "vite build && node -e \"import('node:fs').then(fs => { if (fs.existsSync('dist/_redirects')) { console.warn('[build] Removing dist/_redirects to prevent Cloudflare loop error 100324'); fs.unlinkSync('dist/_redirects'); } })\"",
+    "deploy": "npm run build && wrangler deploy",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
@@ -36,6 +36,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "wrangler": "^4.150.0"
   }
 }
